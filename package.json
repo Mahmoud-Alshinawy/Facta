@@ -1,0 +1,14 @@
+{
+  "name": "facta",
+  "version": "0.0.0",
+  "license": "MIT",
+  "scripts": {
+    "typecheck": "pnpm -r --filter \"./apps/**\" --if-present run typecheck",
+    "build": "pnpm -r --if-present run build"
+  },
+  "private": true,
+  "devDependencies": {
+    "prettier": "^3.8.1",
+    "typescript": "~5.9.2"
+  }
+}

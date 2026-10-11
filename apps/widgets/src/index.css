@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: transparent;
+  --color-foreground: #ffffff;
+  --color-primary: #FF9500;
+  --color-card: transparent;
+  --color-border: transparent;
+}
+
+html, body, #root {
+  background: transparent !important;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Midnight theme (default dark) */
+.theme-midnight {
+  color: #ffffff;
+  --widget-text: #ffffff;
+  --widget-accent: #4D9FFF;
+  --widget-accent-soft: rgba(77, 159, 255, 0.25);
+  --widget-muted: rgba(255, 255, 255, 0.5);
+  --widget-shadow: 0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.5);
+  --widget-accent-shadow: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
+}
+.theme-midnight .widget-text {
+  color: var(--widget-text);
+  text-shadow: var(--widget-shadow);
+}
+.theme-midnight .widget-accent {
+  color: var(--widget-accent);
+  filter: var(--widget-accent-shadow);
+}
+.theme-midnight .widget-muted {
+  color: var(--widget-muted);
+  text-shadow: var(--widget-shadow);
+}
+
+/* Ember theme */
+.theme-ember {
+  color: #FFB74D;
+  --widget-text: #FFB74D;
+  --widget-accent: #FF8C00;
+  --widget-accent-soft: rgba(255, 140, 0, 0.3);
+  --widget-muted: rgba(255, 183, 77, 0.5);
+  --widget-shadow: 0 1px 3px rgba(0, 0, 0, 0.7), 0 0 6px rgba(80, 40, 0, 0.4);
+  --widget-accent-shadow: drop-shadow(0 1px 2px rgba(80, 40, 0, 0.6));
+}
+.theme-ember .widget-text {
+  color: var(--widget-text);
+  text-shadow: var(--widget-shadow);
+}
+.theme-ember .widget-accent {
+  color: var(--widget-accent);
+  filter: var(--widget-accent-shadow);
+}
+.theme-ember .widget-muted {
+  color: var(--widget-muted);
+  text-shadow: var(--widget-shadow);
+}
+
+/* Light theme */
+.theme-light {
+  color: #1a1a1a;
+  --widget-text: #1a1a1a;
+  --widget-accent: #E06B00;
+  --widget-accent-soft: rgba(224, 107, 0, 0.18);
+  --widget-muted: rgba(20, 20, 20, 0.7);
+  --widget-shadow: 0 1px 2px rgba(255, 255, 255, 0.7), 0 0 6px rgba(255, 255, 255, 0.3);
+  --widget-accent-shadow: drop-shadow(0 1px 2px rgba(255, 255, 255, 0.6));
+}
+.theme-light .widget-text {
+  color: var(--widget-text);
+  text-shadow: var(--widget-shadow);
+}
+.theme-light .widget-accent {
+  color: var(--widget-accent);
+  filter: var(--widget-accent-shadow);
+}
+.theme-light .widget-muted {
+  color: var(--widget-muted);
+  text-shadow: var(--widget-shadow);
+}
+
+/* SVG progress circles use the same per-theme accent */
+.progress-ring { stroke: var(--widget-accent); }

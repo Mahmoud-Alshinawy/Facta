@@ -1,0 +1,198 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+env:
+  TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+  TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: planner
+            app_dir: apps/desktop
+            rust_target: x86_64-pc-windows-msvc
+            os: windows-latest
+            artifact_suffix: windows
+          - app: planner
+            app_dir: apps/desktop
+            rust_target: aarch64-apple-darwin
+            os: macos-latest
+            artifact_suffix: macos-arm64
+          - app: planner
+            app_dir: apps/desktop
+            rust_target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            artifact_suffix: linux
+          - app: widgets
+            app_dir: apps/widgets
+            rust_target: x86_64-pc-windows-msvc
+            os: windows-latest
+            artifact_suffix: windows
+          - app: widgets
+            app_dir: apps/widgets
+            rust_target: aarch64-apple-darwin
+            os: macos-latest
+            artifact_suffix: macos-arm64
+          - app: widgets
+            app_dir: apps/widgets
+            rust_target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            artifact_suffix: linux
+
+    runs-on: ${{ matrix.os }}
+    name: Build ${{ matrix.app }} (${{ matrix.artifact_suffix }})
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_target }}
+
+      - name: Install Linux dependencies (Ubuntu only)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libgtk-3-dev squashfs-tools
+
+          curl -fsSL \
+            https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage \
+            -o "$RUNNER_TEMP/appimagetool.AppImage"
+          chmod +x "$RUNNER_TEMP/appimagetool.AppImage"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Get pnpm store path
+        id: pnpm-cache
+        shell: bash
+        run: echo "path=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.path }}
+          key: ${{ runner.os }}-${{ runner.arch }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-pnpm-
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        with:
+          projectPath: ${{ matrix.app_dir }}
+          tauriScript: pnpm tauri
+          args: --target ${{ matrix.rust_target }}
+
+      - name: Repair Linux AppImages
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        env:
+          APPIMAGETOOL: ${{ runner.temp }}/appimagetool.AppImage
+        run: |
+          chmod +x scripts/repair-linux-appimage.sh
+
+          while IFS= read -r -d '' appimage; do
+            scripts/repair-linux-appimage.sh "$appimage"
+          done < <(
+            find "${{ matrix.app_dir }}/src-tauri/target/${{ matrix.rust_target }}/release/bundle" \
+              -type f \
+              -name '*.AppImage' \
+              -print0
+          )
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.app }}-${{ matrix.artifact_suffix }}
+          path: |
+            ${{ matrix.app_dir }}/src-tauri/target/${{ matrix.rust_target }}/release/bundle/**/*.exe
+            ${{ matrix.app_dir }}/src-tauri/target/${{ matrix.rust_target }}/release/bundle/**/*.dmg
+            ${{ matrix.app_dir }}/src-tauri/target/${{ matrix.rust_target }}/release/bundle/**/*.AppImage
+            ${{ matrix.app_dir }}/src-tauri/target/${{ matrix.rust_target }}/release/bundle/**/*.deb
+          if-no-files-found: warn
+
+  package:
+    needs: build
+    runs-on: ubuntu-latest
+    name: Package combined zips
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows
+            artifact_pattern: "*-windows"
+            zip_name: Facta-${{ github.ref_name }}-windows.zip
+          - platform: macos
+            artifact_pattern: "*-macos-arm64"
+            zip_name: Facta-${{ github.ref_name }}-macos.zip
+          - platform: linux
+            artifact_pattern: "*-linux"
+            zip_name: Facta-${{ github.ref_name }}-linux.zip
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: staged
+          merge-multiple: true
+          pattern: ${{ matrix.artifact_pattern }}
+
+      - name: List downloaded files
+        run: find staged -type f
+
+      - name: Create combined zip
+        run: |
+          cd staged
+          zip -r "../${{ matrix.zip_name }}" .
+
+      - name: Upload combined zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.platform }}
+          path: ${{ matrix.zip_name }}
+
+  release:
+    needs: package
+    runs-on: ubuntu-latest
+    name: Create GitHub Release
+
+    steps:
+      - name: Download combined zips
+        uses: actions/download-artifact@v4
+        with:
+          path: zips
+          pattern: release-*
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: zips/**/*.zip
+          make_latest: true
