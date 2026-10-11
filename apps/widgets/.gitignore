@@ -1,0 +1,25 @@
+# Build output
+dist/
+
+# Rust
+target/
+
+# Node modules
+node_modules/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vite
+*.local
+
+# Env
+.env
+.env.local
+.env.*.local
