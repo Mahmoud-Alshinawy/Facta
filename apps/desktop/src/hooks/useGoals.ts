@@ -1,72 +1,14 @@
 import type { ReactNode } from "react";
-import { createContext, createElement, useContext, useState, useCallback, useEffect, useRef } from "react";
-import { format, parseISO, isBefore, startOfDay, getDay, differenceInCalendarDays } from "date-fns";
+import { createContext, createElement, useContext, useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import { toast } from "sonner";
-import { useAuth, getStorageKey } from "@/hooks/useAuth";
-import { requestWidgetExport, setWidgetExportUser } from "@/lib/widgetExportBus";
+import { useAuth } from "@/hooks/useAuth";
+import { useSyncEngine } from "@/hooks/useSync";
+import { isExpiredOverdueGoal, toggleGoalCompletion } from "@/lib/goalDates";
+import { setWidgetExportUser } from "@/lib/widgetExportBus";
+import type { Goal, GoalCategory, GoalRepeat } from "@/types/planner";
 
-export type GoalCategory = "must-do" | "should-do" | "nice-to-have";
-export type GoalRepeat = "none" | "daily" | "weekdays" | "weekly" | "custom";
-
-export interface Goal {
-  id: string;
-  title: string;
-  category: GoalCategory;
-  date: string;
-  time?: string;
-  completed: boolean;
-  completedDates?: string[];
-  repeat?: GoalRepeat;
-  repeatDays?: number[];
-  notificationsEnabled: boolean;
-  notificationMessage: string;
-  lastNotifiedDate?: string;
-}
-
-const TODAY = () => format(new Date(), "yyyy-MM-dd");
-const OVERDUE_DELETE_AFTER_DAYS = 3;
-
-function loadGoals(key: string): Goal[] {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
-}
-
-function saveGoals(key: string, goals: Goal[]) {
-  localStorage.setItem(key, JSON.stringify(goals));
-}
-
-/** Non-recurring, incomplete, due date before today. */
-export function isOverdueGoal(goal: Goal, today = new Date()): boolean {
-  if (goal.completed) return false;
-  if ((goal.repeat ?? "none") !== "none") return false;
-  try {
-    return isBefore(startOfDay(parseISO(goal.date)), startOfDay(today));
-  } catch {
-    return false;
-  }
-}
-
-/** Overdue for more than 3 calendar days → eligible for auto-delete. */
-export function isExpiredOverdueGoal(goal: Goal, today = new Date()): boolean {
-  if (!isOverdueGoal(goal, today)) return false;
-  try {
-    return differenceInCalendarDays(startOfDay(today), startOfDay(parseISO(goal.date))) > OVERDUE_DELETE_AFTER_DAYS;
-  } catch {
-    return false;
-  }
-}
-
-function purgeExpiredOverdue(goals: Goal[]): { kept: Goal[]; removed: number } {
-  const kept: Goal[] = [];
-  let removed = 0;
-  for (const g of goals) {
-    if (isExpiredOverdueGoal(g)) removed += 1;
-    else kept.push(g);
-  }
-  return { kept, removed };
-}
+export type { Goal, GoalCategory, GoalRepeat } from "@/types/planner";
+export { isActiveToday, isCompletedToday, isExpiredOverdueGoal, isOverdueGoal } from "@/lib/goalDates";
 
 export const CATEGORY_META: Record<GoalCategory, { label: string; color: string; bg: string; text: string; border: string }> = {
   "must-do":      { label: "Must Do",      color: "red",    bg: "bg-red-500/15",    text: "text-red-700",    border: "border-red-300" },
@@ -84,103 +26,68 @@ export const REPEAT_META: Record<GoalRepeat, { label: string; short: string }> =
 
 export const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-export function isCompletedToday(goal: Goal): boolean {
-  const repeat = goal.repeat ?? "none";
-  if (repeat === "none") return goal.completed;
-  return (goal.completedDates ?? []).includes(TODAY());
-}
+const NO_GOALS: Goal[] = [];
+const noopSubscribe = () => () => {};
 
-export function isActiveToday(goal: Goal): boolean {
-  const repeat = goal.repeat ?? "none";
-  if (repeat === "none") return false;
-
-  const startDate = parseISO(goal.date);
-  const todayStart = startOfDay(new Date());
-  if (isBefore(todayStart, startOfDay(startDate))) return false;
-
-  const dow = getDay(new Date());
-  if (repeat === "daily") return true;
-  if (repeat === "weekdays") return dow >= 1 && dow <= 5;
-  if (repeat === "weekly") return getDay(startDate) === dow;
-  if (repeat === "custom") return (goal.repeatDays ?? []).includes(dow);
-  return false;
-}
+export type NewGoal = Omit<Goal, "id" | "completed" | "completedDates" | "lastNotifiedDate" | "updatedAt">;
 
 function useGoalsState() {
-  const { user } = useAuth();
-  const storageKey = getStorageKey("planner_goals", user?.id);
-  const purgedKeyRef = useRef<string | null>(null);
-  const [goals, setGoals] = useState<Goal[]>(() => {
-    const { kept } = purgeExpiredOverdue(loadGoals(storageKey));
-    return kept;
-  });
+  const engine = useSyncEngine();
+  const goals = useSyncExternalStore(
+    engine ? engine.subscribe : noopSubscribe,
+    engine ? engine.goals.getSnapshot : () => NO_GOALS,
+  );
 
-  // Reload when the signed-in user changes, dropping goals overdue by more than
-  // OVERDUE_DELETE_AFTER_DAYS.
+  // Goals overdue for more than OVERDUE_DELETE_AFTER_DAYS are deleted through
+  // the normal path (tombstone + queue), so other devices drop them too and a
+  // pull doesn't bring them back. Only runs once the engine exists, i.e. after
+  // auth has resolved.
+  const purgeToastShown = useRef<string | null>(null);
   useEffect(() => {
-    const { kept, removed } = purgeExpiredOverdue(loadGoals(storageKey));
-    setGoals(kept);
-    if (removed > 0) {
-      saveGoals(storageKey, kept);
-      if (purgedKeyRef.current !== storageKey) {
-        purgedKeyRef.current = storageKey;
-        toast.message(
-          removed === 1
-            ? "1 overdue goal was removed"
-            : `${removed} overdue goals were removed`,
-          { description: "Goals overdue for more than 3 days are cleaned up automatically." },
-        );
-      }
-    } else {
-      purgedKeyRef.current = storageKey;
+    if (!engine) return;
+    const expired = goals.filter((g) => isExpiredOverdueGoal(g));
+    if (expired.length === 0) return;
+    for (const g of expired) engine.goals.remove(g.id);
+    if (purgeToastShown.current !== engine.userId) {
+      purgeToastShown.current = engine.userId;
+      toast.message(
+        expired.length === 1 ? "1 overdue goal was removed" : `${expired.length} overdue goals were removed`,
+        { description: "Goals overdue for more than 3 days are cleaned up automatically." },
+      );
     }
-  }, [storageKey]);
+  }, [engine, goals]);
 
-  // Persist, then let the widgets know. Kept out of the state updaters below so
-  // they stay pure.
-  useEffect(() => {
-    saveGoals(storageKey, goals);
-    requestWidgetExport();
-  }, [goals, storageKey]);
-
-  const addGoal = useCallback((goal: Omit<Goal, "id" | "completed" | "completedDates" | "lastNotifiedDate">) => {
-    const newGoal: Goal = {
-      ...goal,
-      id: crypto.randomUUID(),
-      completed: false,
-      completedDates: [],
-    };
-    setGoals((prev) => [...prev, newGoal]);
-    return newGoal;
-  }, []);
+  /** Returns the saved goal, or null if there is no signed-in engine yet. */
+  const addGoal = useCallback((goal: NewGoal): Goal | null => {
+    if (!engine) return null;
+    return engine.goals.upsert({ ...goal, id: crypto.randomUUID(), completed: false, completedDates: [] });
+  }, [engine]);
 
   const updateGoal = useCallback((id: string, updates: Partial<Goal>) => {
-    setGoals((prev) => prev.map((g) => (g.id === id ? { ...g, ...updates } : g)));
-  }, []);
+    const current = engine?.goals.get(id);
+    if (!engine || !current) return;
+    engine.goals.upsert({ ...current, ...updates, id });
+  }, [engine]);
 
   const deleteGoal = useCallback((id: string) => {
-    setGoals((prev) => prev.filter((g) => g.id !== id));
-  }, []);
+    engine?.goals.remove(id);
+  }, [engine]);
 
   const toggleComplete = useCallback((id: string) => {
-    const today = TODAY();
-    setGoals((prev) => prev.map((g) => {
-      if (g.id !== id) return g;
-      if ((g.repeat ?? "none") === "none") return { ...g, completed: !g.completed };
-      const dates = g.completedDates ?? [];
-      const alreadyDone = dates.includes(today);
-      return {
-        ...g,
-        completedDates: alreadyDone ? dates.filter((d) => d !== today) : [...dates, today],
-      };
-    }));
-  }, []);
+    const current = engine?.goals.get(id);
+    if (!engine || !current) return;
+    engine.goals.upsert(toggleGoalCompletion(current));
+  }, [engine]);
 
+  // Per-device reminder bookkeeping: no new updatedAt, nothing queued.
   const markNotified = useCallback((id: string, date: string) => {
-    setGoals((prev) => prev.map((g) => (g.id === id ? { ...g, lastNotifiedDate: date } : g)));
-  }, []);
+    engine?.goals.patchLocal(id, { lastNotifiedDate: date });
+  }, [engine]);
 
-  return { goals, addGoal, updateGoal, deleteGoal, toggleComplete, markNotified };
+  return useMemo(
+    () => ({ goals, addGoal, updateGoal, deleteGoal, toggleComplete, markNotified }),
+    [goals, addGoal, updateGoal, deleteGoal, toggleComplete, markNotified],
+  );
 }
 
 // One shared instance for the whole app. Each independent useGoals() call
@@ -189,8 +96,9 @@ function useGoalsState() {
 const GoalsContext = createContext<ReturnType<typeof useGoalsState> | null>(null);
 
 export function GoalsProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
-  useEffect(() => { setWidgetExportUser(user?.id ?? null); }, [user?.id]);
+  const { user, loading } = useAuth();
+  const userId = loading ? null : user?.id ?? null;
+  useEffect(() => { setWidgetExportUser(userId); }, [userId]);
   return createElement(GoalsContext.Provider, { value: useGoalsState() }, children);
 }
 

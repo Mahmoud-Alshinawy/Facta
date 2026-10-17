@@ -24,6 +24,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import { requestWidgetExport } from "@/lib/widgetExportBus";
 import AuthScreen from "@/components/AuthScreen";
+import SyncStatusBadge from "@/components/SyncStatusBadge";
 import { Toaster } from "sonner";
 
 type View = "today" | "month" | "week" | "day" | "agenda";
@@ -432,6 +433,7 @@ export default function App() {
         )}
 
         <div className="mt-auto px-3 pb-4 space-y-1">
+          <SyncStatusBadge />
           <div className="relative">
             <button
               onClick={() => setThemeOpen((v) => !v)}
