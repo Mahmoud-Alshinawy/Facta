@@ -201,8 +201,8 @@ export default function GoalsPanel() {
     if (editingGoal) {
       updateGoal(editingGoal.id, data);
     } else {
-      const newGoal = addGoal(data);
-      if (addToCalendar) {
+      const saved = addGoal(data);
+      if (saved && addToCalendar) {
         const start = data.time ?? "09:00";
         addEvent({
           title: data.title,

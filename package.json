@@ -4,7 +4,8 @@
   "license": "MIT",
   "scripts": {
     "typecheck": "pnpm -r --filter \"./apps/**\" --if-present run typecheck",
-    "build": "pnpm -r --if-present run build"
+    "build": "pnpm -r --if-present run build",
+    "test": "pnpm -r --if-present run test"
   },
   "private": true,
   "devDependencies": {

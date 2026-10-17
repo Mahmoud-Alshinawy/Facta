@@ -1,11 +1,10 @@
 import type { ReactNode } from "react";
-import { createContext, createElement, useContext, useState, useCallback, useEffect } from "react";
+import { createContext, createElement, useContext, useCallback, useMemo, useSyncExternalStore } from "react";
 import { getDay, parseISO } from "date-fns";
-import { useAuth, getStorageKey } from "@/hooks/useAuth";
-import { requestWidgetExport } from "@/lib/widgetExportBus";
+import { useSyncEngine } from "@/hooks/useSync";
+import type { CalendarEvent, EventColor, EventRepeat } from "@/types/planner";
 
-export type EventColor = "blue" | "red" | "green" | "orange" | "purple" | "pink";
-export type EventRepeat = "none" | "daily" | "weekdays" | "weekly" | "custom";
+export type { CalendarEvent, EventColor, EventRepeat } from "@/types/planner";
 
 export const EVENT_REPEAT_META: Record<EventRepeat, { label: string }> = {
   none:     { label: "No repeat" },
@@ -17,61 +16,31 @@ export const EVENT_REPEAT_META: Record<EventRepeat, { label: string }> = {
 
 export const EVENT_DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
 
-export interface CalendarEvent {
-  id: string;
-  title: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  color: EventColor;
-  description?: string;
-  allDay?: boolean;
-  repeat?: EventRepeat;
-  repeatDays?: number[];
-}
-
-function loadEvents(key: string): CalendarEvent[] {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveEvents(key: string, events: CalendarEvent[]) {
-  localStorage.setItem(key, JSON.stringify(events));
-}
+const NO_EVENTS: CalendarEvent[] = [];
+const noopSubscribe = () => () => {};
 
 function useEventsState() {
-  const { user } = useAuth();
-  const storageKey = getStorageKey("planner_events", user?.id);
-  const [events, setEvents] = useState<CalendarEvent[]>(() => loadEvents(storageKey));
+  const engine = useSyncEngine();
+  const events = useSyncExternalStore(
+    engine ? engine.subscribe : noopSubscribe,
+    engine ? engine.events.getSnapshot : () => NO_EVENTS,
+  );
 
-  useEffect(() => {
-    setEvents(loadEvents(storageKey));
-  }, [storageKey]);
-
-  // Persist, then let the widgets know. Kept out of the state updaters below so
-  // they stay pure.
-  useEffect(() => {
-    saveEvents(storageKey, events);
-    requestWidgetExport();
-  }, [events, storageKey]);
-
-  const addEvent = useCallback((event: Omit<CalendarEvent, "id">) => {
-    const newEvent: CalendarEvent = { ...event, id: crypto.randomUUID() };
-    setEvents((prev) => [...prev, newEvent]);
-    return newEvent;
-  }, []);
+  /** Returns the saved event, or null if there is no signed-in engine yet. */
+  const addEvent = useCallback((event: Omit<CalendarEvent, "id" | "updatedAt">): CalendarEvent | null => {
+    if (!engine) return null;
+    return engine.events.upsert({ ...event, id: crypto.randomUUID() });
+  }, [engine]);
 
   const updateEvent = useCallback((id: string, updates: Partial<CalendarEvent>) => {
-    setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, ...updates } : e)));
-  }, []);
+    const current = engine?.events.get(id);
+    if (!engine || !current) return;
+    engine.events.upsert({ ...current, ...updates, id });
+  }, [engine]);
 
   const deleteEvent = useCallback((id: string) => {
-    setEvents((prev) => prev.filter((e) => e.id !== id));
-  }, []);
+    engine?.events.remove(id);
+  }, [engine]);
 
   const getEventsForDate = useCallback(
     (dateStr: string) => events.filter((e) => {
@@ -89,7 +58,10 @@ function useEventsState() {
     [events]
   );
 
-  return { events, addEvent, updateEvent, deleteEvent, getEventsForDate };
+  return useMemo(
+    () => ({ events, addEvent, updateEvent, deleteEvent, getEventsForDate }),
+    [events, addEvent, updateEvent, deleteEvent, getEventsForDate],
+  );
 }
 
 export const COLOR_MAP: Record<EventColor, { bg: string; text: string; dot: string }> = {
