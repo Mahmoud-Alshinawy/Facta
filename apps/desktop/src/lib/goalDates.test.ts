@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  isActiveToday, isCompletedToday, isExpiredOverdueGoal, isOverdueGoal, localDay, toggleGoalCompletion,
+  goalsForDay, isActiveToday, isCompletedToday, isExpiredOverdueGoal, isOverdueGoal, localDay, overdueGoals, planDay, toggleGoalCompletion,
 } from "@/lib/goalDates";
 import { makeGoal } from "@/test/harness";
 
@@ -154,5 +154,84 @@ describe("clock changes", () => {
     const due = makeGoal({ date: "2026-11-01" });
     expect(isOverdueGoal(due, at("2026-11-01T23:59:59"))).toBe(false);
     expect(isOverdueGoal(due, at("2026-11-02T00:00:00"))).toBe(true);
+  });
+});
+
+describe("goalsForDay / planDay", () => {
+  const oneOff = (title: string, date: string, over: Partial<ReturnType<typeof makeGoal>> = {}) =>
+    makeGoal({ title, date, ...over });
+
+  it("counts one-off goals due today and repeating goals active today", () => {
+    const goals = [
+      oneOff("due today", "2026-10-16"),
+      oneOff("due tomorrow", "2026-10-17"),
+      oneOff("overdue", "2026-10-15"),
+      makeGoal({ title: "daily", repeat: "daily", date: "2026-10-01" }),
+      makeGoal({ title: "weekdays", repeat: "weekdays", date: "2026-10-01" }),
+      makeGoal({ title: "saturdays", repeat: "custom", repeatDays: [6], date: "2026-10-01" }),
+      makeGoal({ title: "starts later", repeat: "daily", date: "2026-10-20" }),
+    ];
+    // 2026-10-16 is a Friday.
+    expect(goalsForDay(goals, at("2026-10-16T12:00:00")).map((g) => g.title)).toEqual(["due today", "daily", "weekdays"]);
+  });
+
+  it("switches days exactly at local midnight", () => {
+    const goals = [
+      oneOff("friday's goal", "2026-10-16"),
+      makeGoal({ title: "weekdays", repeat: "weekdays", date: "2026-10-01" }),
+      makeGoal({ title: "saturdays", repeat: "custom", repeatDays: [6], date: "2026-10-01" }),
+    ];
+    expect(goalsForDay(goals, at("2026-10-16T23:59:59")).map((g) => g.title)).toEqual(["friday's goal", "weekdays"]);
+    expect(goalsForDay(goals, at("2026-10-17T00:00:00")).map((g) => g.title)).toEqual(["saturdays"]);
+  });
+
+  it("a daily goal ticked just before midnight is open again just after", () => {
+    const daily = makeGoal({ title: "daily", repeat: "daily", date: "2026-10-01", completedDates: ["2026-10-16"] });
+    expect(planDay([daily], at("2026-10-16T23:59:59"))).toMatchObject({ done: 1, total: 1, next: undefined });
+    expect(planDay([daily], at("2026-10-17T00:00:00"))).toMatchObject({ done: 0, total: 1 });
+    expect(planDay([daily], at("2026-10-17T00:00:00")).next?.title).toBe("daily");
+  });
+
+  it("next up is the first unfinished goal by priority, then time", () => {
+    const now = at("2026-10-16T09:00:00");
+    const goals = [
+      oneOff("nice", "2026-10-16", { category: "nice-to-have" }),
+      oneOff("should late", "2026-10-16", { category: "should-do", time: "17:00" }),
+      oneOff("should early", "2026-10-16", { category: "should-do", time: "08:00" }),
+      oneOff("must done", "2026-10-16", { category: "must-do", completed: true }),
+    ];
+    const plan = planDay(goals, now);
+    expect(plan.next?.title).toBe("should early");
+    expect(plan.done).toBe(1);
+    expect(plan.total).toBe(4);
+    expect(plan.groups.map((g) => g.category)).toEqual(["must-do", "should-do", "nice-to-have"]);
+    expect(plan.groups[1].items.map((g) => g.title)).toEqual(["should early", "should late"]);
+  });
+
+  it("puts unfinished goals before done ones, timed before untimed", () => {
+    const goals = [
+      oneOff("done early", "2026-10-16", { time: "07:00", completed: true }),
+      oneOff("untimed", "2026-10-16"),
+      oneOff("at noon", "2026-10-16", { time: "12:00" }),
+    ];
+    expect(planDay(goals, at("2026-10-16T09:00:00")).groups[0].items.map((g) => g.title)).toEqual(["at noon", "untimed", "done early"]);
+  });
+
+  it("leaves out empty groups and has no next when everything is done", () => {
+    const plan = planDay([oneOff("only", "2026-10-16", { completed: true })], at("2026-10-16T09:00:00"));
+    expect(plan.groups).toHaveLength(1);
+    expect(plan.next).toBeUndefined();
+  });
+});
+
+describe("overdueGoals", () => {
+  it("lists overdue one-off goals, oldest first", () => {
+    const goals = [
+      makeGoal({ title: "yesterday", date: "2026-10-15" }),
+      makeGoal({ title: "two days ago", date: "2026-10-14" }),
+      makeGoal({ title: "done", date: "2026-10-14", completed: true }),
+      makeGoal({ title: "today", date: "2026-10-16" }),
+    ];
+    expect(overdueGoals(goals, at("2026-10-16T00:00:00")).map((g) => g.title)).toEqual(["two days ago", "yesterday"]);
   });
 });

@@ -65,12 +65,12 @@ function useEventsState() {
 }
 
 export const COLOR_MAP: Record<EventColor, { bg: string; text: string; dot: string }> = {
-  blue:   { bg: "bg-blue-500/15",   text: "text-blue-700",   dot: "bg-blue-500"   },
-  red:    { bg: "bg-red-500/15",    text: "text-red-700",    dot: "bg-red-500"    },
-  green:  { bg: "bg-green-500/15",  text: "text-green-700",  dot: "bg-green-500"  },
-  orange: { bg: "bg-orange-500/15", text: "text-orange-700", dot: "bg-orange-500" },
-  purple: { bg: "bg-purple-500/15", text: "text-purple-700", dot: "bg-purple-500" },
-  pink:   { bg: "bg-pink-500/15",   text: "text-pink-700",   dot: "bg-pink-500"   },
+  blue:   { bg: "bg-blue-500/15",   text: "text-blue-400 light:text-blue-700",   dot: "bg-blue-500"   },
+  red:    { bg: "bg-red-500/15",    text: "text-red-400 light:text-red-700",    dot: "bg-red-500"    },
+  green:  { bg: "bg-green-500/15",  text: "text-green-400 light:text-green-700",  dot: "bg-green-500"  },
+  orange: { bg: "bg-orange-500/15", text: "text-orange-400 light:text-orange-700", dot: "bg-orange-500" },
+  purple: { bg: "bg-purple-500/15", text: "text-purple-400 light:text-purple-700", dot: "bg-purple-500" },
+  pink:   { bg: "bg-pink-500/15",   text: "text-pink-400 light:text-pink-700",   dot: "bg-pink-500"   },
 };
 
 // One shared instance for the whole app. Each independent useEvents() call

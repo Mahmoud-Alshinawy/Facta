@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import Logo from "@/components/Logo";
 import { Mail, Lock, LogIn, UserPlus, Inbox, ArrowLeft, KeyRound, CheckCircle2 } from "lucide-react";
 
 type Mode = "signin" | "signup" | "forgot";
@@ -123,7 +124,7 @@ export default function AuthScreen() {
   return (
     <Shell>
       <div className="flex items-center gap-2 mb-6 justify-center">
-        <img src="/icon.png" alt="Facta" className="w-6 h-6 rounded" />
+        <Logo size={24} />
         <h1 className="text-xl font-semibold">Facta</h1>
       </div>
 
@@ -148,7 +149,7 @@ export default function AuthScreen() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
-            className="w-full pl-9 pr-3 py-2 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            className="w-full pl-9 pr-3 py-2 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </FieldRow>
 
@@ -164,7 +165,7 @@ export default function AuthScreen() {
               onChange={(e) => setResetCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
               placeholder="123456"
               autoFocus
-              className="w-full pl-9 pr-3 py-2 rounded-lg border border-border bg-background text-sm tracking-[0.3em] text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full pl-9 pr-3 py-2 rounded-lg border border-input bg-background text-sm tracking-[0.3em] text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </FieldRow>
         )}
@@ -179,7 +180,7 @@ export default function AuthScreen() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-9 pr-3 py-2 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full pl-9 pr-3 py-2 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </FieldRow>
             <FieldRow label="Confirm new password" icon={<Lock size={14} />}>
@@ -190,7 +191,7 @@ export default function AuthScreen() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-9 pr-3 py-2 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full pl-9 pr-3 py-2 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </FieldRow>
           </>
@@ -205,13 +206,13 @@ export default function AuthScreen() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full pl-9 pr-3 py-2 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full pl-9 pr-3 py-2 rounded-lg border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </FieldRow>
         )}
 
         {error && (
-          <div className="text-xs text-red-500 bg-red-500/10 rounded-lg px-3 py-2">
+          <div className="text-xs text-destructive bg-destructive/10 rounded-lg px-3 py-2">
             {error}
           </div>
         )}

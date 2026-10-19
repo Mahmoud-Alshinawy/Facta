@@ -6,10 +6,10 @@ import {
 } from "lucide-react";
 import {
   Goal, GoalCategory, CATEGORY_META, REPEAT_META,
-  isCompletedToday, isActiveToday, useGoals,
+  isCompletedToday, isActiveToday, useGoals, type NewGoal,
 } from "@/hooks/useGoals";
 import { useNotifications } from "@/hooks/useNotifications";
-import { useEvents } from "@/hooks/useEvents";
+import { useCreateGoal } from "@/hooks/useCreateGoal";
 import GoalDialog from "@/components/GoalDialog";
 
 const ORDER: GoalCategory[] = ["must-do", "should-do", "nice-to-have"];
@@ -71,7 +71,7 @@ function GoalItem({ goal, onToggle, onEdit, onTestNotification }: GoalItemProps)
     >
       <button
         onClick={(e) => { e.stopPropagation(); onToggle(); }}
-        className={`mt-0.5 shrink-0 transition-colors ${completedToday ? "text-green-500" : "text-muted-foreground hover:text-primary"}`}
+        className={`mt-0.5 shrink-0 transition-colors ${completedToday ? "text-success" : "text-input hover:text-primary"}`}
       >
         {completedToday ? <CheckCircle2 size={18} /> : <Circle size={18} />}
       </button>
@@ -169,21 +169,9 @@ function Section({ title, subtitle, goals, icon, defaultOpen = true, onToggle, o
   );
 }
 
-const CATEGORY_EVENT_COLOR: Record<GoalCategory, import("@/hooks/useEvents").EventColor> = {
-  "must-do": "red",
-  "should-do": "orange",
-  "nice-to-have": "blue",
-};
-
-function addHour(time: string) {
-  const [h, m] = time.split(":").map(Number);
-  const nh = (h + 1) % 24;
-  return `${String(nh).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-}
-
 export default function GoalsPanel() {
-  const { goals, addGoal, updateGoal, deleteGoal, toggleComplete, markNotified } = useGoals();
-  const { addEvent } = useEvents();
+  const { goals, updateGoal, deleteGoal, toggleComplete, markNotified } = useGoals();
+  const createGoal = useCreateGoal();
   const { permission, requestPermission, sendNotification } = useNotifications(goals, markNotified);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
@@ -194,28 +182,9 @@ export default function GoalsPanel() {
   function openNew() { setEditingGoal(null); setDialogOpen(true); }
   function openEdit(goal: Goal) { setEditingGoal(goal); setDialogOpen(true); }
 
-  function handleSave(
-    data: Omit<Goal, "id" | "completed" | "completedDates" | "lastNotifiedDate">,
-    addToCalendar = false,
-  ) {
-    if (editingGoal) {
-      updateGoal(editingGoal.id, data);
-    } else {
-      const saved = addGoal(data);
-      if (saved && addToCalendar) {
-        const start = data.time ?? "09:00";
-        addEvent({
-          title: data.title,
-          date: data.date,
-          startTime: start,
-          endTime: addHour(start),
-          color: CATEGORY_EVENT_COLOR[data.category],
-          description: `Goal: ${data.title}`,
-          allDay: false,
-          repeat: "none",
-        });
-      }
-    }
+  function handleSave(data: NewGoal, addToCalendar = false) {
+    if (editingGoal) updateGoal(editingGoal.id, data);
+    else createGoal(data, addToCalendar);
   }
 
   const totalGoals = goals.length;
@@ -231,12 +200,12 @@ export default function GoalsPanel() {
         <div className="flex items-center gap-2">
           {permission !== "granted" && (
             <button onClick={requestPermission}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-500/15 text-amber-700 hover:bg-amber-500/25 transition-colors border border-amber-300/50">
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-warning/15 text-warning hover:bg-warning/25 transition-colors border border-warning-border">
               <Bell size={12} /> Enable notifications
             </button>
           )}
           {permission === "granted" && (
-            <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
+            <span className="flex items-center gap-1 text-xs text-success font-medium">
               <Bell size={12} /> Notifications on
             </span>
           )}

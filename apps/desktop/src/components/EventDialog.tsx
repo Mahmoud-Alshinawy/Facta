@@ -176,9 +176,9 @@ export default function EventDialog({
             <label className="flex items-center gap-2.5 cursor-pointer select-none">
               <div
                 onClick={() => setAllDay((v) => !v)}
-                className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${allDay ? "bg-primary" : "bg-muted-foreground/30"}`}
+                className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${allDay ? "bg-primary" : "bg-input"}`}
               >
-                <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${allDay ? "translate-x-4" : "translate-x-0.5"}`} />
+                <span className={`absolute left-0 top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${allDay ? "translate-x-4" : "translate-x-0.5"}`} />
               </div>
               <span className="text-sm text-foreground font-medium">All day</span>
             </label>

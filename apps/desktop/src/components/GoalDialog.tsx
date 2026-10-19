@@ -224,9 +224,9 @@ export default function GoalDialog({ open, onClose, onSave, onDelete, editGoal, 
               <button
                 type="button"
                 onClick={() => setNotificationsEnabled((v) => !v)}
-                className={`relative w-10 h-5.5 rounded-full transition-colors ${notificationsEnabled ? "bg-primary" : "bg-muted-foreground/30"}`}
+                className={`relative w-10 h-5.5 rounded-full transition-colors ${notificationsEnabled ? "bg-primary" : "bg-input"}`}
               >
-                <span className={`absolute top-0.5 w-4.5 h-4.5 rounded-full bg-white shadow-sm transition-transform ${notificationsEnabled ? "translate-x-5" : "translate-x-0.5"}`} />
+                <span className={`absolute left-0 top-0.5 w-4.5 h-4.5 rounded-full bg-white shadow-sm transition-transform ${notificationsEnabled ? "translate-x-5" : "translate-x-0.5"}`} />
               </button>
             </div>
             {notificationsEnabled && (
