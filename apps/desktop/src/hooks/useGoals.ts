@@ -11,9 +11,9 @@ export type { Goal, GoalCategory, GoalRepeat } from "@/types/planner";
 export { isActiveToday, isCompletedToday, isExpiredOverdueGoal, isOverdueGoal } from "@/lib/goalDates";
 
 export const CATEGORY_META: Record<GoalCategory, { label: string; color: string; bg: string; text: string; border: string }> = {
-  "must-do":      { label: "Must Do",      color: "red",    bg: "bg-red-500/15",    text: "text-red-700",    border: "border-red-300" },
-  "should-do":    { label: "Should Do",    color: "orange", bg: "bg-orange-500/15", text: "text-orange-700", border: "border-orange-300" },
-  "nice-to-have": { label: "Nice to Have", color: "blue",   bg: "bg-blue-500/15",   text: "text-blue-700",   border: "border-blue-300" },
+  "must-do":      { label: "Must Do",      color: "red",    bg: "bg-red-500/15",    text: "text-red-400 light:text-red-700",    border: "border-red-300" },
+  "should-do":    { label: "Should Do",    color: "orange", bg: "bg-orange-500/15", text: "text-orange-400 light:text-orange-700", border: "border-orange-300" },
+  "nice-to-have": { label: "Nice to Have", color: "blue",   bg: "bg-blue-500/15",   text: "text-blue-400 light:text-blue-700",   border: "border-blue-300" },
 };
 
 export const REPEAT_META: Record<GoalRepeat, { label: string; short: string }> = {

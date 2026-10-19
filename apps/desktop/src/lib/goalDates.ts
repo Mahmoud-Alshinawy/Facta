@@ -3,7 +3,7 @@
 // "today" is always the local calendar day.
 
 import { differenceInCalendarDays, format, getDay, isBefore, parseISO, startOfDay } from "date-fns";
-import type { Goal } from "@/types/planner";
+import type { Goal, GoalCategory } from "@/types/planner";
 
 export const OVERDUE_DELETE_AFTER_DAYS = 3;
 
@@ -64,4 +64,66 @@ export function toggleGoalCompletion(goal: Goal, now: Date = new Date()): Goal {
     ...goal,
     completedDates: dates.includes(today) ? dates.filter((d) => d !== today) : [...dates, today],
   };
+}
+
+// ---------------------------------------------------------------------------
+// The day's plan: which goals count today, in what order, and what's next.
+// ---------------------------------------------------------------------------
+
+export const PRIORITY_ORDER: readonly GoalCategory[] = ["must-do", "should-do", "nice-to-have"];
+
+/**
+ * The goals that count on the local day containing `now`: one-off goals due
+ * that day, plus repeating goals active that day.
+ */
+export function goalsForDay(goals: readonly Goal[], now: Date = new Date()): Goal[] {
+  const today = localDay(now);
+  return goals.filter((g) => ((g.repeat ?? "none") === "none" ? g.date === today : isActiveToday(g, now)));
+}
+
+/** Timed goals first, earliest first; untimed after. Stable otherwise. */
+function byTime(a: Goal, b: Goal): number {
+  if (a.time && b.time) return a.time.localeCompare(b.time);
+  if (a.time) return -1;
+  if (b.time) return 1;
+  return 0;
+}
+
+export interface DayGroup {
+  category: GoalCategory;
+  /** Unfinished first (next up at the top), then done; each part by time. */
+  items: Goal[];
+  done: number;
+}
+
+export interface DayPlan {
+  goals: Goal[];
+  done: number;
+  total: number;
+  /** The first unfinished goal by priority, then time. */
+  next: Goal | undefined;
+  /** Only categories that have goals today, in priority order. */
+  groups: DayGroup[];
+}
+
+export function planDay(goals: readonly Goal[], now: Date = new Date()): DayPlan {
+  const today = goalsForDay(goals, now);
+  const isDone = (g: Goal) => isCompletedToday(g, now);
+  const groups: DayGroup[] = [];
+  let next: Goal | undefined;
+  for (const category of PRIORITY_ORDER) {
+    const inGroup = today.filter((g) => g.category === category);
+    if (inGroup.length === 0) continue;
+    const open = inGroup.filter((g) => !isDone(g)).sort(byTime);
+    const closed = inGroup.filter(isDone).sort(byTime);
+    if (!next && open.length > 0) next = open[0];
+    groups.push({ category, items: [...open, ...closed], done: closed.length });
+  }
+  const done = today.filter(isDone).length;
+  return { goals: today, done, total: today.length, next, groups };
+}
+
+/** Overdue one-off goals, oldest first. */
+export function overdueGoals(goals: readonly Goal[], now: Date = new Date()): Goal[] {
+  return goals.filter((g) => isOverdueGoal(g, now)).sort((a, b) => a.date.localeCompare(b.date));
 }

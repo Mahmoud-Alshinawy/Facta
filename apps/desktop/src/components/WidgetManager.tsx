@@ -215,7 +215,7 @@ export default function WidgetManager({ onWidgetChange }: Props) {
               <span className="text-xs font-medium text-foreground">Transparent background</span>
             </div>
             <button onClick={() => setAddTranslucent(!addTranslucent)}
-              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ${addTranslucent ? "bg-primary" : "bg-muted"}`}
+              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ${addTranslucent ? "bg-primary" : "bg-input"}`}
             >
               <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition duration-200 mt-0.5 ${addTranslucent ? "translate-x-4" : "translate-x-0.5"}`} />
             </button>
@@ -261,7 +261,7 @@ export default function WidgetManager({ onWidgetChange }: Props) {
               </div>
               <div className="ml-auto flex items-center gap-1">
                 <select value={w.theme} onChange={(e) => handleTheme(w.id, e.target.value as WidgetTheme)}
-                  className="px-1.5 py-0.5 rounded border border-border bg-background text-[10px] focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="px-1.5 py-0.5 rounded border border-input bg-background text-[10px] focus:outline-none focus:ring-1 focus:ring-primary"
                 >
                   <option value="midnight">Midnight</option>
                   <option value="ember">Ember</option>
@@ -274,7 +274,7 @@ export default function WidgetManager({ onWidgetChange }: Props) {
                   {w.enabled ? <Eye size={13} /> : <EyeOff size={13} />}
                 </button>
                 <button onClick={() => handleRemove(w.id)}
-                  className="p-1.5 rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                  className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                   title="Remove widget"
                 >
                   <X size={13} />

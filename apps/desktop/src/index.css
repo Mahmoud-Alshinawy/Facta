@@ -1,30 +1,65 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
-@custom-variant ember (&:is(.ember *));
+/* For the rare colour that must differ between Light and the dark themes. */
+@custom-variant light (&:where([data-theme="light"], [data-theme="light"] *));
+
+/*
+ * Themes: set with data-theme on <html> ("default" = Black and green,
+ * "midnight", "ember", "light"). public/theme-init.js applies the saved
+ * choice before the app renders; lib/theme.ts switches it at runtime.
+ *
+ * The design tokens below are the source of truth. The @theme block maps
+ * them onto the names the components already use (background, card,
+ * primary, muted, …) and adds the new ones as their own Tailwind colours.
+ * The design's "muted" (a text colour) is called --subtle here, because
+ * Tailwind's "muted" is a background.
+ */
 
 @theme inline {
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
-  --color-border: hsl(var(--border));
-  --color-input: hsl(var(--input));
-  --color-ring: hsl(var(--ring));
-  --color-card: hsl(var(--card));
-  --color-card-foreground: hsl(var(--card-foreground));
-  --color-popover: hsl(var(--popover));
-  --color-popover-foreground: hsl(var(--popover-foreground));
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
-  --color-secondary: hsl(var(--secondary));
-  --color-secondary-foreground: hsl(var(--secondary-foreground));
-  --color-muted: hsl(var(--muted));
-  --color-muted-foreground: hsl(var(--muted-foreground));
-  --color-accent: hsl(var(--accent));
-  --color-accent-foreground: hsl(var(--accent-foreground));
-  --color-destructive: hsl(var(--destructive));
-  --color-destructive-foreground: hsl(var(--destructive-foreground));
-  --font-sans: var(--app-font-sans);
+  /* Existing names, mapped onto the design tokens */
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--text);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--text);
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--accent-text);
+  --color-secondary: var(--raised);
+  --color-secondary-foreground: var(--text);
+  --color-muted: var(--raised);
+  --color-muted-foreground: var(--text-2);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-text);
+  --color-destructive: var(--danger);
+  --color-destructive-foreground: #FFFFFF;
+  --color-border: var(--border);
+  --color-input: var(--control-border);
+  --color-ring: var(--accent);
+
+  /* New design tokens */
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-raised-2: var(--raised-2);
+  --color-border-strong: var(--border-strong);
+  --color-text-2: var(--text-2);
+  --color-subtle: var(--subtle);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-border: var(--accent-border);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-warning-border: var(--warning-border);
+  --color-danger: var(--danger);
+  --color-bar-other: var(--bar-other);
+  --color-event-blue: var(--event-blue);
+  --color-event-purple: var(--event-purple);
+  --color-logo-tile: var(--logo-tile);
+  --color-logo-mark: var(--logo-mark);
+
+  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -32,120 +67,169 @@
 }
 
 :root {
-  --app-font-sans: "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
   --radius: 0.5rem;
-
-  --background: 210 20% 97%;
-  --foreground: 220 15% 10%;
-  --border: 220 13% 88%;
-  --input: 220 13% 88%;
-  --ring: 214 85% 44%;
-
-  --card: 0 0% 100%;
-  --card-foreground: 220 15% 10%;
-
-  --popover: 0 0% 100%;
-  --popover-foreground: 220 15% 10%;
-
-  --primary: 214 85% 44%;
-  --primary-foreground: 0 0% 100%;
-
-  --secondary: 220 14% 94%;
-  --secondary-foreground: 220 15% 30%;
-
-  --muted: 220 14% 94%;
-  --muted-foreground: 220 10% 50%;
-
-  --accent: 214 85% 44%;
-  --accent-foreground: 0 0% 100%;
-
-  --destructive: 0 72% 51%;
-  --destructive-foreground: 0 0% 100%;
-
-  --sidebar: 220 20% 96%;
-  --sidebar-foreground: 220 15% 15%;
-  --sidebar-border: 220 13% 88%;
-  --sidebar-primary: 214 85% 44%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 220 14% 91%;
-  --sidebar-accent-foreground: 220 15% 20%;
-  --sidebar-ring: 214 85% 44%;
 }
 
-.dark {
-  --background: 222 14% 11%;
-  --foreground: 220 10% 93%;
-  --border: 220 13% 22%;
-  --input: 220 13% 22%;
-  --ring: 214 85% 55%;
-
-  --card: 222 14% 14%;
-  --card-foreground: 220 10% 93%;
-
-  --popover: 222 14% 14%;
-  --popover-foreground: 220 10% 93%;
-
-  --primary: 214 85% 55%;
-  --primary-foreground: 0 0% 100%;
-
-  --secondary: 222 14% 20%;
-  --secondary-foreground: 220 10% 80%;
-
-  --muted: 222 14% 18%;
-  --muted-foreground: 220 10% 55%;
-
-  --accent: 214 85% 55%;
-  --accent-foreground: 0 0% 100%;
-
-  --destructive: 0 72% 55%;
-  --destructive-foreground: 0 0% 100%;
-
-  --sidebar: 222 14% 13%;
-  --sidebar-foreground: 220 10% 88%;
-  --sidebar-border: 220 13% 22%;
-  --sidebar-primary: 214 85% 55%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 222 14% 20%;
-  --sidebar-accent-foreground: 220 10% 88%;
-  --sidebar-ring: 214 85% 55%;
+/* Black and green (default), Midnight, Ember, Light */
+:root,
+[data-theme="default"] {
+  color-scheme: dark;
+  --bg: #060706;
+  --surface: #0C0D0C;
+  --raised: #121412;
+  --raised-2: #191C18;
+  --border: #1A1D1A;
+  --border-strong: #262A25;
+  --control-border: #5F685E;
+  --text: #F1F4F1;
+  --text-2: #A6AEA6;
+  --subtle: #868F86;
+  --accent: #22C55E;
+  --accent-hover: #2DD46A;
+  --accent-text: #03210F;
+  --accent-soft: rgba(34,197,94,.10);
+  --accent-border: #1C7E40;
+  --success: #22C55E;
+  --warning: #E0A33B;
+  --warning-border: rgba(224,163,59,.35);
+  --danger: #EF5A5A;
+  --bar-other: #C9D0C9;
+  --event-blue: #5B8DEF;
+  --event-purple: #A47CF0;
+  --logo-tile: #0A0B0A;
+  --logo-mark: #22C55E;
 }
 
-.ember {
-  --background: 0 0% 0%;
-  --foreground: 0 0% 95%;
-  --border: 0 0% 18%;
-  --input: 0 0% 18%;
-  --ring: 30 100% 50%;
+[data-theme="midnight"] {
+  color-scheme: dark;
+  --bg: #04070E;
+  --surface: #090E1A;
+  --raised: #0E1524;
+  --raised-2: #141C30;
+  --border: #161F33;
+  --border-strong: #212C45;
+  --control-border: #55668F;
+  --text: #EEF2FA;
+  --text-2: #A3AECB;
+  --subtle: #7D89A8;
+  --accent: #4C8DF6;
+  --accent-hover: #6AA1F8;
+  --accent-text: #04122B;
+  --accent-soft: rgba(76,141,246,.12);
+  --accent-border: #3B6BBB;
+  --success: #4C8DF6;
+  --warning: #E8B04B;
+  --warning-border: rgba(232,176,75,.35);
+  --danger: #F06A6A;
+  --bar-other: #C3CCE0;
+  --event-blue: #67C1F5;
+  --event-purple: #A88BF5;
+  --logo-tile: #04070E;
+  --logo-mark: #4C8DF6;
+}
 
-  --card: 0 0% 6%;
-  --card-foreground: 0 0% 95%;
+[data-theme="ember"] {
+  color-scheme: dark;
+  --bg: #060504;
+  --surface: #0C0A08;
+  --raised: #120F0D;
+  --raised-2: #191512;
+  --border: #1A1613;
+  --border-strong: #27201C;
+  --control-border: #6E6053;
+  --text: #F6F1EC;
+  --text-2: #B8ADA3;
+  --subtle: #938778;
+  --accent: #FF8000;
+  --accent-hover: #FF9426;
+  --accent-text: #1F0E00;
+  --accent-soft: rgba(255,128,0,.12);
+  --accent-border: #A55505;
+  --success: #FF8000;
+  --warning: #E8C547;
+  --warning-border: rgba(232,197,71,.35);
+  --danger: #F25F5C;
+  --bar-other: #D6CCC2;
+  --event-blue: #6E9CF0;
+  --event-purple: #B08AF0;
+  --logo-tile: #060504;
+  --logo-mark: #FF8000;
+}
 
-  --popover: 0 0% 6%;
-  --popover-foreground: 0 0% 95%;
+[data-theme="light"] {
+  color-scheme: light;
+  --bg: #F6F6F3;
+  --surface: #FFFFFF;
+  --raised: #F0F1EC;
+  --raised-2: #E7E9E3;
+  --border: #E3E5DF;
+  --border-strong: #CDD1C8;
+  --control-border: #7E857B;
+  --text: #141713;
+  --text-2: #4E554D;
+  --subtle: #626A60;
+  --accent: #15803D;
+  --accent-hover: #166534;
+  --accent-text: #FFFFFF;
+  --accent-soft: rgba(21,128,61,.10);
+  --accent-border: #15803D;
+  --success: #16A34A;
+  --warning: #B45309;
+  --warning-border: rgba(180,83,9,.35);
+  --danger: #DC2626;
+  --bar-other: #9AA197;
+  --event-blue: #2563EB;
+  --event-purple: #7C3AED;
+  --logo-tile: #15803D;
+  --logo-mark: #FFFFFF;
+}
 
-  --primary: 30 100% 50%;
-  --primary-foreground: 0 0% 0%;
+/* Toasts (sonner) in the theme's colours. Sonner only knows light and dark
+   and injects its own styles at runtime, so these selectors start with
+   "html" to outrank its [data-sonner-toaster][data-sonner-theme=…] rules. */
+html [data-sonner-toaster][data-sonner-theme] {
+  font-family: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --normal-bg: var(--surface);
+  --normal-bg-hover: var(--raised);
+  --normal-border: var(--border-strong);
+  --normal-border-hover: var(--border-strong);
+  --normal-text: var(--text);
+  --success-bg: color-mix(in srgb, var(--success) 10%, var(--surface));
+  --success-border: color-mix(in srgb, var(--success) 35%, var(--surface));
+  --success-text: var(--success);
+  --info-bg: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  --info-border: color-mix(in srgb, var(--accent) 35%, var(--surface));
+  --info-text: var(--text);
+  --warning-bg: color-mix(in srgb, var(--warning) 10%, var(--surface));
+  --warning-border: var(--warning-border);
+  --warning-text: var(--warning);
+  --error-bg: color-mix(in srgb, var(--danger) 10%, var(--surface));
+  --error-border: color-mix(in srgb, var(--danger) 35%, var(--surface));
+  --error-text: var(--danger);
+}
+html [data-sonner-toaster][data-sonner-theme] [data-sonner-toast][data-styled="true"] {
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.25);
+}
+html [data-sonner-toaster][data-sonner-theme] [data-sonner-toast][data-styled="true"] [data-description] {
+  color: var(--text-2);
+}
+html [data-sonner-toaster][data-sonner-theme] [data-sonner-toast][data-styled="true"] [data-button][data-action] {
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+html [data-sonner-toaster][data-sonner-theme] [data-sonner-toast][data-styled="true"] [data-button][data-cancel] {
+  background: var(--raised-2);
+  color: var(--text);
+}
 
-  --secondary: 0 0% 12%;
-  --secondary-foreground: 0 0% 85%;
-
-  --muted: 0 0% 10%;
-  --muted-foreground: 0 0% 50%;
-
-  --accent: 30 100% 50%;
-  --accent-foreground: 0 0% 0%;
-
-  --destructive: 0 72% 55%;
-  --destructive-foreground: 0 0% 100%;
-
-  --sidebar: 0 0% 4%;
-  --sidebar-foreground: 0 0% 90%;
-  --sidebar-border: 0 0% 18%;
-  --sidebar-primary: 30 100% 50%;
-  --sidebar-primary-foreground: 0 0% 0%;
-  --sidebar-accent: 0 0% 12%;
-  --sidebar-accent-foreground: 0 0% 90%;
-  --sidebar-ring: 30 100% 50%;
+/* Set for one frame while switching themes (lib/theme.ts), so colours swap
+   at once instead of cross-fading through mismatched pairs. */
+.theme-switching,
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition: none !important;
 }
 
 @layer base {
@@ -165,6 +249,13 @@
     display: flex;
     flex-direction: column;
   }
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
 }
 
 @layer utilities {
@@ -176,10 +267,77 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: hsl(var(--border));
+    background: var(--border-strong);
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--muted-foreground) / 0.5);
+    background: var(--subtle);
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Hover tooltip from data-tip (theme dots, disabled tiles) */
+  .tip {
+    position: relative;
+  }
+  .tip::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) translateY(2px);
+    white-space: nowrap;
+    padding: 5px 8px;
+    border-radius: 6px;
+    background: var(--raised-2);
+    border: 1px solid var(--border-strong);
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.12s ease, transform 0.12s ease;
+    z-index: 50;
+  }
+  .tip:hover::after,
+  .tip:focus-visible::after {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* Ticking a goal off */
+  .goal-pop .goal-cb {
+    animation: goal-cb-pop 0.45s cubic-bezier(0.3, 1.7, 0.5, 1);
+  }
+  .goal-pop .goal-ring {
+    animation: goal-ring 0.7s ease-out forwards;
+  }
+  .goal-pop {
+    animation: goal-flash 1.1s ease-out;
+  }
+}
+
+@keyframes goal-cb-pop {
+  0% { transform: scale(0.7); }
+  60% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+@keyframes goal-ring {
+  0% { opacity: 0.9; transform: scale(0.6); }
+  100% { opacity: 0; transform: scale(2.1); }
+}
+@keyframes goal-flash {
+  0% { background: var(--accent-soft); }
+  100% { background: transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .goal-pop,
+  .goal-pop .goal-cb,
+  .goal-pop .goal-ring {
+    animation: none;
   }
 }

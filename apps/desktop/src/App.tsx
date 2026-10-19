@@ -1,11 +1,10 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import {
   format, addMonths, subMonths, startOfWeek, endOfWeek,
-  addWeeks, subWeeks, addDays, parseISO, isToday,
+  addWeeks, subWeeks, addDays, parseISO, isToday, getISOWeek,
 } from "date-fns";
 import {
-  Plus, Calendar, LayoutGrid, CalendarDays, Sun, Flame, Moon,
-  Target, List, Search, Clock, ChevronRight,
+  Plus, Calendar, Target, Search, Clock, ChevronLeft, ChevronRight,
   Settings, LogOut,
 } from "lucide-react";
 import MiniCalendar from "@/components/MiniCalendar";
@@ -25,38 +24,16 @@ import { supabase } from "@/lib/supabase";
 import { requestWidgetExport } from "@/lib/widgetExportBus";
 import AuthScreen from "@/components/AuthScreen";
 import SyncStatusBadge from "@/components/SyncStatusBadge";
+import Logo from "@/components/Logo";
+import ThemeDots from "@/components/ThemeDots";
+import GoalDialog from "@/components/GoalDialog";
+import { useCreateGoal } from "@/hooks/useCreateGoal";
+import { useNow } from "@/hooks/useNow";
+import { overdueGoals as findOverdueGoals } from "@/lib/goalDates";
 import { Toaster } from "sonner";
 
 type View = "today" | "month" | "week" | "day" | "agenda";
 type Section = "calendar" | "goals" | "settings";
-
-type ThemeMode = "light" | "midnight" | "ember";
-
-function useTheme() {
-  const [mode, setMode] = useState<ThemeMode>(() => {
-    try {
-      const stored = localStorage.getItem("facta_theme");
-      if (stored === "midnight" || stored === "ember") return stored;
-      return "light";
-    } catch { return "light"; }
-  });
-
-  useEffect(() => {
-    const root = document.documentElement;
-    root.classList.remove("dark", "ember");
-    if (mode === "midnight") {
-      root.classList.add("dark");
-    } else if (mode === "ember") {
-      root.classList.add("ember");
-    }
-    try { localStorage.setItem("facta_theme", mode); } catch {}
-  }, [mode]);
-
-  const themeIcon = mode === "ember" ? <Flame size={15} /> : mode === "midnight" ? <Moon size={15} /> : <Sun size={15} />;
-  const themeLabel = mode === "ember" ? "Ember" : mode === "midnight" ? "Midnight" : "Light";
-
-  return { mode, setMode, themeIcon, themeLabel };
-}
 
 export default function App() {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -69,14 +46,15 @@ export default function App() {
   const [dialogInitialTime, setDialogInitialTime] = useState<string | undefined>();
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [themeOpen, setThemeOpen] = useState(false);
+  const [goalDialogOpen, setGoalDialogOpen] = useState(false);
+  const createGoal = useCreateGoal();
+  const now = useNow();
   const { events, addEvent, updateEvent, deleteEvent } = useEvents();
   const { goals, markNotified, toggleComplete } = useGoals();
   const goalsRef = useRef<ReturnType<typeof useGoals>["goals"]>(goals);
   useEffect(() => {
     goalsRef.current = goals;
   }, [goals]);
-  const { mode, setMode, themeIcon, themeLabel } = useTheme();
 
   // Handle OAuth callback from URL hash (e.g. email confirmation)
   useEffect(() => {
@@ -137,16 +115,6 @@ export default function App() {
     return () => { unsub?.(); };
   }, []);
 
-  // Close theme dropdown on click outside
-  useEffect(() => {
-    if (!themeOpen) return;
-    function onClick(e: MouseEvent) {
-      const target = e.target as HTMLElement;
-      if (!target.closest(".relative")) setThemeOpen(false);
-    }
-    window.addEventListener("click", onClick);
-    return () => window.removeEventListener("click", onClick);
-  }, [themeOpen]);
 
   // Widget export: every data mutation triggers an export via the shared bus
   // (debounced/coalesced); WidgetManager config changes call it directly.
@@ -234,7 +202,7 @@ export default function App() {
   }, []);
 
   const headerLabel = useCallback(() => {
-    if (view === "today") return "Today";
+    if (view === "today") return format(now, "EEEE, d MMMM");
     if (view === "month") return format(currentMonth, "MMMM yyyy");
     if (view === "agenda") return "Upcoming";
     if (view === "week") {
@@ -243,12 +211,14 @@ export default function App() {
       return `${format(ws, "MMM d")} – ${format(we, "MMM d, yyyy")}`;
     }
     return format(selectedDate, "EEEE, MMMM d, yyyy");
-  }, [view, currentMonth, selectedDate]);
+  }, [view, currentMonth, selectedDate, now]);
 
-  const overdueGoals = useMemo(() => goals.filter(
-    (g) => !g.completed && (g.repeat ?? "none") === "none" &&
-      new Date(g.date) < new Date(new Date().toDateString())
-  ), [goals]);
+  const weekLabel =
+    view === "today" ? `WEEK ${getISOWeek(now)}`
+    : view === "week" || view === "day" ? `WEEK ${getISOWeek(selectedDate)}`
+    : null;
+
+  const overdueGoals = useMemo(() => findOverdueGoals(goals, now), [goals, now]);
 
   const upcomingEvents = useMemo(() => {
     const today = format(new Date(), "yyyy-MM-dd");
@@ -282,7 +252,12 @@ export default function App() {
       }
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.key === "n" && section === "calendar") {
-        openNew(format(selectedDate, "yyyy-MM-dd"));
+        // The dialog focuses its title field before this keystroke finishes;
+        // without preventDefault the "n" would be typed into it.
+        e.preventDefault();
+        // N matches the header's primary button: New goal on Today, New event elsewhere.
+        if (view === "today") setGoalDialogOpen(true);
+        else openNew(format(selectedDate, "yyyy-MM-dd"));
       }
       if (e.key === "t") {
         goToday();
@@ -297,23 +272,23 @@ export default function App() {
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [section, selectedDate, openNew, goToday]);
+  }, [section, view, selectedDate, openNew, goToday]);
 
   const navItems = useMemo(() => {
     const items: { id: Section; label: string; icon: React.ReactNode; badge?: number }[] = [
-      { id: "calendar", label: "Calendar", icon: <Calendar size={15} /> },
-      { id: "goals",    label: "Goals",    icon: <Target size={15} />, badge: overdueGoals.length || undefined },
-      { id: "settings", label: "Settings", icon: <Settings size={15} /> },
+      { id: "calendar", label: "Calendar", icon: <Calendar aria-hidden="true" size={18} /> },
+      { id: "goals",    label: "Goals",    icon: <Target aria-hidden="true" size={18} />, badge: overdueGoals.length || undefined },
+      { id: "settings", label: "Settings", icon: <Settings aria-hidden="true" size={18} /> },
     ];
     return items;
   }, [overdueGoals.length]);
 
   const calendarViews = useMemo(() => [
-    { id: "today" as View,  icon: <Sun size={13} />,         label: "Today",  shortcut: "1" },
-    { id: "month" as View,  icon: <LayoutGrid size={13} />,  label: "Month",  shortcut: "2" },
-    { id: "week" as View,   icon: <Calendar size={13} />,    label: "Week",   shortcut: "3" },
-    { id: "day" as View,    icon: <CalendarDays size={13} />, label: "Day",   shortcut: "4" },
-    { id: "agenda" as View, icon: <List size={13} />,         label: "Agenda", shortcut: "5" },
+    { id: "today" as View,  label: "Today",  shortcut: "1" },
+    { id: "month" as View,  label: "Month",  shortcut: "2" },
+    { id: "week" as View,   label: "Week",   shortcut: "3" },
+    { id: "day" as View,    label: "Day",    shortcut: "4" },
+    { id: "agenda" as View, label: "Agenda", shortcut: "5" },
   ], []);
 
   if (authLoading) {
@@ -331,58 +306,52 @@ export default function App() {
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground">
       {/* Sidebar */}
-      <aside className="w-56 shrink-0 flex flex-col border-r border-border bg-[hsl(var(--sidebar))]">
-        <div className="px-4 pt-5 pb-2">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <img src="/icon.png" alt="Facta" className="w-5 h-5 rounded" />
-              <span className="text-base font-semibold text-foreground">Facta</span>
-            </div>
-            <button
-              onClick={() => setSearchOpen(true)}
-              title="Search (/ or Ctrl+K)"
-              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-[hsl(var(--sidebar-accent))] transition-colors"
-            >
-              <Search size={14} />
-            </button>
-          </div>
-
-          <div className="flex flex-col gap-0.5 mb-3">
-            {navItems.map(({ id, label, icon, badge }) => (
-              <button
-                key={id}
-                onClick={() => setSection(id)}
-                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-                  ${section === id
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-[hsl(var(--sidebar-accent))]"
-                  }`}
-              >
-                {icon}
-                {label}
-                {badge ? (
-                  <span className="ml-auto bg-muted text-muted-foreground text-[10px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
-                    {badge}
-                  </span>
-                ) : null}
-              </button>
-            ))}
-          </div>
-
-          {section === "calendar" && (
-            <button
-              onClick={() => openNew()}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm"
-            >
-              <Plus size={15} />
-              New Event
-              <kbd className="ml-auto text-[9px] font-mono opacity-60 border border-primary-foreground/30 rounded px-1">N</kbd>
-            </button>
-          )}
+      <aside className="w-[248px] shrink-0 flex flex-col gap-6 px-4 pt-6 pb-5 bg-card border-r border-border overflow-y-auto">
+        <div className="flex items-center gap-2.5 px-2">
+          <Logo size={30} />
+          <span className="text-[19px] font-bold tracking-[-0.03em]">Facta</span>
         </div>
 
-        {section === "calendar" && (
-          <div className="px-3 pb-2">
+        <button
+          type="button"
+          onClick={() => setSearchOpen(true)}
+          className="relative flex h-10 w-full items-center gap-2 rounded-[10px] border border-input bg-background pl-3 pr-2 text-left text-sm text-subtle hover:text-text-2"
+        >
+          <Search aria-hidden="true" size={16} />
+          <span className="flex-1">Search</span>
+          <kbd className="rounded-[5px] border border-b-2 border-border-strong bg-raised px-[5px] py-[3px] font-mono text-[11px] leading-none text-subtle">/</kbd>
+          <kbd className="rounded-[5px] border border-b-2 border-border-strong bg-raised px-[5px] py-[3px] font-mono text-[11px] leading-none text-subtle">Ctrl K</kbd>
+        </button>
+
+        <nav aria-label="Main" className="flex flex-col gap-0.5">
+          {navItems.map(({ id, label, icon, badge }) => {
+            const on = section === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                aria-current={on ? "page" : undefined}
+                onClick={() => setSection(id)}
+                className={`flex h-10 items-center gap-3 rounded-[9px] px-3 text-left text-sm transition-colors hover:bg-raised ${
+                  on ? "bg-raised font-medium text-foreground" : "text-text-2"
+                }`}
+              >
+                {icon}
+                <span className="flex-1">{label}</span>
+                {badge ? (
+                  <span className="rounded-md bg-raised-2 px-1.5 py-0.5 font-mono text-[11px] text-text-2" title={`${badge} overdue`}>
+                    {badge}
+                  </span>
+                ) : on ? (
+                  <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-primary" />
+                ) : null}
+              </button>
+            );
+          })}
+        </nav>
+
+        {section === "calendar" && view !== "today" && (
+          <div className="px-1">
             <MiniCalendar
               currentMonth={currentMonth}
               selectedDate={selectedDate}
@@ -398,8 +367,8 @@ export default function App() {
         )}
 
         {/* Upcoming widget */}
-        {section === "calendar" && upcomingEvents.length > 0 && (
-          <div className="px-4 pt-1 pb-2">
+        {section === "calendar" && view !== "today" && upcomingEvents.length > 0 && (
+          <div className="px-2">
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Upcoming</span>
               <button
@@ -417,7 +386,7 @@ export default function App() {
                   <button
                     key={e.id}
                     onClick={() => { openEdit(e); }}
-                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[hsl(var(--sidebar-accent))] transition-colors text-left"
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-raised transition-colors text-left"
                   >
                     <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${colors.dot}`} />
                     <span className="text-xs text-foreground truncate flex-1">{e.title}</span>
@@ -432,32 +401,10 @@ export default function App() {
           </div>
         )}
 
-        <div className="mt-auto px-3 pb-4 space-y-1">
-          <SyncStatusBadge />
-          <div className="relative">
-            <button
-              onClick={() => setThemeOpen((v) => !v)}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-[hsl(var(--sidebar-accent))] transition-colors"
-            >
-              {themeIcon}
-              {themeLabel}
-            </button>
-            {themeOpen && (
-              <div className="absolute bottom-full left-0 right-0 mb-1 bg-popover border border-border rounded-lg shadow-lg p-1 z-50">
-                {(["light", "midnight", "ember"] as ThemeMode[]).map((m) => (
-                  <button
-                    key={m}
-                    onClick={() => { setMode(m); setThemeOpen(false); }}
-                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium transition-colors ${
-                      mode === m ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
-                    }`}
-                  >
-                    {m === "ember" ? <Flame size={13} /> : m === "midnight" ? <Moon size={13} /> : <Sun size={13} />}
-                    {m === "ember" ? "Ember" : m === "midnight" ? "Midnight" : "Light"}
-                  </button>
-                ))}
-              </div>
-            )}
+        <div className="mt-auto flex flex-col gap-3.5">
+          <ThemeDots />
+          <div className="border-t border-border">
+            <SyncStatusBadge />
           </div>
         </div>
       </aside>
@@ -466,78 +413,91 @@ export default function App() {
       <main className="flex-1 flex flex-col overflow-hidden">
         {section === "calendar" && (
           <>
-            <header className="flex items-center gap-3 px-5 py-3 border-b border-border bg-card shrink-0">
-              {view !== "today" && view !== "agenda" && (
-                <button
-                  onClick={goToday}
-                  className="px-3 py-1.5 text-sm font-medium rounded-lg border border-border text-foreground hover:bg-muted transition-colors"
-                >
-                  Today
-                </button>
-              )}
-
-              {(view === "month" || view === "week" || view === "day") && (
-                <div className="flex items-center gap-0.5">
-                  <button
-                    onClick={() => navigate(-1)}
-                    className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                      <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => navigate(1)}
-                    className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                      <path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </button>
+            <header className="flex shrink-0 flex-wrap items-center justify-between gap-4 border-b border-border px-10 py-6">
+              <div className="flex items-center gap-3">
+                {(view === "month" || view === "week" || view === "day") && (
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => navigate(-1)}
+                      aria-label="Previous"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-text-2 hover:bg-raised-2 hover:text-foreground"
+                    >
+                      <ChevronLeft size={18} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigate(1)}
+                      aria-label="Next"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-text-2 hover:bg-raised-2 hover:text-foreground"
+                    >
+                      <ChevronRight size={18} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={goToday}
+                      className="ml-1 h-8 rounded-lg border border-input px-3 text-[13px] font-medium hover:bg-raised-2"
+                    >
+                      Today
+                    </button>
+                  </div>
+                )}
+                <div className="flex flex-col gap-0.5">
+                  {weekLabel && (
+                    <span className="font-mono text-xs tracking-[0.04em] text-subtle">{weekLabel}</span>
+                  )}
+                  <h1 className="m-0 text-[28px] font-semibold tracking-[-0.03em]">{headerLabel()}</h1>
                 </div>
-              )}
+              </div>
 
-              <h1 className="text-base font-semibold text-foreground">
-                {headerLabel()}
-              </h1>
-
-              <button
-                onClick={() => setSearchOpen(true)}
-                className="ml-auto flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted text-sm transition-colors"
-              >
-                <Search size={13} />
-                <span className="text-xs">Search</span>
-                <kbd className="text-[9px] font-mono border border-border rounded px-1 py-0.5">⌘K</kbd>
-              </button>
-
-              <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
-                {calendarViews.map(({ id, icon, label, shortcut }) => (
+              <div className="flex flex-wrap items-center gap-4">
+                <div role="group" aria-label="View" className="flex gap-0.5 rounded-[11px] border border-border bg-card p-[3px]">
+                  {calendarViews.map(({ id, label, shortcut }) => {
+                    const on = view === id;
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => { setView(id); if (id !== "today" && id !== "agenda") goToday(); }}
+                        title={`${label} (${shortcut})`}
+                        className={`flex h-[34px] items-center gap-2 rounded-lg px-3 text-[13px] font-medium transition-colors ${
+                          on ? "bg-raised-2 text-foreground" : "text-text-2 hover:text-foreground"
+                        }`}
+                      >
+                        <span>{label}</span>
+                        <span className="font-mono text-[11px] text-subtle">{shortcut}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {view === "today" ? (
                   <button
-                    key={id}
-                    onClick={() => { setView(id); if (id !== "today" && id !== "agenda") goToday(); }}
-                    title={`${label} (${shortcut})`}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors
-                      ${view === id
-                        ? "bg-card text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                      }`}
+                    type="button"
+                    onClick={() => setGoalDialogOpen(true)}
+                    className="flex h-[42px] items-center gap-2 rounded-[10px] bg-primary pl-3.5 pr-[18px] text-sm font-semibold text-primary-foreground hover:bg-accent-hover"
                   >
-                    {icon}
-                    {label}
+                    <Plus aria-hidden="true" size={18} strokeWidth={2.4} />
+                    New goal
                   </button>
-                ))}
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => openNew()}
+                    className="flex h-[42px] items-center gap-2 rounded-[10px] bg-primary pl-3.5 pr-[18px] text-sm font-semibold text-primary-foreground hover:bg-accent-hover"
+                  >
+                    <Plus aria-hidden="true" size={18} strokeWidth={2.4} />
+                    New event
+                  </button>
+                )}
               </div>
             </header>
 
             <div className="flex-1 overflow-hidden bg-background">
               {view === "today" && (
                 <TodayPanel
-                  events={events}
-                  goals={goals}
                   onNewEvent={(date, time) => openNew(date, time)}
                   onEditEvent={openEdit}
-                  onToggleGoal={toggleComplete}
-                  onGoToDay={() => { setView("day"); goToday(); }}
                 />
               )}
               {view === "month" && (
@@ -591,7 +551,7 @@ export default function App() {
                 <p className="text-xs text-muted-foreground mb-3">{user.email}</p>
                 <button
                   onClick={() => signOut()}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
                 >
                   <LogOut size={14} />
                   Sign Out
@@ -601,6 +561,13 @@ export default function App() {
           </div>
         )}
       </main>
+
+      <GoalDialog
+        open={goalDialogOpen}
+        onClose={() => setGoalDialogOpen(false)}
+        onSave={createGoal}
+        initialDate={format(now, "yyyy-MM-dd")}
+      />
 
       <EventDialog
         open={dialogOpen}

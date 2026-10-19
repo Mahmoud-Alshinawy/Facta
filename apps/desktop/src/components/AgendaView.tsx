@@ -152,7 +152,7 @@ export default function AgendaView({ events, goals, onNewEvent, onEditEvent, onT
                     >
                       <button
                         onClick={() => onToggleGoal(goal.id)}
-                        className={`shrink-0 transition-colors ${done ? "text-green-500" : "text-muted-foreground hover:text-primary"}`}
+                        className={`shrink-0 transition-colors ${done ? "text-success" : "text-input hover:text-primary"}`}
                       >
                         {done ? <CheckCircle2 size={16} /> : <Circle size={16} />}
                       </button>

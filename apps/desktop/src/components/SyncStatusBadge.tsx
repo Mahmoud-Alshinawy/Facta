@@ -1,45 +1,62 @@
-import { AlertTriangle, CheckCircle2, CloudOff, HardDrive, RefreshCw } from "lucide-react";
 import { useSyncEngine, useSyncStatus } from "@/hooks/useSync";
+import { useNow } from "@/hooks/useNow";
 
-/** Small sync indicator for the sidebar. Click to sync now. */
+function ago(ms: number | null, now: number): string | null {
+  if (ms === null) return null;
+  const min = Math.floor((now - ms) / 60_000);
+  if (min < 1) return "just now";
+  if (min < 60) return `${min}m ago`;
+  const h = Math.floor(min / 60);
+  return h < 24 ? `${h}h ago` : `${Math.floor(h / 24)}d ago`;
+}
+
+/** The sync line at the bottom of the sidebar. Click to sync now. */
 export default function SyncStatusBadge() {
   const engine = useSyncEngine();
   const status = useSyncStatus();
+  const now = useNow(30_000).getTime();
   if (!engine) return null;
 
-  const pending = status.pending > 0 ? ` · ${status.pending} pending` : "";
-  let icon = <CheckCircle2 size={13} className="text-green-600" />;
+  let dot = "bg-success";
   let label = "Synced";
+  let detail = ago(status.lastSyncedAt, now);
   if (status.state === "local-only") {
-    icon = <HardDrive size={13} />;
+    dot = "bg-subtle";
     label = "This device only";
+    detail = null;
   } else if (status.state === "syncing") {
-    icon = <RefreshCw size={13} className="animate-spin" />;
+    dot = "bg-accent animate-pulse";
     label = "Syncing…";
+    detail = null;
   } else if (status.state === "offline") {
-    icon = <CloudOff size={13} className="text-orange-500" />;
-    label = `Offline${pending}`;
+    dot = "bg-warning";
+    label = "Offline";
+    detail = status.pending > 0 ? `${status.pending} pending` : null;
   } else if (status.state === "error") {
-    icon = <AlertTriangle size={13} className="text-red-600" />;
+    dot = "bg-danger";
     label = status.failed > 0 ? `${status.failed} not synced` : "Sync error";
+    detail = null;
+  } else if (status.lastSyncedAt === null) {
+    // Idle but never synced yet (just started): nothing to claim.
+    label = "Ready";
   }
-  // While idle, a pending count only means an edit is about to flush (well
-  // under a second), so it isn't shown; it would flicker on every click.
 
   const title =
     status.state === "local-only"
       ? "Supabase isn't configured in this build, so data stays on this device."
-      : status.lastError ?? (status.lastSyncedAt ? `Last synced ${new Date(status.lastSyncedAt).toLocaleTimeString()}` : "Click to sync now");
+      : status.lastError ?? "Sync now";
 
   return (
     <button
+      type="button"
       onClick={() => { void engine.syncNow(); }}
       disabled={status.state === "local-only"}
       title={title}
-      className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-[hsl(var(--sidebar-accent))] transition-colors disabled:hover:bg-transparent disabled:cursor-default"
+      className="flex w-full items-center gap-2 rounded-md px-2 pt-2.5 text-left text-xs text-subtle hover:text-text-2 disabled:cursor-default"
     >
-      {icon}
-      <span className="truncate">{label}</span>
+      <span aria-hidden="true" className={`h-[7px] w-[7px] shrink-0 rounded-full ${dot}`} />
+      <span className="text-text-2">{label}</span>
+      {detail && <span className="truncate">· {detail}</span>}
     </button>
   );
 }
