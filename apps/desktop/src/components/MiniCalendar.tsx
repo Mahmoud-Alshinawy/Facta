@@ -4,6 +4,10 @@ import {
   addDays, addMonths, subMonths, isSameMonth, isSameDay, isToday,
 } from "date-fns";
 import { CalendarEvent } from "@/hooks/useEvents";
+import { usePrefs } from "@/hooks/usePrefs";
+import { weekdayOrder } from "@facta/calendar";
+
+const DAY_LETTERS = ["S", "M", "T", "W", "T", "F", "S"];
 
 interface MiniCalendarProps {
   currentMonth: Date;
@@ -20,10 +24,11 @@ export default function MiniCalendar({
   onSelectDate,
   onMonthChange,
 }: MiniCalendarProps) {
+  const { weekStart } = usePrefs();
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(monthStart);
-  const startDate = startOfWeek(monthStart, { weekStartsOn: 0 });
-  const endDate = endOfWeek(monthEnd, { weekStartsOn: 0 });
+  const startDate = startOfWeek(monthStart, { weekStartsOn: weekStart });
+  const endDate = endOfWeek(monthEnd, { weekStartsOn: weekStart });
 
   const weeks: Date[][] = [];
   let day = startDate;
@@ -61,9 +66,9 @@ export default function MiniCalendar({
       </div>
 
       <div className="grid grid-cols-7 mb-1">
-        {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-          <div key={i} className="text-center text-[10px] font-medium text-muted-foreground py-1">
-            {d}
+        {weekdayOrder(weekStart).map((dow) => (
+          <div key={dow} className="text-center text-[10px] font-medium text-muted-foreground py-1">
+            {DAY_LETTERS[dow]}
           </div>
         ))}
       </div>

@@ -3,6 +3,7 @@
 // single export_data_for_widgets invocation.
 
 import { getStorageKey } from "@/hooks/useAuth";
+import { readPrefs } from "@/hooks/usePrefs";
 
 let timer: ReturnType<typeof setTimeout> | null = null;
 let exportUserId: string | null = null;
@@ -31,7 +32,15 @@ export async function exportWidgetsNow() {
     const eventsKey = getStorageKey('planner_events', exportUserId);
     const goalsJson = localStorage.getItem(goalsKey) || '[]';
     const eventsJson = localStorage.getItem(eventsKey) || '[]';
-    const configJson = localStorage.getItem('facta_widget_config') || '{"widgets":[]}';
+    // The widgets read the calendar settings (time format, week start) from
+    // the same file, under config.prefs.
+    let config: Record<string, unknown> = { widgets: [] };
+    try {
+      config = JSON.parse(localStorage.getItem('facta_widget_config') || '{"widgets":[]}');
+    } catch {
+      config = { widgets: [] };
+    }
+    const configJson = JSON.stringify({ ...config, prefs: readPrefs() });
     await invoke("export_data_for_widgets", { goalsJson, eventsJson, configJson });
   } catch (e) {
     console.error("[WidgetExport] failed:", e);

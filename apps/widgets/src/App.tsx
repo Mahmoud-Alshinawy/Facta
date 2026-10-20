@@ -33,6 +33,16 @@ export default function App() {
     return <div className="w-full h-full bg-transparent" />;
   }
 
+  // The Day widget draws its own card (theme tokens, transparent plate) and
+  // its header is the drag handle.
+  if (urlWidget === "dayview") {
+    return (
+      <div className="w-full h-full select-none" onDoubleClick={handleOpenMain}>
+        <DayViewWidget theme={theme} translucent={translucent} />
+      </div>
+    );
+  }
+
   const themeClass = `theme-${theme}`;
   const containerBg = translucent
     ? "bg-transparent"
@@ -52,7 +62,6 @@ export default function App() {
         {urlWidget === "tasks" && <TaskWidget />}
         {urlWidget === "events" && <EventsWidget />}
         {urlWidget === "calendar" && <CalendarWidget />}
-        {urlWidget === "dayview" && <DayViewWidget />}
       </div>
     </div>
   );

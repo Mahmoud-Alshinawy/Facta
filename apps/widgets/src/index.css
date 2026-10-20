@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "@facta/calendar/theme-tokens.css";
 
 @theme {
   --color-background: transparent;
@@ -88,3 +89,95 @@ body {
 
 /* SVG progress circles use the same per-theme accent */
 .progress-ring { stroke: var(--widget-accent); }
+/* Black and green, for the older widgets (the Day widget uses the shared tokens). */
+.theme-default {
+  color: #ffffff;
+  --widget-text: #ffffff;
+  --widget-accent: #22C55E;
+  --widget-accent-soft: rgba(34, 197, 94, 0.25);
+  --widget-muted: rgba(255, 255, 255, 0.5);
+  --widget-shadow: 0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.5);
+  --widget-accent-shadow: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
+}
+.theme-default .widget-text { color: var(--widget-text); text-shadow: var(--widget-shadow); }
+.theme-default .widget-accent { color: var(--widget-accent); filter: var(--widget-accent-shadow); }
+.theme-default .widget-muted { color: var(--widget-muted); text-shadow: var(--widget-shadow); }
+
+/* ---------------------------------------------------------------------
+   Day widget. Colours come only from the shared theme tokens; plates and
+   tints are color-mix()es of them.
+   --------------------------------------------------------------------- */
+.wg {
+  --plate: color-mix(in srgb, var(--surface) 60%, transparent);
+  --item-plate: color-mix(in srgb, var(--surface) 88%, transparent);
+  --label-chip: color-mix(in srgb, var(--surface) 85%, transparent);
+  height: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px;
+  padding: 14px 14px 16px; border-radius: 18px; overflow: hidden;
+  background: var(--surface); border: 1px solid var(--border-strong); color: var(--text);
+  font-family: "Geist", ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: antialiased;
+}
+.wg[data-theme="light"] {
+  --plate: color-mix(in srgb, var(--surface) 88%, transparent);
+  --item-plate: color-mix(in srgb, var(--surface) 92%, transparent);
+  --label-chip: color-mix(in srgb, var(--surface) 88%, transparent);
+}
+.wg * { box-sizing: border-box; }
+.wg button { font-family: inherit; color: inherit; cursor: pointer; }
+.wg :focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+/* Transparent: a see-through plate, a hairline, and own plates for every label and card. */
+.wg.is-trans { background: var(--plate); border-color: color-mix(in srgb, var(--text) 14%, transparent); }
+.wg.is-trans:not([data-theme="light"]) { text-shadow: 0 1px 2px rgb(0 0 0 / 0.55); }
+
+.wg-head {
+  display: flex; align-items: center; gap: 8px; flex: 0 0 auto;
+  font-family: "Geist Mono", ui-monospace, monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.08em; color: var(--subtle);
+}
+.wg-date { flex: 1; color: var(--text); }
+.wg.is-trans .wg-head { color: var(--text-2); }
+
+.wg-area { position: relative; flex: 1; min-height: 0; margin: 6px 0 4px 40px; }
+.wg-hour { position: absolute; left: -40px; right: 0; height: 0; display: flex; align-items: center; gap: 8px; }
+.wg-hour-label {
+  width: 32px; flex: 0 0 auto; text-align: center; border-radius: 4px;
+  font-family: "Geist Mono", ui-monospace, monospace; font-size: 10px; line-height: 14px; color: var(--subtle);
+}
+/* Over a wallpaper: secondary text on its own chip, for contrast. */
+.wg.is-trans .wg-hour-label { color: var(--text-2); background: var(--label-chip); text-shadow: none; }
+.wg-hour-line { flex: 1; height: 1px; background: var(--border-strong); opacity: 0.6; }
+.wg.is-trans .wg-hour-line { background: color-mix(in srgb, var(--text) 14%, transparent); opacity: 1; }
+
+.wg-now-line { position: absolute; left: 0; right: 0; height: 1.5px; margin-top: -1px; background: var(--text); z-index: 0; pointer-events: none; }
+.wg-items { position: absolute; inset: 0; overflow: hidden; border-radius: 6px; z-index: 1; }
+.wg-item { position: absolute; overflow: hidden; border-radius: 8px; background: var(--raised); }
+.wg.is-trans .wg-item { background: var(--item-plate); text-shadow: none; }
+
+.wg-task { display: flex; align-items: center; gap: 8px; padding: 0 8px; box-shadow: inset 0 0 0 1px var(--control-border); }
+.wg-cb {
+  width: 16px; height: 16px; flex: 0 0 auto; padding: 0; border: 0; border-radius: 5px; background: transparent;
+  display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 0 1.5px var(--control-border);
+}
+.wg-cb:hover { box-shadow: inset 0 0 0 1.5px var(--accent); }
+.wg-cb[aria-checked="true"] { background: var(--accent); color: var(--accent-text); box-shadow: none; }
+/* Done: lower contrast on the checkbox and the strikethrough only; the text stays readable. */
+.wg-task.is-done .wg-cb { opacity: 0.6; }
+.wg-task.is-done .wg-title { text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--text) 50%, transparent); }
+
+.wg-title { flex: 1; min-width: 0; font-size: 12px; font-weight: 500; line-height: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wg-time { flex: 0 0 auto; font-family: "Geist Mono", ui-monospace, monospace; font-size: 10px; line-height: 14px; color: var(--text-2); white-space: nowrap; }
+
+.wg-event { outline-offset: 1px; }
+.wg-ev-fill { position: absolute; inset: 0; border-radius: 8px; background: var(--c); opacity: 0.22; }
+.wg-event.is-past .wg-ev-fill { opacity: 0.12; }
+.wg-ev-edge { position: absolute; left: -1px; top: 0; bottom: 0; width: 5px; transform: skewX(-10deg); background: var(--c); }
+.wg-event.is-past .wg-ev-edge { opacity: 0.7; }
+.wg-ev-body { position: relative; display: flex; align-items: center; gap: 8px; height: 100%; padding: 0 8px 0 14px; min-width: 0; }
+.wg-event.is-tall .wg-ev-body { flex-direction: column; align-items: flex-start; justify-content: center; gap: 0; }
+.wg-event.is-tall .wg-title { flex: 0 0 auto; max-width: 100%; }
+
+.wg-now { position: absolute; left: -40px; width: 46px; height: 0; z-index: 3; pointer-events: none; }
+.wg-now-pill {
+  position: absolute; left: 0; top: -7px; width: 38px; height: 14px; border-radius: 7px; text-align: center; text-shadow: none;
+  background: var(--text); color: var(--surface); font-family: "Geist Mono", ui-monospace, monospace; font-size: 10px; font-weight: 500; line-height: 14px;
+}
+.wg-now-dot { position: absolute; left: 40px; top: -3px; width: 6px; height: 6px; border-radius: 3px; background: var(--text); }
+.wg-empty { position: absolute; left: 0; right: 0; bottom: 4px; margin: 0; text-align: center; font-size: 11px; color: var(--text-2); }

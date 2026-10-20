@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import {
-  format, addMonths, subMonths, startOfWeek, endOfWeek,
+  format, addMonths, subMonths,
   addWeeks, subWeeks, addDays, parseISO, isToday, getISOWeek,
 } from "date-fns";
 import {
@@ -15,6 +15,8 @@ import AgendaView from "@/components/AgendaView";
 import TodayPanel from "@/components/TodayPanel";
 import GoalsPanel from "@/components/GoalsPanel";
 import WidgetManager from "@/components/WidgetManager";
+import CalendarSettings from "@/components/CalendarSettings";
+import { usePrefs } from "@/hooks/usePrefs";
 import SearchModal from "@/components/SearchModal";
 import EventDialog from "@/components/EventDialog";
 import { useEvents, CalendarEvent, COLOR_MAP } from "@/hooks/useEvents";
@@ -44,6 +46,7 @@ export default function App() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogInitialDate, setDialogInitialDate] = useState<string | undefined>();
   const [dialogInitialTime, setDialogInitialTime] = useState<string | undefined>();
+  const [dialogInitialEnd, setDialogInitialEnd] = useState<string | undefined>();
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [goalDialogOpen, setGoalDialogOpen] = useState(false);
@@ -159,12 +162,20 @@ export default function App() {
     return () => { cancelled = true; unlisten?.(); };
   }, [toggleComplete]);
 
-  const openNew = useCallback((date?: string, time?: string) => {
+  const openNew = useCallback((date?: string, time?: string, endTime?: string) => {
     setEditingEvent(null);
     setDialogInitialDate(date ?? format(selectedDate, "yyyy-MM-dd"));
     setDialogInitialTime(time);
+    setDialogInitialEnd(endTime);
     setDialogOpen(true);
   }, [selectedDate]);
+
+  // New goal from Today's header, or for a specific day from Month/Week.
+  const [goalDialogDate, setGoalDialogDate] = useState<string | null>(null);
+  const openNewGoal = useCallback((date?: string) => {
+    setGoalDialogDate(date ?? null);
+    setGoalDialogOpen(true);
+  }, []);
 
   const openEdit = useCallback((event: CalendarEvent) => {
     setEditingEvent(event);
@@ -201,21 +212,17 @@ export default function App() {
     setCurrentMonth(now);
   }, []);
 
+  // Today, Month and Week show today's date in the header; Month and Week
+  // have their own toolbar for the period they show.
   const headerLabel = useCallback(() => {
-    if (view === "today") return format(now, "EEEE, d MMMM");
-    if (view === "month") return format(currentMonth, "MMMM yyyy");
+    if (view === "today" || view === "month" || view === "week") return format(now, "EEEE, d MMMM");
     if (view === "agenda") return "Upcoming";
-    if (view === "week") {
-      const ws = startOfWeek(selectedDate, { weekStartsOn: 0 });
-      const we = endOfWeek(selectedDate, { weekStartsOn: 0 });
-      return `${format(ws, "MMM d")} – ${format(we, "MMM d, yyyy")}`;
-    }
     return format(selectedDate, "EEEE, MMMM d, yyyy");
-  }, [view, currentMonth, selectedDate, now]);
+  }, [view, selectedDate, now]);
 
   const weekLabel =
-    view === "today" ? `WEEK ${getISOWeek(now)}`
-    : view === "week" || view === "day" ? `WEEK ${getISOWeek(selectedDate)}`
+    view === "today" || view === "month" || view === "week" ? `WEEK ${getISOWeek(now)}`
+    : view === "day" ? `WEEK ${getISOWeek(selectedDate)}`
     : null;
 
   const overdueGoals = useMemo(() => findOverdueGoals(goals, now), [goals, now]);
@@ -256,7 +263,7 @@ export default function App() {
         // without preventDefault the "n" would be typed into it.
         e.preventDefault();
         // N matches the header's primary button: New goal on Today, New event elsewhere.
-        if (view === "today") setGoalDialogOpen(true);
+        if (view === "today") openNewGoal();
         else openNew(format(selectedDate, "yyyy-MM-dd"));
       }
       if (e.key === "t") {
@@ -415,7 +422,7 @@ export default function App() {
           <>
             <header className="flex shrink-0 flex-wrap items-center justify-between gap-4 border-b border-border px-10 py-6">
               <div className="flex items-center gap-3">
-                {(view === "month" || view === "week" || view === "day") && (
+                {view === "day" && (
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
@@ -474,7 +481,7 @@ export default function App() {
                 {view === "today" ? (
                   <button
                     type="button"
-                    onClick={() => setGoalDialogOpen(true)}
+                    onClick={() => openNewGoal()}
                     className="flex h-[42px] items-center gap-2 rounded-[10px] bg-primary pl-3.5 pr-[18px] text-sm font-semibold text-primary-foreground hover:bg-accent-hover"
                   >
                     <Plus aria-hidden="true" size={18} strokeWidth={2.4} />
@@ -505,8 +512,10 @@ export default function App() {
                   currentMonth={currentMonth}
                   selectedDate={selectedDate}
                   events={events}
-                  onSelectDate={(d) => { setSelectedDate(d); setView("day"); }}
+                  onSelectDate={(d) => setSelectedDate(d)}
+                  onNavigate={(d) => { setSelectedDate(d); setCurrentMonth(d); }}
                   onNewEvent={(date) => openNew(date)}
+                  onNewGoal={openNewGoal}
                   onEditEvent={openEdit}
                 />
               )}
@@ -515,7 +524,9 @@ export default function App() {
                   selectedDate={selectedDate}
                   events={events}
                   onSelectDate={(d) => { setSelectedDate(d); setView("day"); }}
-                  onNewEvent={(date, time) => openNew(date, time)}
+                  onNavigate={(d) => { setSelectedDate(d); setCurrentMonth(d); }}
+                  onNewEvent={(date, time, endTime) => openNew(date, time, endTime)}
+                  onNewGoal={openNewGoal}
                   onEditEvent={openEdit}
                 />
               )}
@@ -545,6 +556,7 @@ export default function App() {
           <div className="flex-1 overflow-auto p-8">
             <h2 className="text-xl font-semibold mb-6">Settings</h2>
             <div className="max-w-md space-y-4">
+              <CalendarSettings />
               <WidgetManager onWidgetChange={triggerWidgetExport} />
               <div className="p-4 rounded-xl border border-border bg-card">
                 <h3 className="text-sm font-medium mb-2">Account</h3>
@@ -566,7 +578,7 @@ export default function App() {
         open={goalDialogOpen}
         onClose={() => setGoalDialogOpen(false)}
         onSave={createGoal}
-        initialDate={format(now, "yyyy-MM-dd")}
+        initialDate={goalDialogDate ?? format(now, "yyyy-MM-dd")}
       />
 
       <EventDialog
@@ -576,6 +588,7 @@ export default function App() {
         onDelete={deleteEvent}
         initialDate={dialogInitialDate}
         initialStartTime={dialogInitialTime}
+        initialEndTime={dialogInitialEnd}
         editEvent={editingEvent}
       />
 
