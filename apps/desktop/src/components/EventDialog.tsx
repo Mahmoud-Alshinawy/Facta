@@ -10,6 +10,8 @@ interface EventDialogProps {
   onDelete?: (id: string) => void;
   initialDate?: string;
   initialStartTime?: string;
+  /** End time for a new event (e.g. from drag-create in the Week view); defaults to start + 1 h. */
+  initialEndTime?: string;
   editEvent?: CalendarEvent | null;
 }
 
@@ -39,6 +41,7 @@ export default function EventDialog({
   onDelete,
   initialDate,
   initialStartTime,
+  initialEndTime,
   editEvent,
 }: EventDialogProps) {
   const [title, setTitle] = useState("");
@@ -71,7 +74,7 @@ export default function EventDialog({
       setTitle("");
       setDate(initialDate ?? format(new Date(), "yyyy-MM-dd"));
       setStartTime(st);
-      setEndTime(addOneHour(st));
+      setEndTime(initialEndTime ?? addOneHour(st));
       setColor("blue");
       setDescription("");
       setAllDay(false);
@@ -79,7 +82,7 @@ export default function EventDialog({
       setRepeatDays([]);
     }
     setConfirmDelete(false);
-  }, [editEvent, initialDate, initialStartTime, open]);
+  }, [editEvent, initialDate, initialStartTime, initialEndTime, open]);
 
   function handleStartChange(val: string) {
     setStartTime(val);

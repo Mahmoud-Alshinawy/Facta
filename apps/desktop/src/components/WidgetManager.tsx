@@ -3,7 +3,7 @@ import { exportWidgetsNow } from "@/lib/widgetExportBus";
 import { Monitor, X, Plus, LayoutGrid, Target, Clock, GripVertical, Eye, EyeOff, Droplets, Save, Calendar, Sun } from "lucide-react";
 
 export type WidgetType = "tasks" | "progress" | "events" | "calendar" | "dayview";
-export type WidgetTheme = "midnight" | "ember" | "light";
+export type WidgetTheme = "default" | "midnight" | "ember" | "light";
 
 interface WidgetConfig {
   id: string;
@@ -16,6 +16,7 @@ interface WidgetConfig {
 const DEFAULT_WIDGETS: WidgetConfig[] = [];
 
 const THEME_PREVIEW: Record<WidgetTheme, { label: string; bg: string; text: string }> = {
+  default:  { label: "Black and green", bg: "bg-[#060706] border border-[#22C55E]", text: "text-white" },
   midnight: { label: "Midnight", bg: "bg-gray-900", text: "text-white" },
   ember:    { label: "Ember",    bg: "bg-orange-950", text: "text-orange-100" },
   light:    { label: "Light",     bg: "bg-white border border-border", text: "text-gray-900" },
@@ -193,8 +194,8 @@ export default function WidgetManager({ onWidgetChange }: Props) {
 
           <div className="flex flex-col gap-1.5">
             <label className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">Theme</label>
-            <div className="flex gap-2">
-              {(["midnight", "ember", "light"] as WidgetTheme[]).map((t) => (
+            <div className="flex flex-wrap gap-2">
+              {(["default", "midnight", "ember", "light"] as WidgetTheme[]).map((t) => (
                 <button
                   key={t}
                   onClick={() => setAddTheme(t)}
@@ -263,6 +264,7 @@ export default function WidgetManager({ onWidgetChange }: Props) {
                 <select value={w.theme} onChange={(e) => handleTheme(w.id, e.target.value as WidgetTheme)}
                   className="px-1.5 py-0.5 rounded border border-input bg-background text-[10px] focus:outline-none focus:ring-1 focus:ring-primary"
                 >
+                  <option value="default">Black and green</option>
                   <option value="midnight">Midnight</option>
                   <option value="ember">Ember</option>
                   <option value="light">Light</option>

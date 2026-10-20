@@ -1,0 +1,19 @@
+{
+  "name": "@facta/calendar",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Calendar settings, time formatting and layout maths shared by the desktop app and the widgets.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./theme-tokens.css": "./src/theme-tokens.css"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.2",
+    "vitest": "~5.0.5"
+  }
+}

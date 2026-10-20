@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "@facta/calendar/theme-tokens.css";
 
 /* For the rare colour that must differ between Light and the dark themes. */
 @custom-variant light (&:where([data-theme="light"], [data-theme="light"] *));
@@ -70,166 +71,170 @@
   --radius: 0.5rem;
 }
 
-/* Black and green (default), Midnight, Ember, Light */
-:root,
-[data-theme="default"] {
-  color-scheme: dark;
-  --bg: #060706;
-  --surface: #0C0D0C;
-  --raised: #121412;
-  --raised-2: #191C18;
-  --border: #1A1D1A;
-  --border-strong: #262A25;
-  --control-border: #5F685E;
-  --text: #F1F4F1;
-  --text-2: #A6AEA6;
-  --subtle: #868F86;
-  --accent: #22C55E;
-  --accent-hover: #2DD46A;
-  --accent-text: #03210F;
-  --accent-soft: rgba(34,197,94,.10);
-  --accent-border: #1C7E40;
-  --success: #22C55E;
-  --warning: #E0A33B;
-  --warning-border: rgba(224,163,59,.35);
-  --danger: #EF5A5A;
-  --bar-other: #C9D0C9;
-  --event-blue: #5B8DEF;
-  --event-purple: #A47CF0;
-  --logo-tile: #0A0B0A;
-  --logo-mark: #22C55E;
-}
+/* Black and green (default), Midnight, Ember, Light: see the shared tokens file. */
 
-[data-theme="midnight"] {
-  color-scheme: dark;
-  --bg: #04070E;
-  --surface: #090E1A;
-  --raised: #0E1524;
-  --raised-2: #141C30;
-  --border: #161F33;
-  --border-strong: #212C45;
-  --control-border: #55668F;
-  --text: #EEF2FA;
-  --text-2: #A3AECB;
-  --subtle: #7D89A8;
-  --accent: #4C8DF6;
-  --accent-hover: #6AA1F8;
-  --accent-text: #04122B;
-  --accent-soft: rgba(76,141,246,.12);
-  --accent-border: #3B6BBB;
-  --success: #4C8DF6;
-  --warning: #E8B04B;
-  --warning-border: rgba(232,176,75,.35);
-  --danger: #F06A6A;
-  --bar-other: #C3CCE0;
-  --event-blue: #67C1F5;
-  --event-purple: #A88BF5;
-  --logo-tile: #04070E;
-  --logo-mark: #4C8DF6;
-}
+/* ---------------------------------------------------------------------
+   Calendar views (Month, Week). Built from the theme tokens only; tints
+   are color-mix()es of existing tokens, not new colours.
+   --------------------------------------------------------------------- */
+/* In the components layer, so Tailwind utilities on the same element win. */
+@layer components {
+  .cal-ctl {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    height: 36px; padding: 0 12px; border-radius: 9px;
+    border: 1px solid var(--control-border); background: transparent;
+    font-size: 13px; font-weight: 500; color: var(--text);
+  }
+  .cal-ctl:hover { background: var(--raised-2); border-color: var(--text-2); }
+  .cal-kbd {
+    font-family: "Geist Mono", ui-monospace, monospace; font-size: 11px; line-height: 1; color: var(--subtle);
+    border: 1px solid var(--border-strong); border-bottom-width: 2px; border-radius: 5px; padding: 3px 5px; background: var(--raised);
+  }
+  .cal-weekend { background: color-mix(in srgb, var(--text) 3.2%, transparent); }
 
-[data-theme="ember"] {
-  color-scheme: dark;
-  --bg: #060504;
-  --surface: #0C0A08;
-  --raised: #120F0D;
-  --raised-2: #191512;
-  --border: #1A1613;
-  --border-strong: #27201C;
-  --control-border: #6E6053;
-  --text: #F6F1EC;
-  --text-2: #B8ADA3;
-  --subtle: #938778;
-  --accent: #FF8000;
-  --accent-hover: #FF9426;
-  --accent-text: #1F0E00;
-  --accent-soft: rgba(255,128,0,.12);
-  --accent-border: #A55505;
-  --success: #FF8000;
-  --warning: #E8C547;
-  --warning-border: rgba(232,197,71,.35);
-  --danger: #F25F5C;
-  --bar-other: #D6CCC2;
-  --event-blue: #6E9CF0;
-  --event-purple: #B08AF0;
-  --logo-tile: #060504;
-  --logo-mark: #FF8000;
-}
+  .month-cell {
+    position: relative; min-width: 0; min-height: 0; padding: 5px 6px 4px;
+    display: flex; flex-direction: column; gap: 2px; overflow: hidden; outline: none; user-select: none;
+    border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  }
+  .month-cell:hover { background: var(--raised); }
+  .month-cell.is-selected { background: var(--raised-2); }
+  .month-cell:focus-visible { box-shadow: inset 0 0 0 2px var(--text); z-index: 2; }
+  .month-cell-body { display: flex; flex-direction: column; gap: 2px; flex: 1; min-height: 0; }
+  .month-cell.is-out .month-cell-body { opacity: 0.38; }
+  .month-day {
+    width: 22px; height: 22px; border-radius: 11px; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 500; color: var(--text);
+  }
+  .month-day.is-today { background: var(--text); color: var(--surface); font-weight: 600; }
+  .month-plus {
+    width: 20px; height: 20px; padding: 0; border: 0; border-radius: 6px; background: transparent;
+    box-shadow: inset 0 0 0 1px var(--control-border); color: var(--text-2);
+    display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.12s ease;
+  }
+  .month-cell:hover .month-plus, .month-cell:focus-within .month-plus, .month-cell:focus .month-plus { opacity: 1; }
+  .month-plus:hover { background: var(--raised-2); color: var(--text); }
+  .month-ring-track { stroke: color-mix(in srgb, var(--text) 16%, transparent); }
+  .month-chip {
+    height: 19px; display: flex; align-items: center; gap: 6px; padding: 0 6px; border-radius: 5px; min-width: 0;
+    background: color-mix(in srgb, var(--c) 16%, transparent); font-size: 11.5px; line-height: 1;
+  }
+  .month-dot { width: 7px; height: 7px; border-radius: 4px; background: var(--c); flex: 0 0 auto; }
+  .month-more {
+    height: 16px; padding: 0 6px; border: 0; background: transparent; color: var(--text-2);
+    font-size: 11px; text-align: left; border-radius: 4px; align-self: flex-start;
+  }
+  .month-more:hover { color: var(--text); background: var(--raised-2); }
+  .month-pop { box-shadow: 0 18px 40px rgb(0 0 0 / 0.45); }
+  .month-prow { display: flex; align-items: center; gap: 10px; min-height: 32px; padding: 0 6px; border-radius: 8px; background: transparent; border: 0; color: inherit; }
+  .month-prow:hover { background: var(--raised-2); }
 
-[data-theme="light"] {
-  color-scheme: light;
-  --bg: #F6F6F3;
-  --surface: #FFFFFF;
-  --raised: #F0F1EC;
-  --raised-2: #E7E9E3;
-  --border: #E3E5DF;
-  --border-strong: #CDD1C8;
-  --control-border: #7E857B;
-  --text: #141713;
-  --text-2: #4E554D;
-  --subtle: #626A60;
-  --accent: #15803D;
-  --accent-hover: #166534;
-  --accent-text: #FFFFFF;
-  --accent-soft: rgba(21,128,61,.10);
-  --accent-border: #15803D;
-  --success: #16A34A;
-  --warning: #B45309;
-  --warning-border: rgba(180,83,9,.35);
-  --danger: #DC2626;
-  --bar-other: #9AA197;
-  --event-blue: #2563EB;
-  --event-purple: #7C3AED;
-  --logo-tile: #15803D;
-  --logo-mark: #FFFFFF;
-}
+  .week-grid { outline: none; }
+  .week-grid:focus-visible { box-shadow: inset 0 0 0 2px var(--text); }
+  .week-head { display: flex; flex-direction: column; justify-content: center; gap: 2px; padding: 0 10px; border-left: 1px solid var(--border); min-width: 0; }
+  .week-daynum {
+    min-width: 24px; height: 24px; border-radius: 12px; padding: 0 4px; border: 0; background: transparent;
+    display: inline-flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 500; color: var(--text);
+  }
+  .week-daynum:hover { background: var(--raised-2); }
+  .week-head.is-today .week-daynum { background: var(--text); color: var(--surface); font-weight: 600; }
+  .week-tag {
+    font-family: "Geist Mono", ui-monospace, monospace; font-size: 9.5px; letter-spacing: 0.06em; line-height: 1;
+    color: var(--warning); border: 1px solid var(--warning-border); border-radius: 4px; padding: 2px 4px;
+  }
+  .week-allday {
+    height: 20px; display: block; margin: 0 3px; padding: 0 8px; border-radius: 6px; border: 0; text-align: left;
+    background: color-mix(in srgb, var(--c) 24%, var(--surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 42%, transparent);
+    font-size: 11.5px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .week-line { position: absolute; left: 56px; right: 0; height: 1px; background: var(--border); }
+  .week-line.is-half { background: color-mix(in srgb, var(--text) 4.5%, transparent); }
+  .week-col { position: relative; border-left: 1px solid var(--border); min-width: 0; cursor: crosshair; user-select: none; }
+  .week-ev {
+    position: absolute; z-index: 1; display: flex; align-items: baseline; gap: 6px; min-width: 0;
+    border: 0; border-radius: 6px; padding: 2px 6px; overflow: hidden; text-align: left; cursor: pointer;
+    background: color-mix(in srgb, var(--c) 24%, var(--surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 42%, transparent);
+    color: var(--text); font-size: 11.5px; line-height: 1.25;
+    container-type: inline-size;
+  }
+  .week-ev.is-tall { flex-direction: column; align-items: stretch; gap: 0; }
+  .week-ev:hover { background: color-mix(in srgb, var(--c) 32%, var(--surface)); }
+  .week-ev.is-past {
+    background: color-mix(in srgb, var(--c) 13%, var(--surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 26%, transparent);
+    color: var(--text-2);
+  }
+  .week-ev-title { min-width: 0; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .week-ev-title.is-wrap { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-height: 1.2; }
+  .week-meta { font-family: "Geist Mono", ui-monospace, monospace; font-size: 10px; color: var(--text-2); white-space: nowrap; flex: 0 0 auto; }
+  /* Narrow blocks: title only; the time is in the tooltip and the label. */
+  @container (max-width: 110px) {
+    .week-ev-time { display: none; }
+    .week-ev-title.is-wrap { white-space: nowrap; display: block; -webkit-line-clamp: unset; }
+  }
+  .week-goal {
+    position: absolute; z-index: 1; display: flex; align-items: center; gap: 6px; padding: 0 6px; overflow: hidden;
+    border-radius: 7px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--control-border);
+    font-size: 11.5px; font-weight: 500; cursor: default;
+  }
+  .week-goal.is-past { color: var(--text-2); }
+  .week-ghost {
+    position: absolute; left: 2px; right: 2px; z-index: 3; pointer-events: none; display: flex; flex-direction: column; gap: 1px;
+    border-radius: 6px; border: 1.5px dashed var(--text); padding: 3px 6px;
+    background: color-mix(in srgb, var(--text) 10%, transparent);
+  }
+  .week-cursor { position: absolute; border-radius: 6px; box-shadow: 0 0 0 2px var(--text); opacity: 0; }
+  .week-grid:focus-visible .week-cursor { opacity: 1; }
 
-/* Toasts (sonner) in the theme's colours. Sonner only knows light and dark
-   and injects its own styles at runtime, so these selectors start with
-   "html" to outrank its [data-sonner-toaster][data-sonner-theme=…] rules. */
-html [data-sonner-toaster][data-sonner-theme] {
-  font-family: "Geist", ui-sans-serif, system-ui, sans-serif;
-  --normal-bg: var(--surface);
-  --normal-bg-hover: var(--raised);
-  --normal-border: var(--border-strong);
-  --normal-border-hover: var(--border-strong);
-  --normal-text: var(--text);
-  --success-bg: color-mix(in srgb, var(--success) 10%, var(--surface));
-  --success-border: color-mix(in srgb, var(--success) 35%, var(--surface));
-  --success-text: var(--success);
-  --info-bg: color-mix(in srgb, var(--accent) 10%, var(--surface));
-  --info-border: color-mix(in srgb, var(--accent) 35%, var(--surface));
-  --info-text: var(--text);
-  --warning-bg: color-mix(in srgb, var(--warning) 10%, var(--surface));
-  --warning-border: var(--warning-border);
-  --warning-text: var(--warning);
-  --error-bg: color-mix(in srgb, var(--danger) 10%, var(--surface));
-  --error-border: color-mix(in srgb, var(--danger) 35%, var(--surface));
-  --error-text: var(--danger);
-}
-html [data-sonner-toaster][data-sonner-theme] [data-sonner-toast][data-styled="true"] {
-  box-shadow: 0 8px 24px rgb(0 0 0 / 0.25);
-}
-html [data-sonner-toaster][data-sonner-theme] [data-sonner-toast][data-styled="true"] [data-description] {
-  color: var(--text-2);
-}
-html [data-sonner-toaster][data-sonner-theme] [data-sonner-toast][data-styled="true"] [data-button][data-action] {
-  background: var(--accent);
-  color: var(--accent-text);
-  font-weight: 600;
-}
-html [data-sonner-toaster][data-sonner-theme] [data-sonner-toast][data-styled="true"] [data-button][data-cancel] {
-  background: var(--raised-2);
-  color: var(--text);
-}
+  /* Toasts (sonner) in the theme's colours. Sonner only knows light and dark
+     and injects its own styles at runtime, so these selectors start with
+     "html" to outrank its [data-sonner-toaster][data-sonner-theme=…] rules. */
+  html [data-sonner-toaster][data-sonner-theme] {
+    font-family: "Geist", ui-sans-serif, system-ui, sans-serif;
+    --normal-bg: var(--surface);
+    --normal-bg-hover: var(--raised);
+    --normal-border: var(--border-strong);
+    --normal-border-hover: var(--border-strong);
+    --normal-text: var(--text);
+    --success-bg: color-mix(in srgb, var(--success) 10%, var(--surface));
+    --success-border: color-mix(in srgb, var(--success) 35%, var(--surface));
+    --success-text: var(--success);
+    --info-bg: color-mix(in srgb, var(--accent) 10%, var(--surface));
+    --info-border: color-mix(in srgb, var(--accent) 35%, var(--surface));
+    --info-text: var(--text);
+    --warning-bg: color-mix(in srgb, var(--warning) 10%, var(--surface));
+    --warning-border: var(--warning-border);
+    --warning-text: var(--warning);
+    --error-bg: color-mix(in srgb, var(--danger) 10%, var(--surface));
+    --error-border: color-mix(in srgb, var(--danger) 35%, var(--surface));
+    --error-text: var(--danger);
+  }
+  html [data-sonner-toaster][data-sonner-theme] [data-sonner-toast][data-styled="true"] {
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.25);
+  }
+  html [data-sonner-toaster][data-sonner-theme] [data-sonner-toast][data-styled="true"] [data-description] {
+    color: var(--text-2);
+  }
+  html [data-sonner-toaster][data-sonner-theme] [data-sonner-toast][data-styled="true"] [data-button][data-action] {
+    background: var(--accent);
+    color: var(--accent-text);
+    font-weight: 600;
+  }
+  html [data-sonner-toaster][data-sonner-theme] [data-sonner-toast][data-styled="true"] [data-button][data-cancel] {
+    background: var(--raised-2);
+    color: var(--text);
+  }
 
-/* Set for one frame while switching themes (lib/theme.ts), so colours swap
-   at once instead of cross-fading through mismatched pairs. */
-.theme-switching,
-.theme-switching *,
-.theme-switching *::before,
-.theme-switching *::after {
-  transition: none !important;
+  /* Set for one frame while switching themes (lib/theme.ts), so colours swap
+     at once instead of cross-fading through mismatched pairs. */
+  .theme-switching,
+  .theme-switching *,
+  .theme-switching *::before,
+  .theme-switching *::after {
+    transition: none !important;
+  }
 }
 
 @layer base {

@@ -522,7 +522,7 @@ fn spawn_or_update_widgets(app: &tauri::AppHandle, state: &tauri::State<WidgetSt
             "progress" => (240.0, 260.0),
             "events" => (280.0, 300.0),
             "calendar" => (260.0, 280.0),
-            "dayview" => (300.0, 340.0),
+            "dayview" => (300.0, 400.0),
             _ => (280.0, 360.0),
         };
         let width = saved_pos.map(|p| p.width).unwrap_or(default_w);

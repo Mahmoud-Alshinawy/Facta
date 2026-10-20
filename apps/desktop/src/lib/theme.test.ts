@@ -138,8 +138,8 @@ describe("theme-init.js: first paint", () => {
     expect(r.style).toEqual({ backgroundColor: bg, colorScheme: scheme });
   });
 
-  it("uses the same background colours as index.css and lib/theme", () => {
-    const css = readSource("../index.css");
+  it("uses the same background colours as the shared tokens and lib/theme", () => {
+    const css = readSource("../../../../packages/calendar/src/theme-tokens.css");
     for (const t of THEMES) {
       const sel = t.id === "default" ? ':root,\n[data-theme="default"] {' : `[data-theme="${t.id}"] {`;
       const block = css.slice(css.indexOf(sel), css.indexOf("}", css.indexOf(sel)));

@@ -1,0 +1,120 @@
+/*
+ * Facta theme tokens: the four themes, selected with data-theme
+ * ("default" = Black and green, "midnight", "ember", "light").
+ * The single source for the desktop app (src/index.css imports this) and the
+ * widgets. public/theme-init.js and lib/theme.ts repeat --bg and --accent for
+ * first paint and the swatches; a test keeps them in step.
+ */
+
+:root,
+[data-theme="default"] {
+  color-scheme: dark;
+  --bg: #060706;
+  --surface: #0C0D0C;
+  --raised: #121412;
+  --raised-2: #191C18;
+  --border: #1A1D1A;
+  --border-strong: #262A25;
+  --control-border: #5F685E;
+  --text: #F1F4F1;
+  --text-2: #A6AEA6;
+  --subtle: #868F86;
+  --accent: #22C55E;
+  --accent-hover: #2DD46A;
+  --accent-text: #03210F;
+  --accent-soft: rgba(34,197,94,.10);
+  --accent-border: #1C7E40;
+  --success: #22C55E;
+  --warning: #E0A33B;
+  --warning-border: rgba(224,163,59,.35);
+  --danger: #EF5A5A;
+  --bar-other: #C9D0C9;
+  --event-blue: #5B8DEF;
+  --event-purple: #A47CF0;
+  --logo-tile: #0A0B0A;
+  --logo-mark: #22C55E;
+}
+
+[data-theme="midnight"] {
+  color-scheme: dark;
+  --bg: #04070E;
+  --surface: #090E1A;
+  --raised: #0E1524;
+  --raised-2: #141C30;
+  --border: #161F33;
+  --border-strong: #212C45;
+  --control-border: #55668F;
+  --text: #EEF2FA;
+  --text-2: #A3AECB;
+  --subtle: #7D89A8;
+  --accent: #4C8DF6;
+  --accent-hover: #6AA1F8;
+  --accent-text: #04122B;
+  --accent-soft: rgba(76,141,246,.12);
+  --accent-border: #3B6BBB;
+  --success: #4C8DF6;
+  --warning: #E8B04B;
+  --warning-border: rgba(232,176,75,.35);
+  --danger: #F06A6A;
+  --bar-other: #C3CCE0;
+  --event-blue: #67C1F5;
+  --event-purple: #A88BF5;
+  --logo-tile: #04070E;
+  --logo-mark: #4C8DF6;
+}
+
+[data-theme="ember"] {
+  color-scheme: dark;
+  --bg: #060504;
+  --surface: #0C0A08;
+  --raised: #120F0D;
+  --raised-2: #191512;
+  --border: #1A1613;
+  --border-strong: #27201C;
+  --control-border: #6E6053;
+  --text: #F6F1EC;
+  --text-2: #B8ADA3;
+  --subtle: #938778;
+  --accent: #FF8000;
+  --accent-hover: #FF9426;
+  --accent-text: #1F0E00;
+  --accent-soft: rgba(255,128,0,.12);
+  --accent-border: #A55505;
+  --success: #FF8000;
+  --warning: #E8C547;
+  --warning-border: rgba(232,197,71,.35);
+  --danger: #F25F5C;
+  --bar-other: #D6CCC2;
+  --event-blue: #6E9CF0;
+  --event-purple: #B08AF0;
+  --logo-tile: #060504;
+  --logo-mark: #FF8000;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --bg: #F6F6F3;
+  --surface: #FFFFFF;
+  --raised: #F0F1EC;
+  --raised-2: #E7E9E3;
+  --border: #E3E5DF;
+  --border-strong: #CDD1C8;
+  --control-border: #7E857B;
+  --text: #141713;
+  --text-2: #4E554D;
+  --subtle: #626A60;
+  --accent: #15803D;
+  --accent-hover: #166534;
+  --accent-text: #FFFFFF;
+  --accent-soft: rgba(21,128,61,.10);
+  --accent-border: #15803D;
+  --success: #16A34A;
+  --warning: #B45309;
+  --warning-border: rgba(180,83,9,.35);
+  --danger: #DC2626;
+  --bar-other: #9AA197;
+  --event-blue: #2563EB;
+  --event-purple: #7C3AED;
+  --logo-tile: #15803D;
+  --logo-mark: #FFFFFF;
+}
