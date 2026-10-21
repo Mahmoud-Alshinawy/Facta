@@ -5,9 +5,10 @@ locally: copy `artifact-type/dc-runtime.js` to `project/support.js`, serve
 `project/` and open `<Board>.dc.html` (or a wrapper with
 `<dc-import name="CalWeek" theme="bg" state="drag">`).
 
-State: steps 1, 2a and 2b are finished. App uses the new Sidebar; Today is its
+State: steps 1, 2a, 2b and 3 are finished. App uses the new Sidebar; Today is its
 own page with no calendar view switcher. CalendarPage mounts the four new
 views; legacy calendar views/CSS are deleted. TodayPanel.tsx is unchanged.
+GoalDialog and EventDialog now use the v2 layout and shared dialog behaviour.
 
 ## Current owner instructions (approved 21 October 2026)
 - Rail breakpoint is <=1200px; 1100px is a comparison width.
@@ -69,6 +70,24 @@ views; legacy calendar views/CSS are deleted. TodayPanel.tsx is unchanged.
   Formal hosted-board comparison at exact 1440/1100 and native-window QA remain.
 
 ## Done (tested)
+- Step 3: GoalDialog-v2 and two-pane EventDialog New/Edit. Fresh form state on
+  every opening; title autofocus; Enter saves (Shift+Enter allows a description
+  newline); Escape backs out of delete confirmation before closing; Tab trap
+  and focus restoration; blocked-submit live message; scrolling body/fixed footer.
+  Reminder is unavailable without a time; custom repeats require a day.
+  initialEndTime and title/allDay/colour drafts are preserved. Event deletion
+  keeps the existing delayed Undo flow after inline confirmation.
+- Shared dialogs/DatePickerGrid supports arrows, Home/End, PgUp/PgDn and Enter
+  with one tabbable day; uses week-start preferences. Reuse for MiniCalendar next.
+- Added theme tokens for dialog scrim/shadow, danger text and swatch checks from
+  EventDialog's four themes; no literal colours in the new dialog components.
+- Step 3 checks: frozen install, tsc x3, Vitest desktop 209/209 and calendar
+  152/152, desktop build PORT=1420 BASE_PATH=/, cargo check --offline x2 passed.
+  Seven new pure form-state/validation tests. Existing non-fatal warnings only.
+- Step 3 local browser checks: Goal/Event layouts, title autofocus, blocked
+  submit, disabled reminder explanation, Escape close, backward Tab wrapping,
+  Edit event and its inline delete confirmation. Live Supabase remained disabled.
+  Exact board/theme/width comparison still remains for final QA.
 - `packages/calendar/src/theme-tokens.css`: `--event-red/green/orange/pink` as
   real tokens in all four themes (values from the boards). `apps/desktop/src/lib/eventColors.ts`
   and the Day widget now use `var(--event-*)` (Tailwind fallbacks gone).
@@ -107,7 +126,6 @@ views; legacy calendar views/CSS are deleted. TodayPanel.tsx is unchanged.
 
 ## Not started
 - MiniCalendar rewrite (single tab stop, arrows, `.mm` styles).
-- Dialogs v2 (GoalDialog, EventDialog per boards; reset on open, Enter/Esc, delete confirm, reminder needs time, custom repeat ≥1 day, aria-live, keep `initialEndTime`, accept a draft with title/allDay/colour).
 - Goals Mine page, goal stats (weekly ring, streak) with tests, Shared tab "coming soon".
 - Settings tabs (Widgets / Appearance / Account).
 - Icons (`tauri icon` from `apps/desktop/public/icon.png` for both apps), tray-white/black by system theme.
@@ -137,7 +155,7 @@ views; legacy calendar views/CSS are deleted. TodayPanel.tsx is unchanged.
 2a. DONE: rewrite App onto Sidebar + sections; Today is independent. Keep legacy
     calendar views temporarily so this is a separate working commit.
 2b. DONE: CalendarPage and legacy deletion. Formal board comparison still due.
-3. Dialogs v2, then Goals Mine (+ `lib/goalStats.ts` tests), Settings tabs.
+3. DONE: dialogs v2. Next Goals Mine (+ `lib/goalStats.ts` tests), then Settings tabs.
 4. MiniCalendar side panel, empty-state passthrough, icons/tray.
 5. Every commit: frozen install, tsc in all three packages, Vitest in desktop
    and calendar, desktop build with PORT=1420 BASE_PATH=/, cargo check in both
