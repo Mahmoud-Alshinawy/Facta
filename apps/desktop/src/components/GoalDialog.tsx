@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import type { Goal, GoalCategory } from "@/types/planner";
 import type { NewGoal } from "@/hooks/useGoals";
 import { goalForm, goalFormError, type GoalDraft } from "@/lib/dialogState";
+import { requestGoalNotificationPermission } from "@/hooks/useNotifications";
 import { IconCheck, IconClose } from "./shell/Icons";
 import RepeatOptions from "./dialogs/RepeatOptions";
 import DialogFrame from "./dialogs/DialogFrame";
@@ -53,7 +54,7 @@ function GoalDialogForm({ onClose, onSave, onDelete, editGoal, initialDate, draf
         <RepeatOptions id="gd-repeat" repeat={form.repeat} days={form.repeatDays} onRepeat={(repeat) => patch({ repeat })} onDays={(repeatDays) => patch({ repeatDays })} />
         <span id="gd-reminder" className="flab self-start pt-2">Reminder</span><div className="repeat-options">
           <div className="option-row"><button type="button" className="sw" role="switch" aria-checked={form.reminder} aria-disabled={!form.time} aria-labelledby="gd-reminder" aria-describedby="gd-reminder-note"
-            onClick={() => { if (form.time) patch({ reminder: !form.reminder }); }}><span className="knob" /></button>
+            onClick={() => { if (form.time) { patch({ reminder: !form.reminder }); if (!form.reminder) void requestGoalNotificationPermission().catch(() => {}); } }}><span className="knob" /></button>
             <span id="gd-reminder-note" className="dialog-note">{!form.time ? "Set a time first" : form.reminder ? "On" : "Off"}</span></div>
           {form.reminder && <><label htmlFor="gd-message" className="sr-only">Reminder message</label><input id="gd-message" className="inp" placeholder="Custom message (optional)" value={form.message} onChange={(e) => patch({ message: e.target.value })} /></>}
         </div>

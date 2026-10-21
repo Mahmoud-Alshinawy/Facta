@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { format, getISOWeek } from "date-fns";
 import { Plus, LogOut } from "lucide-react";
 import TodayPanel from "@/components/TodayPanel";
-import GoalsPanel from "@/components/GoalsPanel";
+import GoalsPage from "@/components/goals/GoalsPage";
 import WidgetManager from "@/components/WidgetManager";
 import CalendarSettings from "@/components/CalendarSettings";
 import SearchModal from "@/components/SearchModal";
@@ -17,6 +17,7 @@ import { useGoals } from "@/hooks/useGoals";
 import { useAuth } from "@/hooks/useAuth";
 import { useCreateGoal } from "@/hooks/useCreateGoal";
 import { useNow } from "@/hooks/useNow";
+import { useNotifications } from "@/hooks/useNotifications";
 import { supabase } from "@/lib/supabase";
 import { requestWidgetExport } from "@/lib/widgetExportBus";
 import AuthScreen from "@/components/AuthScreen";
@@ -39,7 +40,8 @@ export default function App() {
   const createGoal = useCreateGoal();
   const now = useNow();
   const { events, addEvent, updateEvent, deleteEvent } = useEvents();
-  const { goals, toggleComplete } = useGoals();
+  const { goals, toggleComplete, markNotified } = useGoals();
+  useNotifications(goals, markNotified);
   // Handle OAuth callback from URL hash (e.g. email confirmation)
   useEffect(() => {
     async function processHash() {
@@ -228,7 +230,7 @@ export default function App() {
 
         {section === "calendar" && <CalendarPage anchor={selectedDate} view={view} onAnchor={setSelectedDate} onView={setView}
           actions={calendarActions} keyboardBlocked={dialogOpen || goalDialogOpen || searchOpen || cheatOpen} />}
-        {section === "goals" && <GoalsPanel />}
+        {section === "goals" && <GoalsPage keyboardBlocked={dialogOpen || goalDialogOpen || searchOpen || cheatOpen} />}
         {section === "settings" && <div className="flex-1 overflow-auto p-8">
           <h2 className="mb-6 text-xl font-semibold">Settings</h2>
           <div className="max-w-md space-y-4">
