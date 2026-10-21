@@ -1,0 +1,68 @@
+/* App behaviour and semantic controls around the canvas v97 components. */
+@layer components {
+  .fx .sbsearch-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    height: 40px;
+    padding: 0 8px 0 12px;
+    border: 1px solid var(--control-border);
+    border-radius: 10px;
+    background: var(--bg);
+    color: var(--subtle);
+    font-size: 14px;
+    text-align: left;
+  }
+  .fx .sbsearch-btn:hover { border-color: var(--text-2); }
+  .fx .sbsearch-i { display: flex; }
+  .fx .sbsearch-t { flex: 1; }
+  .fx .sb-sync { border-top: 1px solid var(--border); }
+  .fx .sb-sync > button { min-height: 32px; }
+  .fx .dn-btn, .fx .gl-more, .fx .mpop-btn, .fx .grow-btn {
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: inherit;
+  }
+  .fx .dn-btn { cursor: pointer; }
+  .fx .gl-more { width: fit-content; }
+  .fx .gl-more:hover, .fx .mpop-btn:hover, .fx .grow-btn:hover { color: var(--text); text-decoration: underline; }
+  .fx .mpop-btn, .fx .grow-btn { min-width: 0; padding: 0; }
+  .fx .rsz { position: absolute; left: 0; right: 0; height: 6px; z-index: 3; cursor: ns-resize; }
+  .fx .rsz-t { top: 0; }
+  .fx .rsz-b { bottom: 0; }
+
+  /* The empty card must not intercept selecting a time range behind it. */
+  .fx .empty-pass, .fx .empty-card { user-select: none; pointer-events: none; }
+  .fx :is(.empty-pass, .empty-card) :is(button, a, input, select, textarea, [role="button"]) { pointer-events: auto; }
+
+  .fx .dialog-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    background: color-mix(in srgb, var(--shadow-ink) 55%, transparent);
+  }
+  .fx .dialog-scrim .sheet {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-height: 100%;
+    overflow: hidden;
+    border: 1px solid var(--border-strong);
+    border-radius: 18px;
+    background: var(--surface);
+    box-shadow: 0 24px 64px color-mix(in srgb, var(--shadow-ink) 55%, transparent);
+  }
+  .fx .dialog-body { flex: 1; min-height: 0; overflow-y: auto; }
+  .fx .dialog-footer { flex-shrink: 0; border-top: 1px solid var(--border); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fx .dlg .sheet { animation: none; }
+  }
+}

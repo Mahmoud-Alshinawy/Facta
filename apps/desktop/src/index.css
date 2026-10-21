@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "@facta/calendar/theme-tokens.css";
+@import "./styles/fx.css";
+@import "./styles/fx-app.css";
 
 /* For the rare colour that must differ between Light and the dark themes. */
 @custom-variant light (&:where([data-theme="light"], [data-theme="light"] *));

@@ -9,6 +9,7 @@
 :root,
 [data-theme="default"] {
   color-scheme: dark;
+  --shadow-ink: #000000;
   --bg: #060706;
   --surface: #0C0D0C;
   --raised: #121412;

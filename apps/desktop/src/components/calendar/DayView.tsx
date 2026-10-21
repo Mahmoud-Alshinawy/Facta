@@ -163,7 +163,7 @@ export default function DayView({ anchor, now, prefs, actions, onAnchor, say }: 
               const t = g.at!;
               const over = timed.some((x) => x.start <= t && x.end > t);
               const style: CSSProperties = over
-                ? { top: (t / 60) * H, left: "calc(100% - 236px)", width: 230, boxShadow: "inset 0 0 0 1px var(--control-border), 0 6px 16px rgba(0,0,0,.35)" }
+                ? { top: (t / 60) * H, left: "calc(100% - 236px)", width: 230, boxShadow: "inset 0 0 0 1px var(--control-border), 0 6px 16px color-mix(in srgb,var(--shadow-ink) 35%,transparent)" }
                 : { top: (t / 60) * H + 1, left: `calc(${LEFT}px + 6px)`, width: `calc(100% - ${LEFT + 6}px)` };
               return (
                 <div key={g.goal.id} className={`dgc${g.done ? " is-done" : ""}`} style={style} onMouseDown={(e) => e.stopPropagation()}>
