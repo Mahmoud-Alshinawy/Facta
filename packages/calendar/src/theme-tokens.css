@@ -31,6 +31,10 @@
   --bar-other: #C9D0C9;
   --event-blue: #5B8DEF;
   --event-purple: #A47CF0;
+  --event-red: #EF6B6B;
+  --event-green: #4CC38A;
+  --event-orange: #F0904A;
+  --event-pink: #EC6FB0;
   --logo-tile: #0A0B0A;
   --logo-mark: #22C55E;
 }
@@ -59,6 +63,10 @@
   --bar-other: #C3CCE0;
   --event-blue: #67C1F5;
   --event-purple: #A88BF5;
+  --event-red: #F07A7A;
+  --event-green: #52C98F;
+  --event-orange: #F2A05C;
+  --event-pink: #EE7DB8;
   --logo-tile: #04070E;
   --logo-mark: #4C8DF6;
 }
@@ -87,6 +95,10 @@
   --bar-other: #D6CCC2;
   --event-blue: #6E9CF0;
   --event-purple: #B08AF0;
+  --event-red: #F07070;
+  --event-green: #55C08A;
+  --event-orange: #F0A040;
+  --event-pink: #EE78B4;
   --logo-tile: #060504;
   --logo-mark: #FF8000;
 }
@@ -115,6 +127,10 @@
   --bar-other: #9AA197;
   --event-blue: #2563EB;
   --event-purple: #7C3AED;
+  --event-red: #DC2626;
+  --event-green: #059669;
+  --event-orange: #EA580C;
+  --event-pink: #DB2777;
   --logo-tile: #15803D;
   --logo-mark: #FFFFFF;
 }
