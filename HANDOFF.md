@@ -5,8 +5,9 @@ locally: copy `artifact-type/dc-runtime.js` to `project/support.js`, serve
 `project/` and open `<Board>.dc.html` (or a wrapper with
 `<dc-import name="CalWeek" theme="bg" state="drag">`).
 
-State: step 1 is finished; styles are imported. **The new shell and calendar
-are not wired into App.tsx yet**: the app still runs the old shell and views.
+State: steps 1 and 2a are finished. App uses the new Sidebar; Today is its own
+page with no calendar view switcher. Calendar still uses legacy views until
+the separate step 2b commit. TodayPanel.tsx is unchanged.
 
 ## Current owner instructions (approved 21 October 2026)
 - Rail breakpoint is <=1200px; 1100px is a comparison width.
@@ -31,6 +32,22 @@ are not wired into App.tsx yet**: the app still runs the old shell and views.
   passthrough and scrolling dialog shell. Imported both fx stylesheets.
   Replaced literal black shadows in the port with shared --shadow-ink.
 - No browser/board or real-window verification yet; the shell is not mounted.
+
+## Step 2a verification (Windows, 21 October 2026)
+- Rewrote App shell/navigation while retaining auth callbacks, widget-action
+  processing/export, search and dialogs. New sidebar on all sections; Today
+  is independent, Calendar offers Day/Week/Month/Agenda. Notes/Diary stay hidden.
+- Extracted sidebar navigation logic into shell/navigation.ts and added five
+  tests for the 1200px boundary, manual overrides, resizing and hidden pages.
+- Passed frozen install; npx tsc --noEmit in desktop/widgets/calendar; desktop
+  Vitest 196/196, calendar 152/152; desktop build (PORT=1420 BASE_PATH=/);
+  cargo check --offline in both apps. Same non-fatal build/cache warnings.
+- Visually checked Today and Calendar navigation in Brave with local-only
+  fixture auth, Supabase config explicitly disabled in the preview process;
+  observed automatic narrow rail and full wide sidebar. TodayPanel unchanged.
+- In-app browser cannot reach localhost; native Windows browser works.
+  Formal board comparison and exact 1440/1100 captures remain for 2b/final QA.
+- Calendar's legacy toolbar/now line remain temporarily and are removed in 2b.
 
 ## Done (tested)
 - `packages/calendar/src/theme-tokens.css`: `--event-red/green/orange/pink` as
@@ -71,7 +88,7 @@ are not wired into App.tsx yet**: the app still runs the old shell and views.
 
 ## Not started
 - `CalendarPage.tsx` tying header + views + side panel ("[" mini calendar) + footer + global keys (1-4, N, G, Q, T, PgUp/PgDn, ?, [).
-- App.tsx rewrite to the new shell (`<div className="fx {sidebarRootClass}">`), Today page header (no view switch), removing old views (`components/MonthView.tsx`, `WeekView.tsx`, `DayView.tsx`, `AgendaView.tsx`) and their CSS in `src/index.css`.
+- Remove legacy views (`components/MonthView.tsx`, `WeekView.tsx`, `DayView.tsx`, `AgendaView.tsx`) and their CSS when CalendarPage lands in 2b.
 - MiniCalendar rewrite (single tab stop, arrows, `.mm` styles).
 - Dialogs v2 (GoalDialog, EventDialog per boards; reset on open, Enter/Esc, delete confirm, reminder needs time, custom repeat ≥1 day, aria-live, keep `initialEndTime`, accept a draft with title/allDay/colour).
 - Goals Mine page, goal stats (weekly ring, streak) with tests, Shared tab "coming soon".
@@ -100,7 +117,7 @@ are not wired into App.tsx yet**: the app still runs the old shell and views.
 
 ## Next steps, in order
 1. DONE: import `styles/fx.css` and new `fx-app.css` in `src/index.css`.
-2a. Rewrite App onto Sidebar + sections; Today is independent. Keep legacy
+2a. DONE: rewrite App onto Sidebar + sections; Today is independent. Keep legacy
     calendar views temporarily so this is a separate working commit.
 2b. Write CalendarPage; delete legacy views/CSS; compare CW/CD/CM/CA (bg first).
 3. Dialogs v2, then Goals Mine (+ `lib/goalStats.ts` tests), Settings tabs.

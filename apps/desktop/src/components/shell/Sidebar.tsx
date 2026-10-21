@@ -7,24 +7,8 @@ import {
   IconCalendar, IconDiary, IconGoals, IconLeft, IconNotes, IconRight, IconSearch, IconSettings, IconToday,
 } from "./Icons";
 
-export type Section = "today" | "calendar" | "goals" | "notes" | "diary" | "settings";
-
-/** "" follows the window width, "c" is collapsed by hand, "o" opened by hand on a narrow window. */
-export type SidebarMode = "" | "c" | "o";
-
-/** Window widths up to this show the collapsed rail unless opened by hand. */
-export const RAIL_BREAKPOINT = 1200;
-
-export function nextSidebarMode(mode: SidebarMode, width: number): SidebarMode {
-  const narrow = width <= RAIL_BREAKPOINT;
-  const collapsed = narrow ? mode !== "o" : mode === "c";
-  if (collapsed) return narrow ? "o" : "";
-  return narrow ? "" : "c";
-}
-
-export function sidebarRootClass(mode: SidebarMode): string {
-  return mode === "c" ? "sb-c" : mode === "o" ? "sb-o" : "";
-}
+import { HIDDEN_SECTIONS, type Section } from "./navigation";
+export { HIDDEN_SECTIONS, RAIL_BREAKPOINT, nextSidebarMode, sidebarRootClass, type Section, type SidebarMode } from "./navigation";
 
 const ITEMS: { id: Section; label: string; icon: ReactNode }[] = [
   { id: "today", label: "Today", icon: <IconToday size={18} /> },
@@ -34,9 +18,6 @@ const ITEMS: { id: Section; label: string; icon: ReactNode }[] = [
   { id: "diary", label: "Diary", icon: <IconDiary size={18} /> },
   { id: "settings", label: "Settings", icon: <IconSettings size={18} /> },
 ];
-
-/** Notes and Diary arrive with their screens (feat/notes-diary). */
-export const HIDDEN_SECTIONS: ReadonlySet<Section> = new Set(["notes", "diary"]);
 
 interface Props {
   section: Section;
