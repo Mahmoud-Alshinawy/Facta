@@ -5,9 +5,9 @@ locally: copy `artifact-type/dc-runtime.js` to `project/support.js`, serve
 `project/` and open `<Board>.dc.html` (or a wrapper with
 `<dc-import name="CalWeek" theme="bg" state="drag">`).
 
-State: steps 1 and 2a are finished. App uses the new Sidebar; Today is its own
-page with no calendar view switcher. Calendar still uses legacy views until
-the separate step 2b commit. TodayPanel.tsx is unchanged.
+State: steps 1, 2a and 2b are finished. App uses the new Sidebar; Today is its
+own page with no calendar view switcher. CalendarPage mounts the four new
+views; legacy calendar views/CSS are deleted. TodayPanel.tsx is unchanged.
 
 ## Current owner instructions (approved 21 October 2026)
 - Rail breakpoint is <=1200px; 1100px is a comparison width.
@@ -49,6 +49,25 @@ the separate step 2b commit. TodayPanel.tsx is unchanged.
   Formal board comparison and exact 1440/1100 captures remain for 2b/final QA.
 - Calendar's legacy toolbar/now line remain temporarily and are removed in 2b.
 
+## Step 2b verification (Windows, 21 October 2026)
+- CalendarPage connects the header, four views, hidden-by-default mini calendar,
+  footer and scoped 1-4/N/G/Q/T/PgUp/PgDn/[ shortcuts; App handles ? and search.
+  Q reveals quick add at narrow widths. The mini calendar overlays at <=1200px.
+- Header quick add saves complete lines and forwards incomplete EventDrafts;
+  the current dialog accepts title/allDay/colour plus initialEndTime. The v2
+  dialog rewrite is still next. Six new tests cover period navigation,
+  week-start headings and quick-add mapping/end-of-day bounds.
+- Deleted the four top-level legacy calendar views and their CSS. Removed
+  unused now-line/dot CSS from fx.css; Week/Day render gutter pills only.
+- Fixed a mounted Week flex minimum-height bug found in Brave: the grid now
+  scrolls within the window, the footer remains visible and initial scroll works.
+- Passed frozen install; npx tsc --noEmit x3; Vitest desktop 202/202 and calendar
+  152/152; desktop Vite build (PORT=1420 BASE_PATH=/); cargo check --offline x2.
+  Same non-fatal Vite chunk-size and Cargo cache hard-link warnings.
+- Local fixture browser smoke: Today/Calendar switching, Day/Week keys, overlap
+  layout, all-day spanning, gutter-only time pill, visible focus and footer.
+  Formal hosted-board comparison at exact 1440/1100 and native-window QA remain.
+
 ## Done (tested)
 - `packages/calendar/src/theme-tokens.css`: `--event-red/green/orange/pink` as
   real tokens in all four themes (values from the boards). `apps/desktop/src/lib/eventColors.ts`
@@ -87,8 +106,6 @@ the separate step 2b commit. TodayPanel.tsx is unchanged.
   `types.ts`.
 
 ## Not started
-- `CalendarPage.tsx` tying header + views + side panel ("[" mini calendar) + footer + global keys (1-4, N, G, Q, T, PgUp/PgDn, ?, [).
-- Remove legacy views (`components/MonthView.tsx`, `WeekView.tsx`, `DayView.tsx`, `AgendaView.tsx`) and their CSS when CalendarPage lands in 2b.
 - MiniCalendar rewrite (single tab stop, arrows, `.mm` styles).
 - Dialogs v2 (GoalDialog, EventDialog per boards; reset on open, Enter/Esc, delete confirm, reminder needs time, custom repeat ≥1 day, aria-live, keep `initialEndTime`, accept a draft with title/allDay/colour).
 - Goals Mine page, goal stats (weekly ring, streak) with tests, Shared tab "coming soon".
@@ -119,7 +136,7 @@ the separate step 2b commit. TodayPanel.tsx is unchanged.
 1. DONE: import `styles/fx.css` and new `fx-app.css` in `src/index.css`.
 2a. DONE: rewrite App onto Sidebar + sections; Today is independent. Keep legacy
     calendar views temporarily so this is a separate working commit.
-2b. Write CalendarPage; delete legacy views/CSS; compare CW/CD/CM/CA (bg first).
+2b. DONE: CalendarPage and legacy deletion. Formal board comparison still due.
 3. Dialogs v2, then Goals Mine (+ `lib/goalStats.ts` tests), Settings tabs.
 4. MiniCalendar side panel, empty-state passthrough, icons/tray.
 5. Every commit: frozen install, tsc in all three packages, Vitest in desktop

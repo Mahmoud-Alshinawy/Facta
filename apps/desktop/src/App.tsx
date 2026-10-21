@@ -1,10 +1,6 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import { format, addMonths, addDays, getISOWeek } from "date-fns";
-import { Plus, ChevronLeft, ChevronRight, LogOut } from "lucide-react";
-import MonthView from "@/components/MonthView";
-import DayView from "@/components/DayView";
-import WeekView from "@/components/WeekView";
-import AgendaView from "@/components/AgendaView";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { format, getISOWeek } from "date-fns";
+import { Plus, LogOut } from "lucide-react";
 import TodayPanel from "@/components/TodayPanel";
 import GoalsPanel from "@/components/GoalsPanel";
 import WidgetManager from "@/components/WidgetManager";
@@ -14,7 +10,8 @@ import EventDialog from "@/components/EventDialog";
 import GoalDialog from "@/components/GoalDialog";
 import Sidebar, { nextSidebarMode, sidebarRootClass, type SidebarMode, type Section } from "@/components/shell/Sidebar";
 import { CheatSheet } from "@/components/shell/Shortcuts";
-import type { CalendarView } from "@/components/calendar/types";
+import type { CalendarView, EventDraft } from "@/components/calendar/types";
+import CalendarPage from "@/components/calendar/CalendarPage";
 import { useEvents, type CalendarEvent } from "@/hooks/useEvents";
 import { useGoals } from "@/hooks/useGoals";
 import { useAuth } from "@/hooks/useAuth";
@@ -29,7 +26,7 @@ export default function App() {
   const [section, setSection] = useState<Section>("today");
   const [view, setView] = useState<CalendarView>("week");
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [eventDraft, setEventDraft] = useState<EventDraft>();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogInitialDate, setDialogInitialDate] = useState<string | undefined>();
   const [dialogInitialTime, setDialogInitialTime] = useState<string | undefined>();
@@ -148,6 +145,7 @@ export default function App() {
 
   const openNew = useCallback((date?: string, time?: string, endTime?: string) => {
     setEditingEvent(null);
+    setEventDraft(undefined);
     setDialogInitialDate(date ?? format(selectedDate, "yyyy-MM-dd"));
     setDialogInitialTime(time);
     setDialogInitialEnd(endTime);
@@ -163,6 +161,7 @@ export default function App() {
 
   const openEdit = useCallback((event: CalendarEvent) => {
     setEditingEvent(event);
+    setEventDraft(undefined);
     setDialogInitialDate(undefined);
     setDialogInitialTime(undefined);
     setDialogInitialEnd(undefined);
@@ -177,19 +176,11 @@ export default function App() {
     }
   }, [editingEvent, addEvent, updateEvent]);
 
-  const navigate = useCallback((dir: -1 | 1) => {
-    const next = view === "month" ? addMonths(selectedDate, dir)
-      : addDays(selectedDate, dir * (view === "week" ? 7 : view === "agenda" ? 14 : 1));
-    setSelectedDate(next);
-    setCurrentMonth(next);
-  }, [view, selectedDate]);
-
-  const goToday = useCallback(() => {
-    const today = new Date();
-    setSelectedDate(today);
-    setCurrentMonth(today);
-  }, []);
-
+  const openDraft = useCallback((draft?: EventDraft) => {
+    openNew(draft?.date, draft?.startTime, draft?.endTime);
+    setEventDraft(draft);
+  }, [openNew]);
+  const calendarActions = useMemo(() => ({ newEvent: openDraft, editEvent: openEdit, newGoal: openNewGoal }), [openDraft, openEdit, openNewGoal]);
   // Page shortcuts never act underneath a modal or while entering text.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -204,23 +195,15 @@ export default function App() {
       if (key === "?") { e.preventDefault(); setCheatOpen(true); }
       else if (key === "/") { e.preventDefault(); setSearchOpen(true); }
       else if (section === "today" && key === "n") { e.preventDefault(); openNewGoal(); }
-      else if (section === "calendar") {
-        const views: Record<string, CalendarView> = { "1": "day", "2": "week", "3": "month", "4": "agenda" };
-        if (views[key]) { e.preventDefault(); setView(views[key]); }
-        else if (key === "n") { e.preventDefault(); openNew(); }
-        else if (key === "g") { e.preventDefault(); openNewGoal(format(selectedDate, "yyyy-MM-dd")); }
-        else if (key === "t") { e.preventDefault(); goToday(); }
-      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [section, dialogOpen, goalDialogOpen, searchOpen, cheatOpen, openNew, openNewGoal, selectedDate, goToday]);
+  }, [section, dialogOpen, goalDialogOpen, searchOpen, cheatOpen, openNew, openNewGoal, selectedDate]);
 
   if (authLoading) return <div className="flex min-h-screen items-center justify-center bg-background text-foreground"><span className="text-sm text-muted-foreground">Loading…</span></div>;
   if (!user) return <AuthScreen />;
 
   const changeSection = (next: Section) => { setCheatOpen(false); setSection(next); };
-  const openDay = (date: Date) => { setSelectedDate(date); setCurrentMonth(date); setView("day"); };
 
   return (
     <div className={`fx ${sidebarRootClass(sidebarMode)}`}>
@@ -243,34 +226,8 @@ export default function App() {
           </div>
         </>}
 
-        {/* Legacy views stay mounted until CalendarPage lands in step 2b. */}
-        {section === "calendar" && <>
-          <header className="hd">
-            <h1>{view === "month" ? format(currentMonth, "MMMM yyyy") : view === "agenda" ? "Upcoming" : format(selectedDate, "EEEE, d MMMM")}</h1>
-            <div className="flex items-center gap-1.5" role="group" aria-label="Navigate">
-              <button type="button" className="ctl ctl-icon" aria-label="Previous period" onClick={() => navigate(-1)}><ChevronLeft size={16} /></button>
-              <button type="button" className="ctl" onClick={goToday}>Today</button>
-              <button type="button" className="ctl ctl-icon" aria-label="Next period" onClick={() => navigate(1)}><ChevronRight size={16} /></button>
-            </div>
-            <div className="flex-1" />
-            <div className="seg" role="radiogroup" aria-label="Calendar view">
-              {(["day", "week", "month", "agenda"] as const).map((id, i) => <button key={id} type="button" role="radio" aria-checked={view === id}
-                title={`${id[0].toUpperCase() + id.slice(1)} (${i + 1})`} onClick={() => setView(id)}>
-                {id[0].toUpperCase() + id.slice(1)}<span className="mono">{i + 1}</span>
-              </button>)}
-            </div>
-            <button type="button" className="ctl" onClick={() => openNew()}><Plus size={16} />New event</button>
-          </header>
-          <div className="min-h-0 flex-1 overflow-hidden bg-background">
-            {view === "month" && <MonthView currentMonth={currentMonth} selectedDate={selectedDate} events={events}
-              onSelectDate={setSelectedDate} onNavigate={(d) => { setSelectedDate(d); setCurrentMonth(d); }}
-              onNewEvent={openNew} onNewGoal={openNewGoal} onEditEvent={openEdit} />}
-            {view === "week" && <WeekView selectedDate={selectedDate} events={events} onSelectDate={openDay}
-              onNavigate={(d) => { setSelectedDate(d); setCurrentMonth(d); }} onNewEvent={openNew} onNewGoal={openNewGoal} onEditEvent={openEdit} />}
-            {view === "day" && <DayView selectedDate={selectedDate} events={events} onNewEvent={openNew} onEditEvent={openEdit} />}
-            {view === "agenda" && <AgendaView events={events} goals={goals} onNewEvent={openNew} onEditEvent={openEdit} onToggleGoal={toggleComplete} />}
-          </div>
-        </>}
+        {section === "calendar" && <CalendarPage anchor={selectedDate} view={view} onAnchor={setSelectedDate} onView={setView}
+          actions={calendarActions} keyboardBlocked={dialogOpen || goalDialogOpen || searchOpen || cheatOpen} />}
         {section === "goals" && <GoalsPanel />}
         {section === "settings" && <div className="flex-1 overflow-auto p-8">
           <h2 className="mb-6 text-xl font-semibold">Settings</h2>
@@ -290,9 +247,9 @@ export default function App() {
         initialDate={goalDialogDate ?? format(now, "yyyy-MM-dd")} />
       <EventDialog open={dialogOpen} onClose={() => { setDialogOpen(false); setEditingEvent(null); }}
         onSave={handleSave} onDelete={deleteEvent} initialDate={dialogInitialDate} initialStartTime={dialogInitialTime}
-        initialEndTime={dialogInitialEnd} editEvent={editingEvent} />
+        initialEndTime={dialogInitialEnd} editEvent={editingEvent} draft={eventDraft} />
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} events={events} goals={goals} onSelectEvent={openEdit}
-        onGoToDate={(date, nextView) => { setSelectedDate(date); setCurrentMonth(date); setView(nextView); setSection("calendar"); }} />
+        onGoToDate={(date, nextView) => { setSelectedDate(date); setView(nextView); setSection("calendar"); }} />
       {cheatOpen && <CheatSheet context={section === "goals" ? "goals" : section === "today" ? "today" : "calendar"} onClose={() => setCheatOpen(false)} />}
       <Toaster richColors position="bottom-right" />
     </div>

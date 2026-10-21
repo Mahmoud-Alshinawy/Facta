@@ -20,6 +20,7 @@ interface Props {
   onNewEvent: () => void;
   /** Returns true when the text was used (added, or handed to the dialog). */
   onQuickAdd: (text: string) => boolean;
+  quickAddVisible?: boolean;
 }
 
 export default function CalendarHeader(p: Props) {
@@ -35,7 +36,7 @@ export default function CalendarHeader(p: Props) {
         <button type="button" className="ctl" title="Jump to today (T)" onClick={p.onToday}>Today <span className="kbd">T</span></button>
         <button type="button" className="ctl ctl-icon" aria-label={p.nextLabel} title={`${p.nextLabel} (PgDn)`} onClick={p.onNext}><IconRight /></button>
       </div>
-      <div className="qa hide-s">
+      <div className={`qa${p.quickAddVisible ? "" : " hide-s"}`}>
         <label htmlFor={QUICK_ADD_ID} className="sr-only">Quick add</label>
         <span style={{ position: "absolute", left: 11, top: 10, color: "var(--subtle)", display: "flex" }}><IconPlus size={15} stroke={2.2} /></span>
         <input

@@ -317,7 +317,7 @@ export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpen
   const liveText = `${dayLabel(days[curIdx])}, ${C.full(slot * 30)}${pendKb ? `, new event ${C.range(Math.min(pendKb.a, pendKb.b) * 30, (Math.max(pendKb.a, pendKb.b) + 1) * 30)}. Shift plus arrow down or up changes the length, Enter confirms, Escape cancels` : ""}`;
 
   return (
-    <section style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", position: "relative" }}>
+    <section style={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", flexDirection: "column", position: "relative" }}>
       <div
         ref={scRef}
         className="wk-scroll"

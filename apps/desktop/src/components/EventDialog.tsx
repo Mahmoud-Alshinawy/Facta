@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { X, Trash2, RefreshCw } from "lucide-react";
 import { CalendarEvent, EventColor, EventRepeat, EVENT_REPEAT_META, EVENT_DAY_LABELS } from "@/hooks/useEvents";
 import { format, parseISO } from "date-fns";
+import type { EventDraft } from "./calendar/types";
 
 interface EventDialogProps {
   open: boolean;
@@ -13,6 +14,7 @@ interface EventDialogProps {
   /** End time for a new event (e.g. from drag-create in the Week view); defaults to start + 1 h. */
   initialEndTime?: string;
   editEvent?: CalendarEvent | null;
+  draft?: EventDraft;
 }
 
 const COLORS: { id: EventColor; dot: string; label: string }[] = [
@@ -43,6 +45,7 @@ export default function EventDialog({
   initialStartTime,
   initialEndTime,
   editEvent,
+  draft,
 }: EventDialogProps) {
   const [title, setTitle] = useState("");
   const [date, setDate] = useState(initialDate ?? format(new Date(), "yyyy-MM-dd"));
@@ -71,18 +74,18 @@ export default function EventDialog({
       setRepeatDays(editEvent.repeatDays ?? []);
     } else {
       const st = initialStartTime ?? "09:00";
-      setTitle("");
+      setTitle(draft?.title ?? "");
       setDate(initialDate ?? format(new Date(), "yyyy-MM-dd"));
       setStartTime(st);
       setEndTime(initialEndTime ?? addOneHour(st));
-      setColor("blue");
+      setColor(draft?.color ?? "blue");
       setDescription("");
-      setAllDay(false);
+      setAllDay(draft?.allDay ?? false);
       setRepeat("none");
       setRepeatDays([]);
     }
     setConfirmDelete(false);
-  }, [editEvent, initialDate, initialStartTime, initialEndTime, open]);
+  }, [editEvent, draft, initialDate, initialStartTime, initialEndTime, open]);
 
   function handleStartChange(val: string) {
     setStartTime(val);
