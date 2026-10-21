@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Facta — Calendar, Week</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+<style>
+
+body{margin:0}
+.fx,.fx[data-theme="bg"]{color-scheme:dark;--bg:#060706;--surface:#0C0D0C;--raised:#121412;--raised-2:#191C18;--border:#1A1D1A;--border-strong:#262A25;--control-border:#5F685E;--text:#F1F4F1;--text-2:#A6AEA6;--muted:#868F86;--accent:#22C55E;--accent-hover:#2DD46A;--accent-text:#03210F;--accent-soft:rgba(34,197,94,.10);--accent-border:#1C7E40;--success:#22C55E;--warning:#E0A33B;--danger:#EF5A5A;--danger-soft:rgba(239,90,90,.12);--danger-text:#1A0505;--event-blue:#5B8DEF;--event-purple:#A47CF0;--event-red:#EF6B6B;--event-green:#4CC38A;--event-orange:#F0904A;--event-pink:#EC6FB0;--note-a:#E8C547;--note-b:#5B8DEF;--note-c:#EC6FB0;--note-d:#4CC38A;--text-rgb:241,244,241;--surface-rgb:12,13,12;--logo-tile:#0A0B0A;--logo-mark:#22C55E;--slant:-10deg}
+.fx[data-theme="mid"]{color-scheme:dark;--bg:#04070E;--surface:#090E1A;--raised:#0E1524;--raised-2:#141C30;--border:#161F33;--border-strong:#212C45;--control-border:#55668F;--text:#EEF2FA;--text-2:#A3AECB;--muted:#7D89A8;--accent:#4C8DF6;--accent-hover:#6AA1F8;--accent-text:#04122B;--accent-soft:rgba(76,141,246,.12);--accent-border:#3B6BBB;--success:#4C8DF6;--warning:#E8B04B;--danger:#F06A6A;--danger-soft:rgba(240,106,106,.12);--danger-text:#1F0606;--event-blue:#67C1F5;--event-purple:#A88BF5;--event-red:#F07A7A;--event-green:#52C98F;--event-orange:#F2A05C;--event-pink:#EE7DB8;--note-a:#E8B04B;--note-b:#67C1F5;--note-c:#EE7DB8;--note-d:#52C98F;--text-rgb:238,242,250;--surface-rgb:9,14,26;--logo-tile:#04070E;--logo-mark:#4C8DF6}
+.fx[data-theme="ember"]{color-scheme:dark;--bg:#060504;--surface:#0C0A08;--raised:#120F0D;--raised-2:#191512;--border:#1A1613;--border-strong:#27201C;--control-border:#6E6053;--text:#F6F1EC;--text-2:#B8ADA3;--muted:#938778;--accent:#FF8000;--accent-hover:#FF9426;--accent-text:#1F0E00;--accent-soft:rgba(255,128,0,.12);--accent-border:#A55505;--success:#FF8000;--warning:#E8C547;--danger:#F25F5C;--danger-soft:rgba(242,95,92,.12);--danger-text:#1F0606;--event-blue:#6E9CF0;--event-purple:#B08AF0;--event-red:#F07070;--event-green:#55C08A;--event-orange:#F0A040;--event-pink:#EE78B4;--note-a:#E8C547;--note-b:#6E9CF0;--note-c:#EE78B4;--note-d:#55C08A;--text-rgb:246,241,236;--surface-rgb:12,10,8;--logo-tile:#060504;--logo-mark:#FF8000}
+.fx[data-theme="light"]{color-scheme:light;--bg:#F6F6F3;--surface:#FFFFFF;--raised:#F0F1EC;--raised-2:#E7E9E3;--border:#E3E5DF;--border-strong:#CDD1C8;--control-border:#7E857B;--text:#141713;--text-2:#4E554D;--muted:#626A60;--accent:#15803D;--accent-hover:#166534;--accent-text:#FFFFFF;--accent-soft:rgba(21,128,61,.10);--accent-border:#15803D;--success:#16A34A;--warning:#B45309;--danger:#DC2626;--danger-soft:rgba(220,38,38,.08);--danger-text:#FFFFFF;--event-blue:#2563EB;--event-purple:#7C3AED;--event-red:#DC2626;--event-green:#059669;--event-orange:#EA580C;--event-pink:#DB2777;--note-a:#B45309;--note-b:#2563EB;--note-c:#DB2777;--note-d:#059669;--text-rgb:20,23,19;--surface-rgb:255,255,255;--logo-tile:#15803D;--logo-mark:#FFFFFF}
+
+
+.fx{position:relative;container-type:inline-size;container-name:app;display:flex;height:920px;overflow:hidden;font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased}
+.fx *{box-sizing:border-box}
+:where(.fx) button{color:inherit}
+.fx button{font-family:inherit;cursor:pointer}
+.fx button:focus-visible,.fx input:focus-visible,.fx textarea:focus-visible,.fx [tabindex]:focus-visible{outline:2px solid var(--text);outline-offset:2px}
+.mono{font-family:'Geist Mono',ui-monospace,monospace;font-feature-settings:"tnum"}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.kbd{font-family:'Geist Mono',ui-monospace,monospace;font-size:10.5px;line-height:1;color:var(--muted);border:1px solid var(--border-strong);border-bottom-width:2px;border-radius:5px;padding:3px 5px;background:var(--raised);white-space:nowrap}
+.sec{font-family:'Geist Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.08em;color:var(--muted)}
+/* sidebar */
+.sb{flex:0 0 240px;display:flex;flex-direction:column;gap:22px;padding:22px 14px 18px;background:var(--surface);border-right:1px solid var(--border)}
+.sb .nv{display:flex;align-items:center;gap:12px;height:40px;padding:0 12px;border:0;border-radius:9px;background:transparent;font-size:14px;color:var(--text-2);text-align:left;width:100%}
+.sb .nv:hover{background:var(--raised)}
+.sb .nv[aria-current="page"]{background:var(--raised);color:var(--text);font-weight:500}
+.sb .nv .lbl{flex:1}
+.sb .nv .mk{width:6px;height:6px;border-radius:3px;background:var(--accent)}
+.sb .tdot{width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:14px;background:transparent;border:1.5px solid transparent}
+.sb .tdot:hover{border-color:var(--text-2)}
+.fx.sb-c .sb{flex-basis:64px;align-items:center;padding:20px 8px 16px}
+.fx.sb-c .sb .lbl,.fx.sb-c .sb .mk,.fx.sb-c .sb .sbsearch,.fx.sb-c .sb .wordmark,.fx.sb-c .sb .sync-t,.fx.sb-c .sb .theme-l{display:none}
+.fx.sb-c .sb .nv{width:44px;justify-content:center;padding:0}
+.fx.sb-c .sb .themes{flex-direction:column}
+.fx.sb-c .sb .sbtop{flex-direction:column;padding:0}
+.fx.sb-c .sbtog .i-l{display:none}.fx.sb-c .sbtog .i-r{display:flex}
+.sbtog .i-l{display:flex}.sbtog .i-r{display:none}
+.sbtog{margin-left:auto}
+@container app (max-width:1200px){
+  .fx:not(.sb-o) .sb{flex-basis:64px;align-items:center;padding:20px 8px 16px}
+  .fx:not(.sb-o) .sb .lbl,.fx:not(.sb-o) .sb .mk,.fx:not(.sb-o) .sb .sbsearch,.fx:not(.sb-o) .sb .wordmark,.fx:not(.sb-o) .sb .sync-t,.fx:not(.sb-o) .sb .theme-l{display:none}
+  .fx:not(.sb-o) .sb .nv{width:44px;justify-content:center;padding:0}
+  .fx:not(.sb-o) .sb .themes{flex-direction:column}
+  .fx:not(.sb-o) .sb .sbtop{flex-direction:column;padding:0}
+  .fx:not(.sb-o) .sbtog .i-l{display:none}.fx:not(.sb-o) .sbtog .i-r{display:flex}
+  .side-panel{display:none !important}
+  .hd .hide-s{display:none !important}
+}
+/* controls */
+.ctl{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:36px;padding:0 12px;border-radius:9px;border:1px solid var(--control-border);background:transparent;font-size:13px;font-weight:500;color:var(--text);white-space:nowrap}
+.ctl:hover{background:var(--raised-2);border-color:var(--text-2)}
+.ctl-icon{width:36px;padding:0}
+.ctl[aria-pressed="true"],.ctl[aria-checked="true"]{background:var(--text);color:var(--bg);border-color:var(--text)}
+.b{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;font-size:14px;font-weight:600;line-height:1;white-space:nowrap;transition:background .14s ease,color .14s ease,box-shadow .14s ease,transform .08s ease}
+.b-commit{height:40px;padding:0;border-radius:9px;transform:skewX(var(--slant));overflow:hidden}
+.b-commit > span{transform:skewX(calc(var(--slant) * -1))}
+.b-commit .lab{display:inline-flex;align-items:center;gap:8px;padding:0 16px 0 18px}
+.b-commit .key{height:100%;display:inline-flex;align-items:center;padding:0 12px;font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;font-weight:500;background:rgba(0,0,0,.16);border-left:1px solid rgba(0,0,0,.18);transform:none}
+.b-commit:active{transform:skewX(var(--slant)) scale(.97)}
+.b-primary{background:var(--accent);color:var(--accent-text)}
+.b-primary:hover{background:var(--accent-hover)}
+.b-quiet{height:36px;padding:0 12px;border-radius:9px;background:transparent;color:var(--text-2);font-weight:500;font-size:13px}
+.b-quiet:hover{background:var(--raised-2);color:var(--text)}
+.b-del{height:36px;padding:0 12px;border-radius:9px;background:transparent;color:var(--danger);font-weight:500;font-size:13px}
+.b-del:hover{background:var(--danger-soft)}
+.b-icon{width:32px;height:32px;padding:0;border-radius:8px;background:transparent;color:var(--muted)}
+.b-icon:hover{background:var(--raised-2);color:var(--text)}
+.opt{height:32px;padding:0;border-radius:8px;transform:skewX(var(--slant));background:transparent;box-shadow:inset 0 0 0 1px var(--control-border);color:var(--text-2);font-size:13px;font-weight:500;border:0}
+.opt > span{display:inline-flex;align-items:center;gap:8px;padding:0 14px;transform:skewX(calc(var(--slant) * -1))}
+.opt:hover{box-shadow:inset 0 0 0 1px var(--text-2);color:var(--text)}
+.opt[aria-checked="true"],.opt[aria-pressed="true"]{background:var(--text);color:var(--bg);box-shadow:none}
+.seg{display:flex;gap:2px;padding:3px;background:var(--surface);border:1px solid var(--border);border-radius:11px}
+.seg button{display:flex;align-items:center;gap:8px;height:30px;padding:0 11px;border:0;border-radius:8px;font-size:13px;font-weight:500;background:transparent;color:var(--text-2)}
+.seg button:hover{color:var(--text);background:var(--raised)}
+.seg button[aria-pressed="true"],.seg button[aria-checked="true"]{background:var(--text);color:var(--bg)}
+.seg button .mono{font-size:10.5px;color:var(--muted)}
+.seg button[aria-pressed="true"] .mono,.seg button[aria-checked="true"] .mono{color:var(--bg);opacity:.7}
+.cb{width:16px;height:16px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:5px;border:0;background:transparent;box-shadow:inset 0 0 0 1.5px var(--control-border);flex:0 0 auto;color:var(--accent-text)}
+.cb[aria-checked="true"]{background:var(--accent);box-shadow:none}
+.cb:hover{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.cb[aria-checked="true"]:hover{box-shadow:none}
+.evdot{width:7px;height:7px;border-radius:4px;background:var(--c);flex:0 0 auto}
+.pop{position:absolute;z-index:20;display:flex;flex-direction:column;background:var(--raised);border:1px solid var(--border-strong);border-radius:14px;box-shadow:0 18px 40px rgba(0,0,0,.45);overflow:hidden}
+.scrim{position:absolute;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55)}
+.modal{display:flex;flex-direction:column;background:var(--raised);border:1px solid var(--border-strong);border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.55);overflow:hidden}
+.toast{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:10px;height:38px;padding:0 14px;border-radius:10px;background:var(--text);color:var(--surface);font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.hd{display:flex;flex-wrap:wrap;align-items:center;gap:14px 18px;padding:16px 28px;border-bottom:1px solid var(--border);min-height:72px}
+.hd h1{margin:0;font-size:24px;font-weight:600;letter-spacing:-.03em;line-height:1.15}
+.qa{position:relative;flex:1 1 220px;max-width:380px}
+.qa input{width:100%;height:36px;padding:0 44px 0 34px;background:var(--surface);border:1px solid var(--control-border);border-radius:9px;color:var(--text);font:inherit;font-size:13px}
+.qa input::placeholder{color:var(--muted)}
+.foot{display:flex;align-items:center;gap:16px;height:32px;padding:0 28px;border-top:1px solid var(--border);background:var(--surface);font-size:12px;color:var(--muted);overflow:hidden;white-space:nowrap}
+.foot span.k{display:inline-flex;align-items:center;gap:6px}
+.side-panel{flex:0 0 272px;display:flex;flex-direction:column;gap:18px;padding:18px 16px;border-right:1px solid var(--border);overflow:hidden;background:var(--bg)}
+.mm{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;text-align:center}
+.mm .d{height:28px;padding:0;border:0;border-radius:14px;background:transparent;font-size:12px;color:var(--text);position:relative}
+.mm .d:hover{background:var(--raised)}
+.mm .d.out{color:var(--muted);opacity:.55}
+.mm .d.in-week{background:var(--raised)}
+.mm .d.today{background:var(--text);color:var(--bg);font-weight:600}
+.mm .d .dt{position:absolute;left:50%;bottom:2px;width:3px;height:3px;border-radius:2px;margin-left:-1.5px;background:var(--text-2)}
+.mm .d.today .dt{background:var(--bg)}
+
+
+.wk-scroll{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;position:relative;outline:none;background:var(--bg)}
+.wk-scroll:focus-visible{outline:2px solid var(--text);outline-offset:-2px}
+.stk{position:sticky;top:0;z-index:12;background:var(--bg);border-bottom:1px solid var(--border-strong)}
+.g7{display:grid;grid-template-columns:56px repeat(7,minmax(0,1fr))}
+.hc{display:flex;align-items:center;gap:8px;height:56px;padding:0 10px;border-left:1px solid var(--border);min-width:0}
+.hc.is-wk{background:rgba(var(--text-rgb),.03)}
+.hc .dw{font-size:10.5px;letter-spacing:.08em;color:var(--muted)}
+.hc .dn{min-width:26px;height:26px;padding:0 4px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600}
+.hc.is-today .dn{background:var(--text);color:var(--bg)}
+.hc.is-today .dw{color:var(--text)}
+.hc.is-past .dn{color:var(--text-2);font-weight:500}
+.hc .warn{margin-left:auto;display:flex;align-items:center;gap:4px;color:var(--warning);font-size:11px;font-weight:500}
+.gut{font-family:'Geist Mono',ui-monospace,monospace;font-size:9.5px;letter-spacing:.08em;color:var(--muted);display:flex;align-items:flex-start;justify-content:flex-end;padding:7px 8px 0 0}
+.band{display:grid;grid-template-columns:56px repeat(7,minmax(0,1fr));grid-auto-rows:22px;row-gap:3px;padding:6px 0 6px}
+.ad{position:relative;display:flex;align-items:center;min-width:0;height:22px;margin:0 3px;padding:0 8px 0 12px;border:0;border-radius:6px;background:color-mix(in srgb,var(--c) 26%,var(--surface));color:var(--text);font-size:12px;font-weight:500;text-align:left;overflow:hidden}
+.ad:hover{background:color-mix(in srgb,var(--c) 36%,var(--surface))}
+.ad .ee{position:absolute;left:0;top:0;bottom:0;width:7px;background:var(--c);clip-path:polygon(0 0,100% 0,3px 100%,0 100%)}
+.ad.cl{border-top-left-radius:0;border-bottom-left-radius:0;margin-left:0;padding-left:10px}
+.ad.cl .ee{display:none}
+.ad.cr{border-top-right-radius:0;border-bottom-right-radius:0;margin-right:0}
+.ad .at{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.goalrow{display:grid;grid-template-columns:56px repeat(7,minmax(0,1fr));border-top:1px solid var(--border);height:54px}
+.gcell{display:flex;flex-direction:column;gap:2px;padding:5px 6px;min-width:0;border-left:1px solid var(--border);overflow:hidden}
+.gcell.is-wk{background:rgba(var(--text-rgb),.03)}
+.gl{display:flex;align-items:center;gap:6px;height:20px;min-width:0;font-size:11px;color:var(--text-2)}
+.gl .cb{width:14px;height:14px;border-radius:4px}
+.gl .gt{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.gl.more{padding-left:20px;color:var(--muted)}
+.gbody{position:relative}
+.hlab{position:absolute;left:0;width:56px;padding-right:10px;text-align:right;font-size:10px;line-height:14px;color:var(--muted);pointer-events:none}
+.hl{position:absolute;left:56px;right:0;height:1px;background:var(--border)}
+.hl.half{background:rgba(var(--text-rgb),.045)}
+.cols{position:absolute;left:56px;right:0;top:0;bottom:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.col{position:relative;border-left:1px solid var(--border);cursor:crosshair}
+.col.is-wk{background:rgba(var(--text-rgb),.03)}
+.ev{position:absolute;display:flex;padding:0;border:0;border-radius:6px;overflow:hidden;text-align:left;background:color-mix(in srgb,var(--c) 24%,var(--surface));color:var(--text);container-type:inline-size;z-index:2;cursor:pointer}
+.ev:hover{background:color-mix(in srgb,var(--c) 34%,var(--surface))}
+.ev .ee{position:absolute;left:0;top:0;bottom:0;width:7px;background:var(--c);clip-path:polygon(0 0,100% 0,3px 100%,0 100%)}
+.ev .in{position:relative;display:flex;flex-direction:column;gap:1px;min-width:0;padding:3px 6px 3px 12px;width:100%}
+.ev.row .in{flex-direction:row;align-items:center;gap:6px;padding-top:0;padding-bottom:0}
+.ev .et{font-size:12px;font-weight:500;line-height:1.2;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.ev .em{font-family:'Geist Mono',ui-monospace,monospace;font-size:10.5px;line-height:1.2;color:var(--text-2);white-space:nowrap}
+.ev.wrapt .et{white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+.ev.dense .in{padding-left:10px;padding-right:3px}
+.ev.dense .et{font-size:10.5px}
+.ev.is-past{background:color-mix(in srgb,var(--c) 13%,var(--surface));color:var(--text-2)}
+.ev.is-past .ee{opacity:.65}
+.ev.is-origin{background:transparent;box-shadow:inset 0 0 0 1.5px var(--control-border);opacity:.7}
+.ev.is-origin .ee{display:none}
+.ev.is-lift{z-index:9;background:color-mix(in srgb,var(--c) 40%,var(--surface));box-shadow:0 10px 26px rgba(0,0,0,.45),0 0 0 2px var(--text)}
+.ev .ci{position:absolute;right:4px;top:3px;display:flex;color:var(--warning)}
+.grip{position:absolute;left:50%;width:28px;height:5px;margin-left:-14px;border-radius:3px;background:var(--text);z-index:3}
+@container (max-width:110px){.ev .et.wrap{white-space:nowrap;display:block}.ev .em{display:none}}
+.gc{position:absolute;z-index:3;display:flex;align-items:center;gap:6px;padding:0 7px;height:22px;border-radius:7px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--control-border);font-size:11.5px;font-weight:500;overflow:hidden}
+.gc .gt{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.gc.is-done .gt{text-decoration:line-through;text-decoration-color:rgba(var(--text-rgb),.5)}
+.gc .em{font-family:'Geist Mono',ui-monospace,monospace;font-size:10px;color:var(--text-2)}
+.gc .cb{width:14px;height:14px;border-radius:4px}
+.ghost{position:absolute;left:3px;right:3px;z-index:6;border-radius:7px;background:rgba(var(--text-rgb),.10);box-shadow:inset 0 0 0 1.5px var(--text);padding:5px 8px;display:flex;flex-direction:column;gap:2px;pointer-events:none}
+.ghost .gt1{font-size:12px;font-weight:600}
+.ghost .gt2{font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;color:var(--text)}
+.ovl{position:absolute;left:2px;right:2px;z-index:7;border-radius:6px;box-shadow:inset 0 0 0 1.5px var(--warning);pointer-events:none}
+.ovl span{position:absolute;right:4px;top:-9px;display:flex;align-items:center;gap:4px;height:18px;padding:0 6px;border-radius:9px;background:var(--bg);box-shadow:inset 0 0 0 1px var(--warning);font-size:10.5px;font-weight:500;color:var(--warning)}
+.wk-scroll:not(:focus) .curs{display:none}
+.curs{position:absolute;z-index:5;border-radius:6px;box-shadow:inset 0 0 0 2px var(--text);pointer-events:none}
+.nowL{position:absolute;left:56px;right:0;height:1px;background:rgba(var(--text-rgb),.26);z-index:1;pointer-events:none}
+.nowT{position:absolute;height:2px;background:var(--text);z-index:1;pointer-events:none;border-radius:1px}
+.nowD{position:absolute;width:9px;height:9px;border-radius:5px;background:var(--text);z-index:5;pointer-events:none}
+.nowP{position:absolute;left:6px;width:44px;height:18px;border-radius:9px;background:var(--text);color:var(--bg);font-size:10.5px;font-weight:500;line-height:18px;text-align:center;z-index:6;pointer-events:none}
+.tipP{position:absolute;z-index:10;display:flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:12px;background:var(--text);color:var(--bg);font-size:11px;font-weight:500;pointer-events:none;white-space:nowrap}
+.qin{width:100%;height:40px;padding:0 12px;background:var(--bg);border:1px solid var(--control-border);border-radius:9px;color:var(--text);font:inherit;font-size:15px;font-weight:500}
+.qin:focus{outline:2px solid var(--text);outline-offset:1px}
+.pchip{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 9px;border-radius:7px;background:var(--raised-2);font-size:12px;color:var(--text)}
+.swc{width:22px;height:22px;padding:0;border:0;border-radius:11px;background:var(--c);box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+.swc[aria-checked="true"]{box-shadow:0 0 0 2px var(--raised),0 0 0 4px var(--text)}
+.chrow{display:flex;align-items:center;gap:10px;min-height:30px;font-size:13px}
+.empty-card{position:absolute;z-index:8;left:50%;top:210px;transform:translateX(-50%);width:380px;display:flex;flex-direction:column;gap:14px;padding:20px 22px;border-radius:14px;background:var(--raised);border:1px solid var(--border-strong);box-shadow:0 18px 40px rgba(0,0,0,.35)}
+.crow{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:30px;font-size:13px;color:var(--text-2)}
+.crow .ks{display:flex;gap:4px}
+
+</style>
+</helmet>
+<div class="fx {{ rootCls }}" data-theme="{{ themeKey }}">
+  <aside class="sb" aria-label="Sidebar">
+    <div class="sbtop" style="display:flex;align-items:center;gap:10px;padding:0 6px">
+      <svg width="30" height="30" viewBox="0 0 120 120" role="img" aria-label="Facta logo"><rect width="120" height="120" rx="27" style="fill: var(--logo-tile)"></rect><polygon style="fill: var(--logo-mark); stroke: var(--logo-mark)" stroke-width="7" stroke-linejoin="round" points="46,31 93,31 90.4,41 55.4,41 51.3,57 73,57 70.9,65 49.2,65 42.5,91 30.5,91"></polygon></svg>
+      <span class="wordmark" style="font-size:19px;font-weight:700;letter-spacing:-.03em">Facta</span>
+      <button type="button" class="b b-icon sbtog" aria-label="Collapse or expand sidebar" title="Collapse or expand sidebar" onClick="{{ sbToggle }}"><span class="i-l"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></span><span class="i-r"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></span></button>
+    </div>
+    <div class="sbsearch" style="position:relative">
+      <label for="sb-search" class="sr-only">Search</label>
+      <span style="position:absolute;left:12px;top:12px;color:var(--muted);display:flex"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg></span>
+      <input id="sb-search" type="search" placeholder="Search" style="width:100%;height:40px;padding:0 70px 0 36px;background:var(--bg);border:1px solid var(--control-border);border-radius:10px;color:var(--text);font:inherit;font-size:14px">
+      <span class="kbd" style="position:absolute;right:8px;top:11px">Ctrl K</span>
+    </div>
+    <nav aria-label="Main" style="display:flex;flex-direction:column;gap:2px">
+<button type="button" class="nv" title="Today"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg><span class="lbl">Today</span></button>
+<button type="button" class="nv" title="Calendar" aria-current="page"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg><span class="lbl">Calendar</span><span class="mk"></span></button>
+<button type="button" class="nv" title="Goals"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg><span class="lbl">Goals</span></button>
+<button type="button" class="nv" title="Notes"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6M8 13h8M8 17h5"></path></svg><span class="lbl">Notes</span></button>
+<button type="button" class="nv" title="Diary"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14Z"></path><path d="M9 8h7"></path></svg><span class="lbl">Diary</span></button>
+<button type="button" class="nv" title="Settings"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9M14 17H5"></path><circle cx="17" cy="17" r="3"></circle><circle cx="7" cy="7" r="3"></circle></svg><span class="lbl">Settings</span></button>
+    </nav>
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:12px">
+      <div role="group" aria-label="Theme" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 2px 0 8px">
+        <span class="theme-l" style="font-size:12px;font-weight:500;color:var(--muted)">Theme</span>
+        <div class="themes" style="display:flex;align-items:center;gap:4px">
+          <sc-for list="{{ themes }}" as="t" hint-placeholder-count="4">
+            <button type="button" class="tdot" title="{{ t.name }}" aria-label="{{ t.name }} theme" aria-pressed="{{ t.pressed }}" onClick="{{ t.pick }}" style="border-color: {{ t.ring }}">
+              <span aria-hidden="true" style="width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-strong);background:{{ t.sw1 }}"><span style="width:7px;height:7px;border-radius:4px;background:{{ t.sw2 }}"></span></span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 8px 0;border-top:1px solid var(--border);font-size:12px;color:var(--muted)">
+        <span style="width:7px;height:7px;border-radius:4px;background:var(--success)"></span><span class="sync-t">Synced · just now</span>
+      </div>
+    </div>
+  </aside>
+  <main style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <header class="hd">
+      <div style="display:flex;flex-direction:column;gap:2px;min-width:150px">
+        <span class="mono" style="font-size:11px;color:var(--muted);letter-spacing:.06em">{{ subtitle }}</span>
+        <h1>{{ title }}</h1>
+      </div>
+      <div role="group" aria-label="Navigate" style="display:flex;gap:6px;align-items:center">
+        <button type="button" class="ctl ctl-icon" aria-label="{{ prevLabel }}" title="{{ prevLabel }}" onClick="{{ prev }}"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></button>
+        <button type="button" class="ctl" title="Jump to today (T)" onClick="{{ goToday }}">Today <span class="kbd">T</span></button>
+        <button type="button" class="ctl ctl-icon" aria-label="{{ nextLabel }}" title="{{ nextLabel }}" onClick="{{ next }}"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></button>
+      </div>
+      <div class="qa hide-s">
+        <label for="qa-in" class="sr-only">Quick add</label>
+        <span style="position:absolute;left:11px;top:10px;color:var(--muted);display:flex"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"></path></svg></span>
+        <input id="qa-in" type="text" autocomplete="off" placeholder="Quick add: Lunch with Alex Fri 1pm" value="{{ q }}" onChange="{{ onQ }}" onKeyDown="{{ onQKey }}">
+        <span class="kbd" style="position:absolute;right:8px;top:9px">Q</span>
+      </div>
+      <div style="flex:1"></div>
+      <div class="seg" role="radiogroup" aria-label="Calendar view">
+        <sc-for list="{{ views }}" as="v" hint-placeholder-count="4">
+          <button type="button" role="radio" aria-checked="{{ v.checked }}" title="{{ v.name }} ({{ v.key }})" onClick="{{ v.pick }}"><span>{{ v.name }}</span><span class="mono hide-s">{{ v.key }}</span></button>
+        </sc-for>
+      </div>
+      <button type="button" class="b b-commit b-primary" onClick="{{ newEvent }}"><span class="lab"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"></path></svg>New event</span><span class="key hide-s">N</span></button>
+    </header>
+    <div style="flex:1;min-height:0;display:flex">
+      <section style="flex:1;min-width:0;display:flex;flex-direction:column;position:relative">
+        <div class="wk-scroll" role="grid" tabindex="0" aria-label="{{ gridLabel }}" ref="{{ scRef }}" onKeyDown="{{ onKey }}" onMouseUp="{{ dragEnd }}">
+          <div class="stk">
+            <div class="g7">
+              <div class="gut" style="align-items:center;padding:0 8px 0 0">{{ weekNo }}</div>
+              <sc-for list="{{ heads }}" as="h" hint-placeholder-count="7">
+                <div class="{{ h.cls }}" role="columnheader" aria-label="{{ h.aria }}">
+                  <span class="mono dw">{{ h.dow }}</span><span class="dn">{{ h.n }}</span>
+                  <sc-if value="{{ h.conflict }}" hint-placeholder-val="{{ false }}"><span class="warn" title="Two events overlap"> <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg> Overlap</span></sc-if>
+                </div>
+              </sc-for>
+            </div>
+            <div class="band" style="{{ bandStyle }}">
+              <div class="gut" style="grid-row: 1 / span {{ laneCount }}">ALL DAY</div>
+              <sc-if value="{{ noAllDay }}" hint-placeholder-val="{{ false }}"><span style="grid-column: 2 / span 7; grid-row: 1; display:flex; align-items:center; padding-left:12px; font-size:12px; color:var(--muted)">All-day events appear here</span></sc-if>
+              <sc-for list="{{ allday }}" as="a" hint-placeholder-count="2">
+                <button type="button" class="{{ a.cls }}" style="{{ a.style }}" title="{{ a.tip }}" tabindex="-1" onClick="{{ a.open }}"><span class="ee" aria-hidden="true"></span><span class="at">{{ a.title }}</span></button>
+              </sc-for>
+            </div>
+            <div class="goalrow">
+              <div class="gut" style="padding-top:8px">GOALS</div>
+              <sc-for list="{{ goalCells }}" as="gc" hint-placeholder-count="7">
+                <div class="{{ gc.cls }}">
+                  <sc-for list="{{ gc.items }}" as="g" hint-placeholder-count="2">
+                    <div class="gl"><button type="button" class="cb" role="checkbox" tabindex="-1" aria-checked="{{ g.checked }}" aria-label="{{ g.cbLabel }}" onClick="{{ g.toggle }}"><sc-if value="{{ g.done }}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></sc-if></button><span class="gt" style="text-decoration: {{ g.deco }}">{{ g.title }}</span></div>
+                  </sc-for>
+                  <sc-if value="{{ gc.hasMore }}" hint-placeholder-val="{{ false }}"><div class="gl more mono">{{ gc.moreText }}</div></sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div class="gbody" style="height: {{ bodyH }}px">
+            <sc-for list="{{ lines }}" as="l" hint-placeholder-count="48"><div class="{{ l.cls }}" style="top: {{ l.top }}px"></div></sc-for>
+            <sc-for list="{{ hours }}" as="h" hint-placeholder-count="24"><span class="mono hlab" style="top: {{ h.top }}px; opacity: {{ h.op }}">{{ h.label }}</span></sc-for>
+            <div class="cols">
+              <sc-for list="{{ cols }}" as="c" hint-placeholder-count="7">
+                <div class="{{ c.cls }}" aria-label="{{ c.aria }}" onMouseDown="{{ c.down }}" onMouseMove="{{ c.move }}">
+                  <sc-for list="{{ c.items }}" as="it" hint-placeholder-count="3">
+                    <div>
+                      <sc-if value="{{ it.isEv }}" hint-placeholder-val="{{ true }}">
+                        <button type="button" class="{{ it.cls }}" tabindex="-1" style="{{ it.style }}" aria-label="{{ it.aria }}" onMouseDown="{{ it.stop }}" onClick="{{ it.open }}">
+                          <span class="ee" aria-hidden="true"></span>
+                          <span class="in"><span class="{{ it.etCls }}">{{ it.title }}</span><span class="em">{{ it.time }}</span></span>
+                          <sc-if value="{{ it.conflict }}" hint-placeholder-val="{{ false }}"><span class="ci" title="Overlaps another event"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg></span></sc-if>
+                          <sc-if value="{{ it.lift }}" hint-placeholder-val="{{ false }}"><span class="grip" style="top: 3px"></span><span class="grip" style="bottom: 3px"></span></sc-if>
+                        </button>
+                      </sc-if>
+                      <sc-if value="{{ it.isGoal }}" hint-placeholder-val="{{ false }}">
+                        <div class="{{ it.cls }}" style="{{ it.style }}" onMouseDown="{{ it.stop }}"><button type="button" class="cb" role="checkbox" tabindex="-1" aria-checked="{{ it.checked }}" aria-label="{{ it.cbLabel }}" onClick="{{ it.toggle }}"><sc-if value="{{ it.done }}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></sc-if></button><span class="gt">{{ it.title }}</span><span class="em">{{ it.time }}</span></div>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{ c.hasGhost }}" hint-placeholder-val="{{ false }}"><div class="ghost" style="{{ c.ghostStyle }}"><span class="gt1">New event</span><span class="gt2">{{ c.ghostLabel }}</span></div></sc-if>
+                  <sc-if value="{{ c.hasOvl }}" hint-placeholder-val="{{ false }}"><div class="ovl" style="{{ c.ovlStyle }}"><span><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg> {{ c.ovlLabel }}</span></div></sc-if>
+                  <sc-if value="{{ c.hasTip }}" hint-placeholder-val="{{ false }}"><div class="tipP" style="{{ c.tipStyle }}">{{ c.tipText }}</div></sc-if>
+                </div>
+              </sc-for>
+            </div>
+                        <sc-if value="{{ hasNow }}" hint-placeholder-val="{{ true }}">
+              <span class="mono nowP" style="top: {{ now.pillTop }}px">{{ now.label }}</span>
+            </sc-if>
+            <sc-if value="{{ showCursor }}" hint-placeholder-val="{{ true }}"><div class="curs" style="{{ cursorStyle }}"></div></sc-if>
+
+            <sc-if value="{{ showQA }}" hint-placeholder-val="{{ false }}">
+              <div class="pop" role="dialog" aria-label="Quick add event" style="{{ qaStyle }}">
+                <div style="display:flex;flex-direction:column;gap:10px;padding:14px 14px 10px">
+                  <label for="qa-title" class="sr-only">Event title</label>
+                  <input id="qa-title" class="qin" type="text" autocomplete="off" value="{{ qaText }}" onChange="{{ onQaText }}" onKeyDown="{{ onQaKey }}">
+                  <div style="display:flex;flex-wrap:wrap;gap:6px">
+                    <span class="pchip"><svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg> {{ qa.dateText }}</span>
+                    <span class="pchip mono"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg> {{ qa.timeText }}</span>
+                    <span class="pchip mono">{{ qa.durText }}</span>
+                  </div>
+                  <div role="radiogroup" aria-label="Colour" style="display:flex;align-items:center;gap:10px">
+                    <sc-for list="{{ qa.colors }}" as="k" hint-placeholder-count="6"><button type="button" class="swc" role="radio" aria-checked="{{ k.checked }}" aria-label="{{ k.name }}" onClick="{{ k.pick }}" style="--c: {{ k.v }}"></button></sc-for>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-top:1px solid var(--border-strong);background:var(--surface)">
+                  <button type="button" class="b b-quiet" onClick="{{ qaMore }}">More options <span class="kbd">Ctrl Enter</span></button>
+                  <span style="flex:1"></span>
+                  <button type="button" class="b b-quiet" onClick="{{ qaClose }}">Cancel <span class="kbd">Esc</span></button>
+                  <button type="button" class="b b-commit b-primary" onClick="{{ qaAdd }}"><span class="lab">Add event</span><span class="key">Enter</span></button>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ showDetail }}" hint-placeholder-val="{{ false }}">
+              <div class="pop" role="dialog" aria-label="Event details" style="{{ dStyle }}">
+                <div style="display:flex;align-items:flex-start;gap:10px;padding:14px 12px 6px 16px">
+                  <span class="evdot" style="--c: {{ d.color }};margin-top:7px;width:10px;height:10px;border-radius:5px"></span>
+                  <div style="flex:1;min-width:0"><h3 style="margin:0;font-size:17px;font-weight:600;letter-spacing:-.01em">{{ d.title }}</h3></div>
+                  <button type="button" class="b b-icon" aria-label="Close" onClick="{{ dClose }}"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:2px;padding:2px 16px 12px 36px">
+                  <div class="chrow"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg><span>{{ d.when }}</span><span class="mono" style="color:var(--muted);font-size:12px">{{ d.dur }}</span></div>
+                  <div class="chrow"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4"></path><path d="M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4"></path><path d="M21 13v1a4 4 0 0 1-4 4H3"></path></svg><span>{{ d.repeat }}</span></div>
+                  <div class="chrow"><span class="evdot" style="--c: {{ d.color }}"></span><span>{{ d.colorName }}</span></div>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;padding:8px 10px;border-top:1px solid var(--border-strong);background:var(--surface)">
+                  <button type="button" class="ctl" onClick="{{ dEdit }}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg> Edit <span class="kbd">E</span></button>
+                  <span style="flex:1"></span>
+                  <button type="button" class="b b-del" onClick="{{ dDelete }}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg> Delete <span class="kbd">Del</span></button>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+              <div class="empty-card">
+                <div style="display:flex;flex-direction:column;gap:4px"><h2 style="margin:0;font-size:17px;font-weight:600">A clear week</h2><span style="font-size:13px;color:var(--text-2)">Click a time slot, drag across it, or type a line and press Enter.</span></div>
+                <div class="crow"><span>Quick add</span><span class="mono" style="font-size:12px;color:var(--text)">Lunch with Alex Fri 1pm</span></div>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <button type="button" class="b b-commit b-primary" onClick="{{ newEvent }}"><span class="lab">New event</span><span class="key">N</span></button>
+                  <button type="button" class="ctl" onClick="{{ newGoal }}">New goal <span class="kbd">G</span></button>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </section>
+    </div>
+    <div class="foot" aria-label="Keyboard hints">
+      <span class="k"><span class="kbd">←</span><span class="kbd">→</span>day</span>
+      <span class="k"><span class="kbd">↑</span><span class="kbd">↓</span>30 min</span>
+      <span class="k"><span class="kbd">Shift</span><span class="kbd">↑</span><span class="kbd">↓</span>stretch a new slot</span>
+      <span class="k"><span class="kbd">Enter</span>open, toggle or create</span>
+      <span class="k"><span class="kbd">N</span>event</span>
+      <span class="k"><span class="kbd">G</span>goal</span>
+      <span class="k"><span class="kbd">Q</span>quick add</span>
+      <span style="flex:1"></span>
+      <span class="k"><span class="kbd">?</span>all shortcuts</span>
+    </div>
+  </main>
+
+  <sc-if value="{{ cheat }}" hint-placeholder-val="{{ false }}">
+    <div class="scrim" onClick="{{ closeCheat }}">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cs-h" style="width:760px;max-width:calc(100% - 40px)" onKeyDown="{{ cheatKey }}" onClick="{{ stopClick }}">
+        <div style="display:flex;align-items:center;gap:12px;padding:18px 22px;border-bottom:1px solid var(--border-strong)">
+          <h2 id="cs-h" style="margin:0;font-size:18px;font-weight:600;flex:1">Keyboard shortcuts</h2>
+          <span style="font-size:12px;color:var(--muted)">Calendar</span>
+          <button type="button" class="b b-icon" aria-label="Close shortcuts" onClick="{{ closeCheat }}"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 40px;padding:20px 22px 22px">
+          <sc-for list="{{ cheatGroups }}" as="g" hint-placeholder-count="5">
+            <section aria-label="{{ g.name }}">
+              <div class="sec" style="margin-bottom:6px">{{ g.name }}</div>
+              <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="4">
+                <div class="crow"><span>{{ r.what }}</span><span class="ks"><sc-for list="{{ r.keys }}" as="k" hint-placeholder-count="2"><span class="kbd">{{ k }}</span></sc-for></span></div>
+              </sc-for>
+            </section>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}"><div class="toast" role="status">{{ toast }}</div></sc-if>
+  <div class="sr-only" aria-live="polite">{{ liveText }}</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme": {"editor": "enum", "options": ["bg", "mid", "ember", "light"], "default": "bg"}, "state": {"editor": "enum", "options": ["default", "drag", "move", "conflict", "allday", "busy", "empty", "quickadd", "detail", "cheat"], "default": "default"}, "weekStart": {"editor": "enum", "options": ["sun", "mon", "sat"], "default": "sun"}, "timeFormat": {"editor": "enum", "options": ["24h", "12h"], "default": "24h"}, "$preview": {"width": 1440, "height": 920}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const st = props.state || 'default';
+    this._sc = null; this._inited = false; this._t = null; this._stickyH = 150;
+    this.listenPrefs();
+    this.state = {
+      theme: props.theme || 'bg', anchor: st === 'empty' ? '2026-11-04' : '2026-10-17', mmY: null, mmM: null, toggled: {}, toast: '', q: '',
+      cur: { key: null, slot: 26 }, cheat: st === 'cheat',
+      drag: st === 'drag' ? { key: '2026-10-14', a: 28, b: 30, held: true } : null,
+      qa: st === 'quickadd' ? { key: '2026-10-17', a: 36, b: 37 } : null, qaText: 'Dinner with Sara 7pm', qaColor: 'blue',
+      detail: st === 'detail' ? { key: '2026-10-17', id: 'tm' } : null
+    };
+  }
+
+  sbVals() {
+    const m = this.state.sbMode || '';
+    return { rootCls: m === 'c' ? 'sb-c' : (m === 'o' ? 'sb-o' : ''), sbToggle: (e) => {
+      const el = e && e.currentTarget && e.currentTarget.closest ? e.currentTarget.closest('.fx') : null;
+      const narrow = !!el && el.getBoundingClientRect().width <= 1200; const cur = this.state.sbMode || '';
+      const collapsed = narrow ? cur !== 'o' : cur === 'c';
+      this.setState({ sbMode: collapsed ? (narrow ? 'o' : '') : (narrow ? '' : 'c') }); } };
+  }
+  prefs() {
+    let o = {}; try { o = (typeof window !== 'undefined' && window.__factaPrefs) || JSON.parse(window.localStorage.getItem('facta.prefs') || '{}') || {}; } catch (e) { o = {}; }
+    const p = this.props || {};
+    const wsKey = ['sun', 'mon', 'sat'].indexOf(o.weekStart) >= 0 ? o.weekStart : (['sun', 'mon', 'sat'].indexOf(p.weekStart) >= 0 ? p.weekStart : 'sun');
+    const tf = (o.timeFormat === '12h' || o.timeFormat === '24h') ? o.timeFormat : (p.timeFormat === '12h' ? '12h' : '24h');
+    return { wsKey, ws: { sun: 0, mon: 1, sat: 6 }[wsKey], tf };
+  }
+  listenPrefs() {
+    this._onPrefs = () => { try { this.setState({ prefTick: Date.now() }); } catch (e) {} };
+    try { window.addEventListener('facta-prefs', this._onPrefs); window.addEventListener('storage', this._onPrefs); } catch (e) {}
+  }
+  unlistenPrefs() { try { window.removeEventListener('facta-prefs', this._onPrefs); window.removeEventListener('storage', this._onPrefs); } catch (e) {} }
+  componentWillUnmount() { this.unlistenPrefs(); }
+  say(text) {
+    this.setState({ toast: text });
+    if (this._t) clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ toast: '' }), 2400);
+  }
+  themeDots() {
+    const cur = this.state.theme;
+    return [{ id: 'bg', name: 'Black & green', sw1: '#060706', sw2: '#22C55E' }, { id: 'mid', name: 'Midnight', sw1: '#04070E', sw2: '#4C8DF6' },
+      { id: 'ember', name: 'Ember', sw1: '#060504', sw2: '#FF8000' }, { id: 'light', name: 'Light', sw1: '#F6F6F3', sw2: '#15803D' }]
+      .map((t) => ({ ...t, pressed: cur === t.id ? 'true' : 'false', ring: cur === t.id ? 'var(--text)' : 'transparent', pick: () => this.setState({ theme: t.id }) }));
+  }
+
+  applyScroll(top) {
+    const go = () => { const el = this._sc; if (el && el.scrollHeight > el.clientHeight) el.scrollTop = top; };
+    try { requestAnimationFrame(() => requestAnimationFrame(go)); } catch (e) {}
+    setTimeout(go, 60); setTimeout(go, 250); setTimeout(go, 700);
+  }
+  renderVals() {
+    const s = this.state, p = this.props, st = p.state || 'default', VIEW = 'week';
+
+    const PF = this.prefs();
+    const TODAY = { y: 2026, m: 9, d: 17 }, NOW_MIN = 13 * 60 + 12;
+    const pad = (n) => (n < 10 ? '0' : '') + n;
+    const keyOf = (y, m, d) => y + '-' + pad(m + 1) + '-' + pad(d);
+    const fmt = (min, mode) => { const h = Math.floor(min / 60), mm = min % 60;
+      if (PF.tf === '24h') return pad(h) + ':' + pad(mm);
+      const h12 = h % 12 === 0 ? 12 : h % 12, hh = h % 24, ap = hh < 12 ? 'AM' : 'PM';
+      if (mode === 'hour') return h12 + ' ' + ap;
+      if (mode === 'chip') return h12 + (mm ? ':' + pad(mm) : '') + (hh < 12 ? 'a' : 'p');
+      return h12 + ':' + pad(mm) + ' ' + ap; };
+    const rng = (a, b, mode) => fmt(a, mode) + '–' + fmt(b, mode);
+    const dur = (a, b) => { const d = b - a, h = Math.floor(d / 60), m = d % 60; return (h ? h + 'h' : '') + (h && m ? ' ' : '') + (m ? m + 'm' : ''); };
+    const T = (x) => { const q = x.split(':'); return Number(q[0]) * 60 + Number(q[1]); };
+    const DOW = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+    const DOWL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const MON = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const MONS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const COL = { blue: 'var(--event-blue)', red: 'var(--event-red)', green: 'var(--event-green)', orange: 'var(--event-orange)', purple: 'var(--event-purple)', pink: 'var(--event-pink)' };
+    const COLN = { blue: 'Blue', red: 'Red', green: 'Green', orange: 'Orange', purple: 'Purple', pink: 'Pink' };
+    const ev = (id, title, a, b, c) => ({ id, title, s: T(a), e: T(b), c });
+    const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    const todayD = new Date(TODAY.y, TODAY.m, TODAY.d);
+    // Sample timed events. Only October 2026 has data.
+    const eventsFor = (y, m, d) => {
+      if (y !== 2026 || m !== 9) return [];
+      const X = {
+        11: [ev('sg', 'Study group', '18:00', '19:30', 'orange')],
+        12: [ev('alg', 'Algorithms lecture', '09:00', '10:30', 'blue'), ev('ss', 'Study session', '14:00', '15:30', 'orange')],
+        13: [ev('lab', 'Database lab', '13:00', '15:00', 'green'), ev('gym', 'Gym', '18:00', '19:00', 'orange')],
+        14: [ev('alg2', 'Algorithms lecture', '09:00', '10:30', 'blue'), ev('adv', 'Advisor meeting', '12:00', '12:30', 'purple'), ev('gp', 'Group project', '15:00', '17:00', 'purple')],
+        15: [ev('sem', 'Seminar', '10:00', '11:00', 'purple'), ev('lab2', 'Database lab', '13:00', '15:00', 'green'), ev('lib', 'Library', '15:30', '17:00', 'orange'), ev('gym2', 'Gym', '17:30', '18:30', 'orange')],
+        16: [ev('chk', 'Project check-in', '11:00', '11:30', 'purple'), ev('lun', 'Lunch with Alex', '12:30', '13:30', 'pink')],
+        17: [ev('dbl', 'Database lecture', '10:00', '11:30', 'blue'), ev('tm', 'Team meeting', '16:00', '17:00', 'purple')],
+        18: [ev('sg2', 'Study group', '18:00', '19:30', 'orange')],
+        19: [ev('alg3', 'Algorithms lecture', '09:00', '10:30', 'blue')],
+        20: [ev('car', 'Career fair', '10:00', '12:00', 'pink'), ev('ss2', 'Study session', '16:00', '17:30', 'orange')],
+        21: [ev('oh', 'Office hours', '11:00', '12:00', 'green'), ev('lun2', 'Lunch', '12:30', '13:15', 'orange'), ev('gp2', 'Group project', '14:00', '16:00', 'purple'), ev('rev', 'Review session', '16:30', '17:30', 'red'), ev('gym3', 'Gym', '18:00', '19:00', 'orange')],
+        22: [ev('mid', 'Midterm: Databases', '10:00', '12:00', 'red')],
+        26: [ev('demo', 'Project demo', '14:00', '15:00', 'pink')],
+        29: [ev('tm2', 'Team meeting', '16:00', '17:00', 'purple')]
+      };
+      return (X[d] || []).slice().sort((a, b) => a.s - b.s);
+    };
+    // All-day and multi-day events: [id, title, first day, last day, colour]
+    const ALLDAY = [['ex', 'Exam prep week', 12, 15, 'orange'], ['dl', 'Project deadline', 15, 15, 'red'], ['hk', 'Hackathon', 14, 16, 'purple'], ['bd', 'Mom’s birthday', 19, 19, 'pink'], ['fb', 'Fall break', 24, 25, 'green'], ['mw', 'Midterm week', 26, 28, 'red']];
+    const goalsFor = (y, m, d) => {
+      if (y !== 2026 || m !== 9) return [];
+      const dow = new Date(y, m, d).getDay();
+      if (d === 17) return [
+        { id: 'lab', title: 'Finish lab report', time: '14:00', done: false }, { id: 'gma', title: 'Call grandma', time: '', done: false },
+        { id: 'gym', title: 'Gym — push day', time: '', done: true }, { id: 'read', title: 'Read 20 pages', time: '', done: true },
+        { id: 'sql', title: 'Review SQL joins', time: '09:00', done: true }, { id: 'pl', title: 'Water the plants', time: '', done: true }];
+      const past = d < 17;
+      const dn = (id) => past && ((d * 7 + id.length * 3) % 9 !== 0);
+      const g = [{ id: 'gym', title: 'Gym — push day', time: '', done: dn('gym') }];
+      if (dow >= 1 && dow <= 5) g.push({ id: 'read', title: 'Read 20 pages', time: dow === 3 ? '20:00' : '', done: dn('read') });
+      if (dow === 6) g.push({ id: 'pl', title: 'Water the plants', time: '', done: dn('pl') });
+      if (d % 4 === 0) g.push({ id: 'asg', title: 'Submit assignment', time: '', done: dn('asg') });
+      return g;
+    };
+    const isoWeek = (y, m, d) => { const t = new Date(Date.UTC(y, m, d)); const n = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - n); const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1)); return Math.ceil(((t - y0) / 86400000 + 1) / 7); };
+    const lab = (dt) => DOW[dt.getDay()].charAt(0) + DOW[dt.getDay()].slice(1).toLowerCase() + ' ' + dt.getDate() + ' ' + MONS[dt.getMonth()];
+
+    const H = 52, G = 56, MINV = Math.ceil(22 / H * 60);
+    const sp = s.anchor.split('-').map(Number), anchorD = new Date(sp[0], sp[1] - 1, sp[2]);
+    const ws = new Date(anchorD.getFullYear(), anchorD.getMonth(), anchorD.getDate() - ((anchorD.getDay() - PF.ws + 7) % 7));
+    const days = []; for (let i = 0; i < 7; i++) days.push(new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() + i));
+    const weekDays = days;
+    const todayIdx = days.findIndex((d) => sameDay(d, todayD));
+    const dkey = (dt) => keyOf(dt.getFullYear(), dt.getMonth(), dt.getDate());
+    const idxOfKey = (k) => days.findIndex((d) => dkey(d) === k);
+    const empty = st === 'empty';
+    const extra = {};
+    if (st === 'conflict') extra[13] = [ev('car2', 'Career fair', '12:30', '14:00', 'pink')];
+    if (st === 'busy') extra[14] = [ev('oh2', 'Office hours', '09:30', '10:30', 'green'), ev('lun3', 'Lunch', '12:00', '13:00', 'orange'), ev('rev2', 'Review session', '13:30', '15:30', 'red'), ev('call', 'Call with advisor', '14:00', '15:00', 'pink')];
+    const dayEvents = (dt) => empty ? [] : eventsFor(dt.getFullYear(), dt.getMonth(), dt.getDate()).concat(dt.getMonth() === 9 ? (extra[dt.getDate()] || []) : []);
+    const dayGoals = (dt) => empty ? [] : goalsFor(dt.getFullYear(), dt.getMonth(), dt.getDate()).map((g) => ({ ...g, done: s.toggled[dkey(dt) + ':' + g.id] ? !g.done : g.done }));
+    const toggleGoal = (dt, g) => (e) => { if (e && e.stopPropagation) e.stopPropagation(); const k = dkey(dt) + ':' + g.id; this.setState({ toggled: { ...s.toggled, [k]: !s.toggled[k] } }); };
+    const stop = (e) => { if (e && e.stopPropagation) e.stopPropagation(); };
+
+    // ---- all-day band (0 / 1 / 3 stacked chips depending on state) ----
+    const showAll = empty ? [] : (st === 'allday' ? ['ex', 'hk', 'dl'] : ['ex']);
+    const adRaw = ALLDAY.filter((a) => showAll.indexOf(a[0]) >= 0).map((a) => {
+      const f = days.findIndex((d) => d.getMonth() === 9 && d.getDate() >= a[2] && d.getDate() <= a[3]);
+      let to = -1; days.forEach((d, i) => { if (d.getMonth() === 9 && d.getDate() >= a[2] && d.getDate() <= a[3]) to = i; });
+      return f < 0 ? null : { id: a[0], title: a[1], c: a[4], from: f, to, contL: days[f].getDate() > a[2], contR: days[to].getDate() < a[3], lane: 0 }; }).filter(Boolean);
+    adRaw.sort((x, y) => x.from - y.from || (y.to - y.from) - (x.to - x.from));
+    const laneEnd = []; adRaw.forEach((a) => { let l = 0; while (laneEnd[l] !== undefined && laneEnd[l] >= a.from) l++; laneEnd[l] = a.to; a.lane = l; });
+    const laneCount = Math.max(1, laneEnd.length);
+    const allday = adRaw.map((a) => ({ title: a.title, tip: a.title + ', all day', cls: 'ad' + (a.contL ? ' cl' : '') + (a.contR ? ' cr' : ''),
+      style: '--c: ' + COL[a.c] + '; grid-column: ' + (a.from + 2) + ' / span ' + (a.to - a.from + 1) + '; grid-row: ' + (a.lane + 1), open: () => this.say('Open event · ' + a.title) }));
+
+    // ---- untimed goals row ----
+    const goalCells = days.map((dt, i) => { const gs = dayGoals(dt).filter((g) => !g.time);
+      const shown = gs.length > 2 ? gs.slice(0, 1) : gs.slice(0, 2);
+      return { cls: 'gcell' + (dt.getDay() === 0 || dt.getDay() === 6 ? ' is-wk' : ''),
+        items: shown.map((g) => ({ title: g.title, done: g.done, checked: g.done ? 'true' : 'false', deco: g.done ? 'line-through' : 'none', cbLabel: (g.done ? 'Mark not done: ' : 'Mark done: ') + g.title + ', ' + lab(dt), toggle: toggleGoal(dt, g) })),
+        hasMore: gs.length > 2, moreText: '+' + (gs.length - 1) + ' more' }; });
+
+    // ---- timed blocks per column ----
+    const layout = (items) => {
+      items.sort((a, b) => a.s - b.s || b.ve - a.ve);
+      let cl = [], cEnd = -1;
+      const flush = () => { const ends = []; cl.forEach((it) => { let i = ends.findIndex((x) => x <= it.s); if (i < 0) { i = ends.length; ends.push(0); } ends[i] = it.ve; it.col = i; }); cl.forEach((it) => { it.cols = ends.length; }); cl = []; cEnd = -1; };
+      items.forEach((it) => { if (cl.length && it.s >= cEnd) flush(); cl.push(it); cEnd = Math.max(cEnd, it.ve); });
+      flush(); return items;
+    };
+    const slotRange = (a, b, snap) => { let lo = Math.min(a, b), hi = Math.max(a, b); if (snap && lo === hi) { lo = Math.floor(lo / 2) * 2; hi = lo + 1; } return [lo, hi]; };
+    const slotOf = (e) => { const r = e.currentTarget.getBoundingClientRect(); return Math.max(0, Math.min(47, Math.floor((e.clientY - r.top) / (H / 2)))); };
+    const colX = (i) => 'left: calc(' + G + 'px + (100% - ' + G + 'px) * ' + (i / 7).toFixed(5) + ' + 1px); width: calc((100% - ' + G + 'px) / 7 - 2px)';
+    const mv = st === 'move' ? { fromKey: '2026-10-14', id: 'gp', toKey: '2026-10-15', s: T('16:00'), e: T('18:00') } : null;
+    const cols = days.map((dt, i) => {
+      const key = dkey(dt), isToday = sameDay(dt, todayD), isPastDay = dt < todayD && !isToday;
+      const evs = dayEvents(dt);
+      const evItems = evs.map((e) => ({ kind: 'ev', id: e.id, title: e.title, s: e.s, e: e.e, ve: Math.max(e.e, e.s + MINV), c: e.c, past: isPastDay || (isToday && e.e <= NOW_MIN), origin: !!(mv && mv.fromKey === key && mv.id === e.id) }));
+      if (mv && mv.toKey === key) { const src = eventsFor(2026, 9, 14).find((x) => x.id === mv.id); evItems.push({ kind: 'ev', id: 'lift', title: src.title, s: mv.s, e: mv.e, ve: mv.e, c: src.c, past: false, lift: true }); }
+      const gItems = dayGoals(dt).filter((g) => g.time).map((g) => { const gs = T(g.time); return { kind: 'goal', id: g.id, title: g.title, s: gs, e: gs + MINV, ve: gs + MINV, done: g.done, g, past: isPastDay || (isToday && gs < NOW_MIN) }; });
+      const items = layout(evItems.concat(gItems));
+      // overlap detection between events only
+      const evOnly = items.filter((x) => x.kind === 'ev' && !x.origin);
+      const clash = new Set(); let ovl = null;
+      for (let a = 0; a < evOnly.length; a++) for (let b = a + 1; b < evOnly.length; b++) { const A = evOnly[a], B = evOnly[b]; const lo = Math.max(A.s, B.s), hi = Math.min(A.e, B.e); if (lo < hi) { clash.add(A.id); clash.add(B.id); if (!ovl) ovl = [lo, hi]; } }
+      const view = items.map((it) => {
+        const top = it.s / 60 * H + 1, h = Math.max(22, (it.e - it.s) / 60 * H - 2), cc = it.cols;
+        const style = 'top: ' + top.toFixed(1) + 'px; height: ' + (it.kind === 'goal' ? 22 : h).toFixed(1) + 'px; left: calc(' + (it.col / cc * 100).toFixed(3) + '% + 2px); width: calc(' + (100 / cc).toFixed(3) + '% - ' + (cc > 1 ? 5 : 4) + 'px); --c: ' + (it.c ? COL[it.c] : 'var(--text)');
+        if (it.kind === 'goal') return { isEv: false, isGoal: true, cls: 'gc' + (it.done ? ' is-done' : '') + (it.past && !it.done ? ' is-past' : ''), style, stop, title: it.title, time: fmt(it.s, 'chip'), done: it.done,
+          checked: it.done ? 'true' : 'false', cbLabel: (it.done ? 'Mark not done: ' : 'Mark done: ') + it.title, toggle: toggleGoal(dt, it.g) };
+        const row = h < 34, narrow = cc >= 2;
+        return { isEv: true, isGoal: false, title: it.title, style, stop, time: row && narrow ? '' : (row ? fmt(it.s, 'chip') : rng(it.s, it.e, 'chip')),
+          cls: 'ev' + (row ? ' row' : '') + (it.past ? ' is-past' : '') + (cc >= 3 ? ' dense' : '') + (it.origin ? ' is-origin' : '') + (it.lift ? ' is-lift' : ''),
+          etCls: narrow ? 'et wrap' : 'et', aria: it.title + ', ' + lab(dt) + ', ' + rng(it.s, it.e) + (clash.has(it.id) ? ', overlaps another event' : '') + (it.past ? ', past' : ''),
+          conflict: clash.has(it.id) && !it.lift && cc > 1 && h > 28, lift: !!it.lift, open: (e) => { stop(e); this.setState({ detail: { key, id: it.id } }); } };
+      });
+      // ghost (drag to create) + overlap marker + move tooltip
+      const dr = s.drag && s.drag.key === key ? s.drag : null;
+      let ghost = { hasGhost: false, ghostStyle: '', ghostLabel: '' };
+      if (dr) { const r = slotRange(dr.a, dr.b, true); ghost = { hasGhost: true, ghostStyle: 'top: ' + (r[0] * H / 2 + 1) + 'px; height: ' + ((r[1] - r[0] + 1) * H / 2 - 2) + 'px', ghostLabel: rng(r[0] * 30, (r[1] + 1) * 30) }; }
+      if (s.qa && s.qa.key === key) { const r = slotRange(s.qa.a, s.qa.b, false); ghost = { hasGhost: true, ghostStyle: 'top: ' + (r[0] * H / 2 + 1) + 'px; height: ' + ((r[1] - r[0] + 1) * H / 2 - 2) + 'px', ghostLabel: rng(r[0] * 30, (r[1] + 1) * 30) }; }
+      const showOvl = st === 'conflict' && ovl;
+      const tip = mv && mv.toKey === key ? { hasTip: true, tipStyle: 'left: 8px; top: ' + (mv.s / 60 * H - 30) + 'px', tipText: lab(dt) + ' · ' + rng(mv.s, mv.e) } : { hasTip: false, tipStyle: '', tipText: '' };
+      return { cls: 'col' + (dt.getDay() === 0 || dt.getDay() === 6 ? ' is-wk' : ''), aria: DOWL[dt.getDay()] + ' ' + dt.getDate() + ' ' + MON[dt.getMonth()] + (isToday ? ', today' : ''), items: view, ...ghost, ...tip,
+        hasOvl: !!showOvl, ovlStyle: showOvl ? 'top: ' + (ovl[0] / 60 * H) + 'px; height: ' + ((ovl[1] - ovl[0]) / 60 * H) + 'px' : '', ovlLabel: showOvl ? 'Overlap ' + dur(ovl[0], ovl[1]) : '',
+        overlap: clash.size > 0,
+        down: (e) => { if (e.button) return; const sl = slotOf(e); this.setState({ drag: { key, a: sl, b: sl }, cur: { key, slot: sl }, qa: null, detail: null }); },
+        move: (e) => { if (!s.drag || s.drag.key !== key || s.drag.held) return; const sl = slotOf(e); if (sl !== s.drag.b) this.setState({ drag: { ...s.drag, b: sl } }); } };
+    });
+    const heads = days.map((dt, i) => ({ dow: DOW[dt.getDay()], n: String(dt.getDate()), conflict: cols[i].overlap, aria: cols[i].aria,
+      cls: 'hc' + (sameDay(dt, todayD) ? ' is-today' : '') + (dt < todayD && !sameDay(dt, todayD) ? ' is-past' : '') + (dt.getDay() === 0 || dt.getDay() === 6 ? ' is-wk' : '') }));
+
+    // ---- hours, lines, now ----
+    const hasNow = todayIdx >= 0, nowTop = NOW_MIN / 60 * H;
+    const hours = []; for (let h = 0; h < 24; h++) hours.push({ label: fmt(h * 60, 'hour'), top: h === 0 ? 2 : h * H - 7, op: hasNow && Math.abs(h * H - nowTop) < 14 ? '0' : '1' });
+    const lines = []; for (let h = 1; h < 24; h++) { lines.push({ top: h * H, cls: 'hl' }); } for (let h = 0; h < 24; h++) lines.push({ top: h * H + H / 2, cls: 'hl half' });
+    const now = { lineTop: nowTop, today: 'top: ' + (nowTop - 0.5) + 'px; left: calc(' + G + 'px + (100% - ' + G + 'px) * ' + (todayIdx / 7).toFixed(5) + '); width: calc((100% - ' + G + 'px) / 7)',
+      dot: 'top: ' + (nowTop - 4) + 'px; left: calc(' + G + 'px + (100% - ' + G + 'px) * ' + (todayIdx / 7).toFixed(5) + ' - 4px)', pillTop: nowTop - 9, label: fmt(NOW_MIN) };
+
+    // ---- cursor, header, title ----
+    const curIdx = s.cur.key ? Math.max(0, idxOfKey(s.cur.key)) : Math.max(0, todayIdx), cur = { day: curIdx, slot: s.cur.slot };
+    const showCursor = !s.drag && !s.qa && !s.detail && !s.cheat;
+    const m0 = days[0], m6 = days[6];
+    const wk = isoWeek(days[3].getFullYear(), days[3].getMonth(), days[3].getDate());
+    const title = MON[days[3].getMonth()] + ' ' + days[3].getFullYear();
+    const subtitle = 'WEEK ' + wk + ' · ' + m0.getDate() + (m0.getMonth() !== m6.getMonth() ? ' ' + MONS[m0.getMonth()].toUpperCase() : '') + '–' + m6.getDate() + ' ' + MONS[m6.getMonth()].toUpperCase();
+    const shiftWeek = (n) => { const t = new Date(ws.getFullYear(), ws.getMonth(), ws.getDate() + n * 7); this.setState({ anchor: dkey(t), drag: null, qa: null, detail: null, cur: { key: null, slot: s.cur.slot } }); };
+    const thisWeek = () => this.setState({ anchor: dkey(todayD), drag: null, qa: null, detail: null, cur: { key: null, slot: s.cur.slot } });
+
+    const VIEWS = [['day', 'Day', '1'], ['week', 'Week', '2'], ['month', 'Month', '3'], ['agenda', 'Agenda', '4']];
+    const views = VIEWS.map((v) => ({ name: v[1], key: v[2], checked: v[0] === VIEW ? 'true' : 'false', pick: () => this.say(v[1] + ' view') }));
+
+
+    const mmY = s.mmY != null ? s.mmY : anchorD.getFullYear(), mmM = s.mmM != null ? s.mmM : anchorD.getMonth();
+    const mmFirst = (new Date(mmY, mmM, 1).getDay() - PF.ws + 7) % 7;
+    const mmStart = new Date(mmY, mmM, 1 - mmFirst);
+    const inWeek = (dt) => weekDays && weekDays.some((x) => sameDay(x, dt));
+    const mmCells = []; for (let i = 0; i < 42; i++) { const dt = new Date(mmStart.getFullYear(), mmStart.getMonth(), mmStart.getDate() + i);
+      const has = dt.getMonth() === 9 && dt.getFullYear() === 2026 && (eventsFor(2026, 9, dt.getDate()).length > 0);
+      mmCells.push({ n: String(dt.getDate()), dot: has, aria: lab(dt) + (sameDay(dt, todayD) ? ', today' : ''),
+        cls: 'd' + (dt.getMonth() !== mmM ? ' out' : '') + (sameDay(dt, todayD) ? ' today' : '') + (inWeek(dt) && !sameDay(dt, todayD) ? ' in-week' : ''),
+        pick: () => { this.setState({ anchor: keyOf(dt.getFullYear(), dt.getMonth(), dt.getDate()) }); } }); }
+    const shiftMM = (n) => { const t = new Date(mmY, mmM + n, 1); this.setState({ mmY: t.getFullYear(), mmM: t.getMonth() }); };
+    const sdEv = eventsFor(anchorD.getFullYear(), anchorD.getMonth(), anchorD.getDate());
+    const sdGoals = goalsFor(anchorD.getFullYear(), anchorD.getMonth(), anchorD.getDate()).map((g) => ({ ...g, done: s.toggled[keyOf(anchorD.getFullYear(), anchorD.getMonth(), anchorD.getDate()) + ':' + g.id] ? !g.done : g.done }));
+    const sdItems = sdEv.map((e) => ({ at: e.s, isEv: true, isGoal: false, color: COL[e.c], title: e.title, time: fmt(e.s, 'chip'), fg: 'var(--text)', deco: 'none' }))
+      .concat(sdGoals.map((g) => ({ at: g.time ? T(g.time) : 24 * 60, isEv: false, isGoal: true, title: g.title, time: g.time ? fmt(T(g.time), 'chip') : '', done: g.done, checked: g.done ? 'true' : 'false',
+        fg: 'var(--text)', deco: g.done ? 'line-through' : 'none', cbLabel: (g.done ? 'Mark not done: ' : 'Mark done: ') + g.title,
+        toggle: () => { const k = keyOf(anchorD.getFullYear(), anchorD.getMonth(), anchorD.getDate()) + ':' + g.id; this.setState({ toggled: { ...s.toggled, [k]: !s.toggled[k] } }); } })))
+      .sort((a, b) => a.at - b.at);
+    const side = { title: MON[mmM] + ' ' + mmY, prev: () => shiftMM(-1), next: () => shiftMM(1),
+      dows: [0, 1, 2, 3, 4, 5, 6].map((i) => DOW[(PF.ws + i) % 7].charAt(0)), cells: mmCells,
+      dayTitle: (sameDay(anchorD, todayD) ? 'Today, ' : '') + lab(anchorD), dayCount: sdEv.length + ' events · ' + sdGoals.filter((g) => g.done).length + '/' + sdGoals.length + ' goals',
+      items: sdItems.slice(0, 7), hasMore: sdItems.length > 7, moreText: '+' + (sdItems.length - 7) + ' more' };
+
+    // ---- quick-add parsing (Fantastical-style natural language) ----
+    const parseQuick = (text, defDate, defStart) => {
+      let t = ' ' + text + ' ', date = null, start = null, len = 60, m;
+      m = t.match(/\s(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i);
+      if (m) { let h = Number(m[1]) % 12; if (/pm/i.test(m[3])) h += 12; start = h * 60 + Number(m[2] || 0); t = t.replace(m[0], ' '); }
+      else { m = t.match(/\s(?:at\s+)?([01]?\d|2[0-3]):([0-5]\d)\b/); if (m) { start = Number(m[1]) * 60 + Number(m[2]); t = t.replace(m[0], ' '); } }
+      m = t.match(/\sfor\s+(\d+(?:\.\d+)?)\s*(h|hr|hrs|hour|hours|m|min|mins|minutes)\b/i);
+      if (m) { len = /^h/i.test(m[2]) ? Math.round(Number(m[1]) * 60) : Number(m[1]); t = t.replace(m[0], ' '); }
+      m = t.match(/\s(today|tomorrow|sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tue|tues|wed|thu|thur|thurs|fri|sat)\b/i);
+      if (m) { const w = m[1].toLowerCase().slice(0, 3); if (w === 'tod') date = todayD; else if (w === 'tom') date = new Date(TODAY.y, TODAY.m, TODAY.d + 1);
+        else { const diff = (['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].indexOf(w) - todayD.getDay() + 7) % 7; date = new Date(TODAY.y, TODAY.m, TODAY.d + diff); } t = t.replace(m[0], ' '); }
+      const title = t.replace(/\s+(at|on|for)\s*$/i, '').replace(/\s+/g, ' ').trim();
+      const sM = start != null ? start : defStart;
+      return { title, date: date || defDate, start: sM, end: Math.min(24 * 60, sM + len), len, hadTime: start != null };
+    };
+
+    // ---- quick-add popover (opens from a slot click or drag) ----
+    const qaSlot = s.qa; let showQA = false, qa = { dateText: '', timeText: '', durText: '', colors: [] }, qaStyle = '';
+    const colHoriz = (i) => (i <= 3 ? 'left: calc(' + G + 'px + (100% - ' + G + 'px) * ' + ((i + 1) / 7).toFixed(5) + ' + 8px)' : 'right: calc((100% - ' + G + 'px) * ' + ((7 - i) / 7).toFixed(5) + ' + 8px)');
+    if (qaSlot && idxOfKey(qaSlot.key) >= 0) { showQA = true; const qi = idxOfKey(qaSlot.key), r = slotRange(qaSlot.a, qaSlot.b, false);
+      const pq = parseQuick(s.qaText, days[qi], r[0] * 30), tEnd = pq.hadTime ? pq.end : (r[1] + 1) * 30;
+      qa = { dateText: lab(pq.date), timeText: rng(pq.start, tEnd), durText: dur(pq.start, tEnd),
+        colors: Object.keys(COL).map((k) => ({ name: COLN[k], v: COL[k], checked: s.qaColor === k ? 'true' : 'false', pick: () => this.setState({ qaColor: k }) })) };
+      qaStyle = colHoriz(qi) + '; top: ' + Math.max(8, r[0] * H / 2 - 20) + 'px; width: 348px'; }
+    const closeQA = () => this.setState({ qa: null, drag: null });
+    const addQA = () => { const qi = qaSlot ? idxOfKey(qaSlot.key) : 0; const r = qaSlot ? slotRange(qaSlot.a, qaSlot.b, false) : [0, 1]; const pq = parseQuick(s.qaText, days[Math.max(0, qi)], r[0] * 30);
+      this.setState({ qa: null, drag: null }); this.say('Event added · ' + (pq.title || 'Untitled') + ' · ' + lab(pq.date) + ' · ' + rng(pq.start, pq.hadTime ? pq.end : (r[1] + 1) * 30)); };
+
+    // ---- event detail popover ----
+    let showDetail = false, d = { title: '', color: '', when: '', dur: '', repeat: '', colorName: '' }, dStyle = '';
+    if (s.detail) { const di = idxOfKey(s.detail.key); const src = di >= 0 ? dayEvents(days[di]).find((x) => x.id === s.detail.id) : null;
+      if (src) { showDetail = true; d = { title: src.title, color: COL[src.c], when: lab(days[di]) + ' · ' + rng(src.s, src.e), dur: dur(src.s, src.e), repeat: src.id === 'tm' ? 'Every week' : 'Does not repeat', colorName: COLN[src.c] };
+        dStyle = colHoriz(di) + '; top: ' + Math.max(8, src.s / 60 * H - 12) + 'px; width: 330px'; } }
+    const closeDetail = () => this.setState({ detail: null });
+
+    // ---- keyboard ----
+    const cheatGroups = [
+      { name: 'VIEWS', rows: [{ what: 'Day', keys: ['1'] }, { what: 'Week', keys: ['2'] }, { what: 'Month', keys: ['3'] }, { what: 'Agenda', keys: ['4'] }] },
+      { name: 'NAVIGATE', rows: [{ what: 'Previous or next day', keys: ['←', '→'] }, { what: 'Up or down 30 minutes', keys: ['↑', '↓'] }, { what: 'Previous or next week', keys: ['PgUp', 'PgDn'] }, { what: 'Jump to today', keys: ['T'] }] },
+      { name: 'CREATE', rows: [{ what: 'New event', keys: ['N'] }, { what: 'New goal', keys: ['G'] }, { what: 'Quick add', keys: ['Q'] }, { what: 'Start a slot at the cursor', keys: ['Enter'] }, { what: 'Stretch the new slot', keys: ['Shift', '↑ ↓'] }] },
+      { name: 'EDIT', rows: [{ what: 'Open event or toggle goal', keys: ['Enter'] }, { what: 'Edit the open event', keys: ['E'] }, { what: 'Delete the open event', keys: ['Del'] }, { what: 'Cancel a drag or close', keys: ['Esc'] }] },
+      { name: 'GENERAL', rows: [{ what: 'Search everything', keys: ['Ctrl', 'K'] }, { what: 'This cheat sheet', keys: ['?'] }, { what: 'Hide the mini calendar', keys: ['['] }] }
+    ];
+    const ensureVisible = (slot) => { const el = this._sc; if (!el) return; const y = slot * H / 2, sticky = this._stickyH + 8;
+      if (y < el.scrollTop + sticky) el.scrollTop = Math.max(0, y - sticky); else if (y + H / 2 > el.scrollTop + el.clientHeight) el.scrollTop = y + H / 2 - el.clientHeight + 8; };
+    const commitDrag = () => { const dr = s.drag; if (!dr || dr.held || dr.kb) return; const r = slotRange(dr.a, dr.b, false); this.setState({ drag: null, qa: { key: dr.key, a: r[0], b: r[1] === r[0] ? r[0] + 1 : r[1] }, qaText: '', detail: null }); };
+    const onKey = (e) => {
+      const k = e.key; let di = cur.day, sl = cur.slot, moved = false;
+      const pend = s.drag && s.drag.kb ? s.drag : null;
+      if (k === '?') { e.preventDefault(); this.setState({ cheat: true }); return; }
+      if (e.shiftKey && (k === 'ArrowDown' || k === 'ArrowUp')) { e.preventDefault();
+        if (pend) { const nb = k === 'ArrowDown' ? Math.min(47, pend.b + 1) : Math.max(pend.a, pend.b - 1); if (nb !== pend.b) this.setState({ drag: { ...pend, b: nb } }); } return; }
+      if (k === 'ArrowLeft') { di = Math.max(0, di - 1); moved = true; } else if (k === 'ArrowRight') { di = Math.min(6, di + 1); moved = true; }
+      else if (k === 'ArrowUp') { sl = Math.max(0, sl - 1); moved = true; } else if (k === 'ArrowDown') { sl = Math.min(47, sl + 1); moved = true; }
+      else if (k === 'PageUp') { e.preventDefault(); shiftWeek(-1); return; } else if (k === 'PageDown') { e.preventDefault(); shiftWeek(1); return; }
+      else if (k === 't' || k === 'T') { e.preventDefault(); thisWeek(); return; }
+      else if (k === 'n' || k === 'N') { e.preventDefault(); this.say('New event'); return; }
+      else if (k === 'g' || k === 'G') { e.preventDefault(); this.say('New goal'); return; }
+      else if (k === 'q' || k === 'Q') { e.preventDefault(); this.say('Quick add'); return; }
+      else if (k === 'Escape') { if (s.drag || s.qa || s.detail) { e.preventDefault(); this.setState({ drag: null, qa: null, detail: null }); } return; }
+      else if (k === 'Enter') { e.preventDefault(); const dt = days[di], t0 = sl * 30;
+        if (pend) { const r = slotRange(pend.a, pend.b, false); this.setState({ drag: null, qa: { key: pend.key, a: r[0], b: r[1] }, qaText: '' }); return; }
+        const gg = dayGoals(dt).find((x) => x.time && T(x.time) >= t0 && T(x.time) < t0 + 30);
+        if (gg) { toggleGoal(dt, gg)(); this.say((gg.done ? 'Not done · ' : 'Done · ') + gg.title); return; }
+        const hit = dayEvents(dt).find((x) => x.s <= t0 && x.e > t0);
+        if (hit) { this.setState({ detail: { key: dkey(dt), id: hit.id } }); return; }
+        this.setState({ drag: { key: dkey(dt), a: sl, b: Math.min(47, sl + 1), kb: true, held: true } }); return; }
+      if (moved) { e.preventDefault(); this.setState({ cur: { key: dkey(days[di]), slot: sl }, drag: pend ? null : s.drag }); ensureVisible(sl); }
+    };
+    const pendingDrag = s.drag && s.drag.kb;
+    if (pendingDrag) { const pi = idxOfKey(s.drag.key); if (pi >= 0) { const r = slotRange(s.drag.a, s.drag.b, false); cols[pi].hasGhost = true; cols[pi].ghostStyle = 'top: ' + (r[0] * H / 2 + 1) + 'px; height: ' + ((r[1] - r[0] + 1) * H / 2 - 2) + 'px'; cols[pi].ghostLabel = rng(r[0] * 30, (r[1] + 1) * 30); } }
+    const bandH = 12 + laneCount * 25, stickyH = 56 + bandH + 54;
+    this._stickyH = stickyH;
+    const targetHour = ({ default: 8, drag: 11, move: 11, conflict: 11, busy: 8, quickadd: 15, detail: 10 })[st] || 8;
+    const qaKey = (e) => { if (e.key === 'Enter') { e.preventDefault(); addQA(); } else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeQA(); } };
+    const qNew = () => this.say('New event');
+    return {
+      ...this.sbVals(), themeKey: s.theme, themes: this.themeDots(), views, title, subtitle, prevLabel: 'Previous week', nextLabel: 'Next week', prev: () => shiftWeek(-1), next: () => shiftWeek(1), goToday: thisWeek,
+      q: s.q, onQ: (e) => this.setState({ q: e.target.value }),
+      onQKey: (e) => { if (e.key === 'Enter') { e.preventDefault(); const pq = parseQuick(s.q, todayD, 9 * 60); if (!pq.title) return; this.setState({ q: '' }); this.say('Event added · ' + pq.title + ' · ' + lab(pq.date) + ' · ' + rng(pq.start, pq.end)); } },
+      newEvent: qNew, newGoal: () => this.say('New goal'),
+      side, weekNo: 'W' + wk, heads, bandStyle: '', laneCount, noAllDay: allday.length === 0, allday, goalCells,
+      bodyH: 24 * H, lines, hours, cols, now, hasNow, showCursor,
+      cursorStyle: 'left: calc(' + G + 'px + (100% - ' + G + 'px) * ' + (cur.day / 7).toFixed(5) + ' + 1px); width: calc((100% - ' + G + 'px) / 7 - 2px); top: ' + (cur.slot * H / 2) + 'px; height: ' + (H / 2) + 'px',
+      gridLabel: 'Week of ' + title + '. Arrow keys move between days and half-hours, Enter opens an event, toggles a timed goal or starts a new event. Question mark lists shortcuts.',
+      liveText: lab(days[cur.day]) + ', ' + fmt(cur.slot * 30) + (pendingDrag ? ', new event ' + rng(Math.min(s.drag.a, s.drag.b) * 30, (Math.max(s.drag.a, s.drag.b) + 1) * 30) + '. Shift plus arrow down or up changes the length, Enter confirms, Escape cancels' : ''),
+      scRef: (el) => { if (el) { this._sc = el; if (!this._inited) { this._inited = true; this.applyScroll(targetHour * H - 6); } } },
+      onKey, dragEnd: commitDrag,
+      showQA, qa, qaStyle, qaText: s.qaText, onQaText: (e) => this.setState({ qaText: e.target.value }), onQaKey: qaKey, qaClose: closeQA, qaAdd: addQA, qaMore: () => { this.setState({ qa: null }); this.say('Opening the full event dialog'); },
+      showDetail, d, dStyle, dClose: closeDetail, dEdit: () => { this.setState({ detail: null }); this.say('Opening the full event dialog'); }, dDelete: () => { this.setState({ detail: null }); this.say('Event deleted'); },
+      isEmpty: empty, cheat: s.cheat, cheatGroups, closeCheat: () => this.setState({ cheat: false }), stopClick: (e) => { if (e && e.stopPropagation) e.stopPropagation(); }, cheatKey: (e) => { if (e.key === 'Escape') { e.preventDefault(); this.setState({ cheat: false }); } },
+      hasToast: !!s.toast, toast: s.toast
+    };
+  }
+}
+</script>
+</body>
+</html>
