@@ -185,11 +185,11 @@ export default function App() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target instanceof HTMLElement ? e.target : null;
-      if (e.defaultPrevented || dialogOpen || goalDialogOpen || searchOpen || cheatOpen
-        || target?.closest('input, textarea, select, [contenteditable="true"], [role="dialog"]')) return;
+      if (e.defaultPrevented || dialogOpen || goalDialogOpen || searchOpen || cheatOpen) return;
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
         e.preventDefault(); setSearchOpen(true); return;
       }
+      if (target?.closest('input, textarea, select, [contenteditable="true"], [role="dialog"]')) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const key = e.key.toLowerCase();
       if (key === "?") { e.preventDefault(); setCheatOpen(true); }

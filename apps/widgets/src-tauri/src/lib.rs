@@ -8,6 +8,13 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 use fs2::FileExt;
 
+fn tray_icon(theme: tauri::Theme) -> tauri::image::Image<'static> {
+    match theme {
+        tauri::Theme::Light => tauri::include_image!("../../desktop/public/tray-black.png"),
+        _ => tauri::include_image!("../../desktop/public/tray-white.png"),
+    }
+}
+
 // ─── State ────────────────────────────────────────────────────────────────────
 
 struct WidgetState {
@@ -593,6 +600,15 @@ pub fn run() {
             open_main_app,
             write_action
         ])
+        .on_window_event(|window, event| {
+            if window.label() == "keeper" {
+                if let tauri::WindowEvent::ThemeChanged(theme) = event {
+                    if let Some(tray) = window.app_handle().tray_by_id("facta-widgets-tray") {
+                        let _ = tray.set_icon(Some(tray_icon(*theme)));
+                    }
+                }
+            }
+        })
         .setup(move |app| {
             log(&format!("Setup phase (T+{}ms)", t0.elapsed().as_millis()));
             
@@ -600,7 +616,8 @@ pub fn run() {
             let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&quit_item])?;
             
-            let _tray = TrayIconBuilder::new()
+            let tray = TrayIconBuilder::with_id("facta-widgets-tray")
+                .icon(tray_icon(tauri::Theme::Dark))
                 .tooltip("Facta Widgets")
                 .menu(&menu)
                 .on_menu_event(|app, event| match event.id.as_ref() {
@@ -640,6 +657,9 @@ pub fn run() {
                 Err(e) => log(&format!("Keeper window failed: {}", e)),
             }
 
+            let system_theme = app.get_webview_window("keeper")
+                .and_then(|window| window.theme().ok()).unwrap_or(tauri::Theme::Dark);
+            tray.set_icon(Some(tray_icon(system_theme)))?;
             let app_handle = app.app_handle().clone();
             let state: tauri::State<WidgetState> = app.state::<WidgetState>();
             

@@ -27,7 +27,7 @@ interface Props {
 
 export default function CalendarPage({ anchor, view, onAnchor, onView, actions, keyboardBlocked }: Props) {
   const prefs = usePrefs(), now = useNow();
-  const { events, addEvent } = useEvents();
+  const { addEvent } = useEvents();
   const [miniOpen, setMiniOpen] = useState(false);
   const [miniMonth, setMiniMonth] = useState(anchor);
   const [popOpen, setPopOpen] = useState(false);
@@ -35,6 +35,13 @@ export default function CalendarPage({ anchor, view, onAnchor, onView, actions, 
   const [quickVisible, setQuickVisible] = useState(false);
   const [live, setLive] = useState("");
   const root = useRef<HTMLDivElement>(null);
+  useEffect(() => { setMiniMonth(anchor); }, [anchor]);
+  useEffect(() => {
+    if (!miniOpen) return;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const frame = requestAnimationFrame(() => root.current?.querySelector<HTMLButtonElement>('.calendar-mini [role="gridcell"][tabindex="0"]')?.focus());
+    return () => { cancelAnimationFrame(frame); if (opener?.isConnected) opener.focus(); };
+  }, [miniOpen]);
   const heading = calendarHeading(anchor, now, view, prefs);
   const say = useCallback((text: string) => { setLive(text); toast.message(text); }, []);
   const go = useCallback((date: Date) => { setPopOpen(false); onAnchor(date); setMiniMonth(date); }, [onAnchor]);
@@ -83,7 +90,7 @@ export default function CalendarPage({ anchor, view, onAnchor, onView, actions, 
           <div className="flex items-center justify-between"><span className="sec">JUMP TO DATE</span>
             <button type="button" className="b b-icon" aria-label="Hide mini calendar ([)" onClick={() => setMiniOpen(false)}><IconClose /></button>
           </div>
-          <MiniCalendar currentMonth={miniMonth} selectedDate={anchor} events={events} onMonthChange={setMiniMonth}
+          <MiniCalendar currentMonth={miniMonth} selectedDate={anchor} onMonthChange={setMiniMonth}
             onSelectDate={(date) => { go(date); }} />
         </aside>}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">

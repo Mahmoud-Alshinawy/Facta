@@ -5,6 +5,13 @@ use tauri::Manager;
 use tauri::RunEvent;
 use std::env;
 
+fn tray_icon(theme: tauri::Theme) -> tauri::image::Image<'static> {
+    match theme {
+        tauri::Theme::Light => tauri::include_image!("../public/tray-black.png"),
+        _ => tauri::include_image!("../public/tray-white.png"),
+    }
+}
+
 // ─── Commands ─────────────────────────────────────────────────────────────
 
 #[tauri::command]
@@ -270,8 +277,11 @@ pub fn run() {
         let menu = Menu::with_items(app, &[&show, &PredefinedMenuItem::separator(app)?, &quit])?;
 
         let _app_handle = app.handle().clone();
-        let _tray = TrayIconBuilder::new()
-            .icon(app.default_window_icon().unwrap().clone())
+        let system_theme = app.get_webview_window("main")
+            .and_then(|window| window.theme().ok()).unwrap_or(tauri::Theme::Dark);
+        let _tray = TrayIconBuilder::with_id("facta-tray")
+            .icon(tray_icon(system_theme))
+            .tooltip("Facta")
             .menu(&menu)
             .on_menu_event(move |app, event| match event.id().as_ref() {
                 "quit" => {
@@ -342,6 +352,11 @@ pub fn run() {
         match event {
             RunEvent::WindowEvent { label, event: win_event, .. } => {
                 if label == "main" {
+                    if let tauri::WindowEvent::ThemeChanged(theme) = &win_event {
+                        if let Some(tray) = app_handle.tray_by_id("facta-tray") {
+                            let _ = tray.set_icon(Some(tray_icon(*theme)));
+                        }
+                    }
                     if let tauri::WindowEvent::CloseRequested { api, .. } = win_event {
                         if let Some(window) = app_handle.get_webview_window("main") {
                             let _ = window.hide();

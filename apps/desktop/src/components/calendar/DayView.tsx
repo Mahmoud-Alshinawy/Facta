@@ -119,7 +119,7 @@ export default function DayView({ anchor, now, prefs, actions, onAnchor, say }: 
               <span className="mono sec lbl">ALL DAY</span>
               {allDay.length === 0 && <span style={{ fontSize: 13, color: "var(--subtle)" }}>Nothing all day</span>}
               {allDay.map((a) => (
-                <button key={a.id} type="button" className="ad1" tabIndex={-1} style={{ ["--c" as string]: colorVar(a.color) }} onClick={() => setDetail(a.id)}>
+                <button key={a.id} type="button" className="ad1" style={{ ["--c" as string]: colorVar(a.color) }} onClick={() => setDetail(a.id)}>
                   <span className="ee" aria-hidden="true" />{a.title}
                 </button>
               ))}
@@ -146,7 +146,7 @@ export default function DayView({ anchor, now, prefs, actions, onAnchor, say }: 
               const past = isPast || (isToday && t.realEnd <= nowMin);
               const cl = clash.ids.has(t.event.id);
               return (
-                <button key={t.event.id} type="button" tabIndex={-1}
+                <button key={t.event.id} type="button"
                   className={`dev${row ? " row" : ""}${past ? " is-past" : ""}${cl ? " clash" : ""}`}
                   aria-label={`${t.event.title}, ${C.range(t.start, t.realEnd)}${cl ? ", overlaps another event" : ""}`}
                   title={`${t.event.title}, ${C.range(t.start, t.realEnd)}`}
@@ -167,7 +167,7 @@ export default function DayView({ anchor, now, prefs, actions, onAnchor, say }: 
                 : { top: (t / 60) * H + 1, left: `calc(${LEFT}px + 6px)`, width: `calc(100% - ${LEFT + 6}px)` };
               return (
                 <div key={g.goal.id} className={`dgc${g.done ? " is-done" : ""}`} style={style} onMouseDown={(e) => e.stopPropagation()}>
-                  <Check done={g.done} label={g.goal.title} onToggle={() => toggle(g)} />
+                  <Check done={g.done} label={g.goal.title} onToggle={() => toggle(g)} tabIndex={0} />
                   <span className="gt">{g.goal.title}</span><span className="em">{C.chip(t)}</span>
                 </div>
               );

@@ -236,3 +236,13 @@
   @media (max-width:650px) { .fx .settings-header { padding-left:20px;padding-right:20px; } .fx .settings-content { padding:20px; } .fx .widget-state { display:none; } }
   @media (prefers-reduced-motion:reduce) { .fx .settings-page .sw .knob { transition:none; } }
 }
+
+@layer components {
+  .fx .date-grid.mm { display:flex;gap:1px; }
+  .fx .date-grid.mm .date-grid-row { gap:1px; }
+  .fx .mini-calendar .date-picker-head { font-size:14px; }
+  .fx .mini-calendar .mm .d[aria-selected="true"] { background:var(--accent);color:var(--accent-text);opacity:1; }
+  .fx .mini-calendar .mm .d[aria-selected="true"] .dt { background:var(--accent-text); }
+  .fx .mini-calendar-hint { margin-top:12px;color:var(--subtle);font-size:10px;line-height:1.7; }
+  .fx .calendar-mini { overflow-y:auto; }
+}

@@ -5,12 +5,13 @@ locally: copy `artifact-type/dc-runtime.js` to `project/support.js`, serve
 `project/` and open `<Board>.dc.html` (or a wrapper with
 `<dc-import name="CalWeek" theme="bg" state="drag">`).
 
-State: steps 1, 2a, 2b, 3, 4 and 5 are implemented and checked. App uses the new Sidebar; Today is its
+State: steps 1, 2a, 2b, 3, 4, 5 and 6 are implemented and checked. App uses the new Sidebar; Today is its
 own page with no calendar view switcher. CalendarPage mounts the four new
 views; legacy calendar views/CSS are deleted. TodayPanel.tsx is unchanged.
 GoalDialog and EventDialog now use the v2 layout and shared dialog behaviour.
 Goals Mine is mounted with live statistics, List/Board and quick add. Its visual QA remains pending.
-Settings now mounts Widgets / Appearance / Account. MiniCalendar and icons/tray are next.
+Settings mounts Widgets / Appearance / Account. MiniCalendar, icons and tray are implemented.
+Final four-theme / two-width board comparison and native smoke checks remain.
 
 ## Current owner instructions (approved 21 October 2026)
 - Rail breakpoint is <=1200px; 1100px is a comparison width.
@@ -72,6 +73,26 @@ Settings now mounts Widgets / Appearance / Account. MiniCalendar and icons/tray 
   Formal hosted-board comparison at exact 1440/1100 and native-window QA remain.
 
 ## Done (tested)
+- Step 6 (22 October 2026): MiniCalendar reuses the dialog date grid. One
+  tabbable date; arrows, Home/End and PgUp/PgDn move, Enter/Space select.
+  Previous/next month controls have the equivalent PgUp/PgDn keys. Date
+  navigation has six pure tests for year/month/leap boundaries and all three
+  week starts. Recurring-event dots reuse the existing event-date selector.
+  Opening [ focuses the grid; closing restores focus. Mini panel scrolls.
+- Keyboard audit: Week day headers, all-day spans, untimed/timed goal checkboxes,
+  more controls and each overlapping event are reachable. Day events and timed
+  checkboxes are reachable too. Ctrl/Cmd+K now works while typing. Month/Agenda
+  retain their grid/list keyboard paths. Empty-card drag passthrough CSS reviewed;
+  pointer/keyboard smoke remains unverified in a running app.
+- Regenerated both src-tauri/icons sets with the local Tauri CLI from
+  apps/desktop/public/icon.png, including default platform outputs. Both trays
+  embed public/tray-white.png / tray-black.png via Tauri's existing include_image
+  macro, select by native system theme and update on ThemeChanged. No new
+  dependencies/features. Native tray appearance/theme switching is not verified.
+- Step 6 passed frozen install; npx tsc --noEmit x3; desktop Vitest 257/257,
+  calendar 152/152; desktop build PORT=1420 BASE_PATH=/; widgets Vite build;
+  cargo check --offline in both native folders. Existing Vite size warning only.
+  TodayPanel.tsx remains identical to b449d97. No live Supabase access.
 - Step 5 (22 October 2026): Settings tabs with arrow/Home/End navigation;
   Widgets companion status + Launch, saved widget list, enable/remove, new-widget
   type/theme/transparency/live-data preview, inline Reset all confirmation;
@@ -162,9 +183,7 @@ Settings now mounts Widgets / Appearance / Account. MiniCalendar and icons/tray 
   `Popovers.tsx` (quick add, event detail with E / Del + Undo), `common.tsx`,
   `types.ts`.
 
-## Not started
-- MiniCalendar rewrite (single tab stop, arrows, `.mm` styles).
-- Icons (`tauri icon` from `apps/desktop/public/icon.png` for both apps), tray-white/black by system theme.
+## Remaining verification
 - Board comparison in 4 themes at 1440 and 1100; real Tauri window test; branch 2 and 3.
 
 ## Decisions that differ from the brief
@@ -192,7 +211,7 @@ Settings now mounts Widgets / Appearance / Account. MiniCalendar and icons/tray 
     calendar views temporarily so this is a separate working commit.
 2b. DONE: CalendarPage and legacy deletion. Formal board comparison still due.
 3. DONE: dialogs v2, Goals Mine (+ goalStats tests), Settings tabs.
-4. MiniCalendar side panel, empty-state passthrough, icons/tray.
+4. DONE: MiniCalendar side panel, empty-state passthrough, icons/tray.
 5. Every commit: frozen install, tsc in all three packages, Vitest in desktop
    and calendar, desktop build with PORT=1420 BASE_PATH=/, cargo check in both
    native folders. Use Windows host settings. Build widgets when relevant.

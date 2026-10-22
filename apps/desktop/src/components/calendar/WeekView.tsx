@@ -333,7 +333,7 @@ export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpen
               <div key={c.key} role="columnheader" aria-label={`${dayLabelLong(c.dt)}${c.isToday ? ", today" : ""}${c.clash.ids.size ? ", two events overlap" : ""}`}
                 className={`hc${c.isToday ? " is-today" : ""}${c.isPastDay ? " is-past" : ""}${c.weekend ? " is-wk" : ""}`}>
                 <span className="mono dw">{dowShort(c.dt.getDay())}</span>
-                <button type="button" className="dn dn-btn" tabIndex={-1} title={`Open ${dayLabel(c.dt)}`} onClick={() => onOpenDay(c.dt)}>{c.dt.getDate()}</button>
+                <button type="button" className="dn dn-btn" aria-label={`Open ${dayLabelLong(c.dt)}`} onClick={() => onOpenDay(c.dt)}>{c.dt.getDate()}</button>
                 {c.clash.ids.size > 0 && <span className="warn" title="Two events overlap"><IconWarn size={12} /> Overlap</span>}
               </div>
             ))}
@@ -344,7 +344,7 @@ export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpen
               <span style={{ gridColumn: "2 / span 7", gridRow: 1, display: "flex", alignItems: "center", paddingLeft: 12, fontSize: 12, color: "var(--subtle)" }}>All-day events appear here</span>
             )}
             {spans.segments.map((s) => (
-              <button key={s.item.id} type="button" tabIndex={-1}
+              <button key={s.item.id} type="button"
                 className={`ad${s.contL ? " cl" : ""}${s.contR ? " cr" : ""}`}
                 title={`${s.item.event.title}, all day`}
                 style={{ ["--c" as string]: colorVar(s.item.event.color), gridColumn: `${s.from + 2} / span ${s.to - s.from + 1}`, gridRow: s.lane + 1 }}
@@ -362,12 +362,12 @@ export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpen
                 <div key={c.key} className={`gcell${c.weekend ? " is-wk" : ""}`}>
                   {shown.map((g) => (
                     <div className="gl" key={g.goal.id}>
-                      <Check done={g.done} label={`${g.goal.title}, ${dayLabel(c.dt)}`} onToggle={() => toggleGoal(g.goal, c.key)} />
+                      <Check done={g.done} label={`${g.goal.title}, ${dayLabel(c.dt)}`} onToggle={() => toggleGoal(g.goal, c.key)} tabIndex={0} />
                       <span className="gt" style={{ textDecoration: g.done ? "line-through" : "none" }}>{g.goal.title}</span>
                     </div>
                   ))}
                   {gs.length > 2 && (
-                    <button type="button" tabIndex={-1} className="gl more mono gl-more" onClick={() => onOpenDay(c.dt)}>+{gs.length - 1} more</button>
+                    <button type="button" className="gl more mono gl-more" onClick={() => onOpenDay(c.dt)}>+{gs.length - 1} more</button>
                   )}
                 </div>
               );
@@ -409,7 +409,7 @@ export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpen
                       return (
                         <div key={`g:${it.id}`} className={`gc${it.done ? " is-done" : ""}${past && !it.done ? " is-past" : ""}`}
                           style={evStyle(top, 22, it.col, it.cols, "var(--text)")} onMouseDown={(e) => e.stopPropagation()}>
-                          <Check done={it.done} label={it.goal.title} onToggle={() => toggleGoal(it.goal, c.key)} />
+                          <Check done={it.done} label={it.goal.title} onToggle={() => toggleGoal(it.goal, c.key)} tabIndex={0} />
                           <span className="gt">{it.goal.title}</span><span className="em">{C.chip(it.start)}</span>
                         </div>
                       );
@@ -429,13 +429,13 @@ export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpen
                       <button
                         key={it.id}
                         type="button"
-                        tabIndex={-1}
+                        tabIndex={it.lift || it.origin ? -1 : 0}
                         className={`ev${row ? " row" : ""}${past ? " is-past" : ""}${cc >= 3 ? " dense" : ""}${it.origin ? " is-origin" : ""}${it.lift ? " is-lift" : ""}`}
                         style={evStyle(top, h, it.col, cc, colorVar(it.event.color))}
                         aria-label={`${it.event.title}, ${dayLabel(c.dt)}, ${C.range(s, en)}${clashing ? ", overlaps another event" : ""}${past ? ", past" : ""}`}
                         title={`${it.event.title}, ${C.range(s, en)}`}
                         onMouseDown={(e) => !it.lift && real && startEventDrag(e, it.event, c.key, real.start, real.end, "move")}
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e) => { e.stopPropagation(); if (e.detail === 0 && !it.lift) setDetail({ key: c.key, id: it.event.id }); }}
                       >
                         <span className="ee" aria-hidden="true" />
                         <span className="in"><span className={narrow ? "et wrap" : "et"}>{it.event.title}</span>{time && <span className="em">{time}</span>}</span>
