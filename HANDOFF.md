@@ -1,6 +1,12 @@
 # Handoff: feat/ui-redesign (branch 1 of 3), work in progress
 
 ## Review fixes (22 October 2026)
+- Fix 3: enabled untimed reminders are due at local midnight. Overdue one-offs
+  remain due; repeats still respect schedules, completion and sent-day state.
+  Added midnight/overdue/repeating tests in both Riyadh and New York projects.
+- Fix 3 checks passed: frozen install; npx tsc x3; desktop Vitest 264/264,
+  calendar 152/152; required desktop build; both cargo check --offline.
+  Existing Vite chunk-size warning only.
 - Fix 2: both native apps read HKCU SystemUsesLightTheme through RegGetValueW
   at tray startup and on ThemeChanged: dark taskbar uses white, light uses
   black. Window/app theme fallback is compiled only outside Windows. No new

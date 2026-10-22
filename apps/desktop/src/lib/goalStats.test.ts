@@ -208,8 +208,7 @@ describe("unsent reminder state", () => {
     ).toBe(false);
     expect(reminderPending({ ...due, completed: true }, now)).toBe(false);
   });
-  it("requires a time, enabled reminder and an active recurring occurrence", () => {
-    expect(reminderPending({ ...due, time: undefined }, now)).toBe(false);
+  it("requires an enabled reminder and an active recurring occurrence", () => {
     expect(reminderPending({ ...due, notificationsEnabled: false }, now)).toBe(
       false,
     );
@@ -222,5 +221,21 @@ describe("unsent reminder state", () => {
         now,
       ),
     ).toBe(false);
+  });
+  it("treats untimed one-offs as due at local midnight, including overdue goals", () => {
+    const untimed = { ...due, time: undefined };
+    expect(reminderPending(untimed, new Date(2026, 9, 21, 0, 0))).toBe(true);
+    expect(reminderPending(untimed, new Date(2026, 9, 22, 0, 0))).toBe(true);
+    expect(reminderPending(untimed, new Date(2026, 9, 20, 23, 59))).toBe(false);
+    expect(reminderPending({ ...untimed, completed: true }, now)).toBe(false);
+    expect(reminderPending({ ...untimed, lastNotifiedDate: "2026-10-21" }, now)).toBe(false);
+  });
+  it("reminds for untimed repeats only on active, unfinished and unsent days", () => {
+    const untimed = { ...due, time: undefined, repeat: "custom" as const, repeatDays: [3] };
+    expect(reminderPending(untimed, new Date(2026, 9, 21, 0, 0))).toBe(true);
+    expect(reminderPending(untimed, new Date(2026, 9, 22, 0, 0))).toBe(false);
+    expect(reminderPending({ ...untimed, completedDates: ["2026-10-21"] }, now)).toBe(false);
+    expect(reminderPending({ ...untimed, lastNotifiedDate: "2026-10-21" }, now)).toBe(false);
+    expect(reminderPending({ ...untimed, notificationsEnabled: false }, now)).toBe(false);
   });
 });

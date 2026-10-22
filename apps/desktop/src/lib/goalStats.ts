@@ -115,7 +115,8 @@ export function reminderPending(goal: Goal, now: Date): boolean {
     isCompletedToday(goal, now)
   )
     return false;
-  const at = parseClock(goal.time);
+  // Existing untimed reminders are due from the start of their scheduled day.
+  const at = goal.time ? parseClock(goal.time) : 0;
   if (at === null) return false;
   const today = format(now, "yyyy-MM-dd");
   if (goal.lastNotifiedDate === today || goal.date > today) return false;
