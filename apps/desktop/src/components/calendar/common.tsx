@@ -28,14 +28,16 @@ export function Check({ done, label, onToggle, tabIndex = -1, className = "cb" }
 }
 
 /** The slanted commit button: label, then the key that does the same. */
-export function Commit({ children, keyHint, onClick, type = "button", disabled, danger, className = "", hideKeyNarrow }: {
+export function Commit({ children, keyHint, onClick, type = "button", disabled, danger, className = "", hideKeyNarrow, title }: {
   children: ReactNode; keyHint?: string; onClick?: () => void; type?: "button" | "submit"; disabled?: boolean; danger?: boolean; className?: string;
   /** Drop the key chip on narrow windows, as the toolbar boards do. */
   hideKeyNarrow?: boolean;
+  title?: string;
 }) {
   return (
     <button
       type={type}
+      title={title}
       className={`b b-commit ${danger ? "b-danger" : "b-primary"} ${className}`}
       aria-disabled={disabled ? "true" : undefined}
       onClick={onClick}

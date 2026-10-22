@@ -109,6 +109,19 @@
     .fx .goal-fields > span:empty { display: none; }
   }
   .fx .hd, .fx .foot { flex-shrink: 0; }
+  .fx .calendar-heading { min-width:150px; }
+  @container app (min-width: 1201px) and (max-width: 1440px) {
+    .fx .calendar-toolbar { flex-wrap:nowrap;gap:12px;padding-inline:20px; }
+    .fx .calendar-toolbar .calendar-heading { min-width:140px;max-width:200px;flex-shrink:1; }
+    .fx .calendar-toolbar h1 { overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+    .fx .calendar-toolbar .qa { min-width:80px;flex:1 1 120px;max-width:260px; }
+    .fx .calendar-toolbar > :is([role="group"], .seg, .calendar-new) { flex-shrink:0; }
+  }
+  @container app (min-width: 1201px) and (max-width: 1320px) {
+    .fx .calendar-new .calendar-new-label { position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap; }
+    .fx .calendar-new .key { display:none; }
+    .fx .calendar-new .lab { padding-inline:14px; }
+  }
   @container app (max-width: 1200px) {
     .fx .calendar-body .calendar-mini {
       display: flex !important;

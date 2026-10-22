@@ -1,6 +1,14 @@
 # Handoff: feat/ui-redesign (branch 1 of 3), work in progress
 
 ## Review fixes (22 October 2026)
+- Fix 4: Calendar's 1201–1440px toolbar stays on one row with a flexible
+  quick-add field. New event is icon-only at 1201–1320px, retaining its name,
+  tooltip and shortcut. Browser checked all four views at 1440/1280/1210/1100;
+  visually inspected Week at every width (720px height). Header stayed 79px
+  high with no document overflow. Today styling is unchanged.
+- Fix 4 checks passed: frozen install; npx tsc x3; desktop Vitest 264/264,
+  calendar 152/152; required desktop build; both cargo check --offline.
+  Temporary isolated fixtures removed before build; existing chunk warning.
 - Fix 3: enabled untimed reminders are due at local midnight. Overdue one-offs
   remain due; repeats still respect schedules, completion and sent-day state.
   Added midnight/overdue/repeating tests in both Riyadh and New York projects.

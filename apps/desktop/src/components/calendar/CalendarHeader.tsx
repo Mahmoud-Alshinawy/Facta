@@ -26,10 +26,10 @@ interface Props {
 export default function CalendarHeader(p: Props) {
   const [q, setQ] = useState("");
   return (
-    <header className="hd">
-      <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 150 }}>
+    <header className="hd calendar-toolbar">
+      <div className="calendar-heading" style={{ display: "flex", flexDirection: "column", gap: 2 }}>
         <span className="mono" style={{ fontSize: 11, color: "var(--subtle)", letterSpacing: ".06em" }}>{p.subtitle}</span>
-        <h1>{p.title}</h1>
+        <h1 title={p.title}>{p.title}</h1>
       </div>
       <div role="group" aria-label="Navigate" style={{ display: "flex", gap: 6, alignItems: "center" }}>
         <button type="button" className="ctl ctl-icon" aria-label={p.prevLabel} title={`${p.prevLabel} (PgUp)`} onClick={p.onPrev}><IconLeft /></button>
@@ -59,7 +59,7 @@ export default function CalendarHeader(p: Props) {
         />
         <span className="kbd" style={{ position: "absolute", right: 8, top: 9 }}>Q</span>
       </div>
-      <div style={{ flex: 1 }} />
+      <div className="calendar-spacer" style={{ flex: 1 }} />
       <div className="seg" role="radiogroup" aria-label="Calendar view">
         {VIEWS.map(([id, name, key]) => (
           <button key={id} type="button" role="radio" aria-checked={p.view === id} title={`${name} (${key})`} onClick={() => p.onView(id)}>
@@ -67,7 +67,7 @@ export default function CalendarHeader(p: Props) {
           </button>
         ))}
       </div>
-      <Commit keyHint="N" hideKeyNarrow onClick={p.onNewEvent}><IconPlus />New event</Commit>
+      <Commit className="calendar-new" title="New event (N)" keyHint="N" hideKeyNarrow onClick={p.onNewEvent}><IconPlus /><span className="calendar-new-label">New event</span></Commit>
     </header>
   );
 }
