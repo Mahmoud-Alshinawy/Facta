@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from "rea
 import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
 import { humanizeAuthError } from "@/lib/authErrors";
+import { signOutWithLocalFallback } from "@/lib/signOut";
 
 const DEFAULT_AUTH_REDIRECT = "facta://auth/callback";
 const AUTH_REDIRECT_TO =
@@ -86,7 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    await signOutWithLocalFallback(supabase.auth);
     setUser(null);
   }, []);
 

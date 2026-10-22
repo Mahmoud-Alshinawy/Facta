@@ -18,7 +18,7 @@ export default defineConfig({
       },
       {
         extends: true,
-        test: { name: "new-york", include: ["src/lib/goalDates.test.ts"], env: { TZ: "America/New_York" } },
+        test: { name: "new-york", include: ["src/lib/goalDates.test.ts", "src/lib/goalStats.test.ts"], env: { TZ: "America/New_York" } },
       },
     ],
   },

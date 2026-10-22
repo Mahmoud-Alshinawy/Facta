@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Facta diary widget</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+.wg,.wg[data-theme="bg"]{--surface:#0C0D0C;--raised:#121412;--border-strong:#262A25;--control-border:#5F685E;--text:#F1F4F1;--text-2:#A6AEA6;--muted:#868F86;--accent:#22C55E;--accent-soft:rgba(34,197,94,.12);--surface-rgb:12,13,12;--text-rgb:241,244,241;--t-alpha:.46;--t-shadow:0 1px 2px rgba(0,0,0,.55)}
+.wg[data-theme="mid"]{--surface:#090E1A;--raised:#0E1524;--border-strong:#212C45;--control-border:#55668F;--text:#EEF2FA;--text-2:#A3AECB;--muted:#7D89A8;--accent:#4C8DF6;--accent-soft:rgba(76,141,246,.14);--surface-rgb:9,14,26;--text-rgb:238,242,250;--t-alpha:.48;--t-shadow:0 1px 2px rgba(0,0,0,.55)}
+.wg[data-theme="ember"]{--surface:#0C0A08;--raised:#120F0D;--border-strong:#27201C;--control-border:#6E6053;--text:#F6F1EC;--text-2:#B8ADA3;--muted:#938778;--accent:#FF8000;--accent-soft:rgba(255,128,0,.14);--surface-rgb:12,10,8;--text-rgb:246,241,236;--t-alpha:.48;--t-shadow:0 1px 2px rgba(0,0,0,.55)}
+.wg[data-theme="light"]{--surface:#FFFFFF;--raised:#F0F1EC;--border-strong:#CDD1C8;--control-border:#7E857B;--text:#141713;--text-2:#4E554D;--muted:#626A60;--accent:#15803D;--accent-soft:rgba(21,128,61,.10);--surface-rgb:255,255,255;--text-rgb:20,23,19;--t-alpha:.74;--t-shadow:none}
+.wg{width:300px;box-sizing:border-box;display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:18px;background:var(--surface);border:1px solid var(--border-strong);color:var(--text);font-family:'Geist',ui-sans-serif,system-ui,sans-serif;-webkit-font-smoothing:antialiased;box-shadow:0 18px 40px rgba(0,0,0,.35)}
+.wg *{box-sizing:border-box}
+.wg input:focus-visible{outline:2px solid var(--text);outline-offset:2px}
+.wg.is-trans{background:rgba(var(--surface-rgb),var(--t-alpha));border-color:rgba(var(--text-rgb),.14);box-shadow:none;text-shadow:var(--t-shadow)}
+.mono{font-family:'Geist Mono',ui-monospace,monospace;font-feature-settings:"tnum"}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+.whead{display:flex;align-items:center;gap:8px;font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;font-weight:500;letter-spacing:.08em;color:var(--muted)}
+.lrow{transition:background .15s ease}
+.lrow:hover{background:rgba(var(--text-rgb),.05)}
+.oneline{width:100%;height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--control-border);background:transparent;color:var(--text);font:inherit;font-size:14px}
+.oneline::placeholder{color:var(--muted)}
+.oneline:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+</style>
+</helmet>
+
+<!-- One line a day -->
+<div class="{{ rootCls }}" data-theme="{{ themeKey }}">
+  <div class="whead">
+    <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14Z"></path></svg>
+    <span style="flex: 1">ONE LINE A DAY</span>
+    <span style="color: var(--text)">17 OCT</span>
+  </div>
+  <sc-if value="{{ lineOpen }}" hint-placeholder-val="{{ true }}">
+    <form onSubmit="{{ saveLine }}" style="display: flex; flex-direction: column; gap: 6px">
+      <label for="dw-line" class="vh">Today in one line</label>
+      <input id="dw-line" class="oneline" type="text" autocomplete="off" maxlength="120" placeholder="Today in one line…" value="{{ line }}" onChange="{{ onLine }}">
+      <span class="mono" style="align-self: flex-end; font-size: 10px; color: var(--muted)">{{ lineCount }}/120 · Enter</span>
+    </form>
+  </sc-if>
+  <span class="mono" style="font-size: 10px; letter-spacing: .08em; color: var(--muted)">ON THIS DAY</span>
+  <ul style="list-style: none; margin: 0 -6px; padding: 0; display: flex; flex-direction: column; gap: 2px">
+    <sc-for list="{{ past }}" as="p" hint-placeholder-count="3">
+      <li class="lrow" style="display: grid; grid-template-columns: 52px 1fr; gap: 10px; padding: 8px 6px; border-radius: 9px">
+        <span class="mono" style="font-size: 11px; color: {{ p.dateColor }}; padding-top: 1px">{{ p.date }}</span>
+        <span style="font-size: 13px; line-height: 1.45; color: {{ p.color }}">{{ p.text }}</span>
+      </li>
+    </sc-for>
+  </ul>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["bg","mid","ember","light"],"default":"bg"},"transparent":{"editor":"boolean","default":false},"$preview":{"width":300,"height":340}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { line: '', lineSaved: '' };
+  }
+  renderVals() {
+    const s = this.state, p = this.props;
+    const past = [
+      { date: '17 SEP', text: 'First week of uni. Got lost twice finding the lab.' },
+      { date: '17 AUG', text: 'Started the gym plan with Omar. Legs are done.' },
+      { date: '17 JUL', text: 'Beach with the family. No phone all afternoon.' }
+    ].map((x) => ({ ...x, dateColor: 'var(--muted)', color: 'var(--text-2)' }));
+    if (s.lineSaved) past.unshift({ date: 'TODAY', text: s.lineSaved, dateColor: 'var(--accent)', color: 'var(--text)' });
+    return {
+      themeKey: p.theme || 'bg', rootCls: 'wg' + (p.transparent ? ' is-trans' : ''),
+      lineOpen: !s.lineSaved, line: s.line, lineCount: s.line.length,
+      onLine: (e) => this.setState({ line: e.target.value }),
+      saveLine: (e) => { e.preventDefault(); const t = s.line.trim(); if (t) this.setState({ lineSaved: t, line: '' }); },
+      past
+    };
+  }
+}
+</script>
+</body>
+</html>

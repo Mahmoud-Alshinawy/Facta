@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "@facta/calendar/theme-tokens.css";
+@import "./styles/fx.css";
+@import "./styles/fx-app.css";
 
 /* For the rare colour that must differ between Light and the dark themes. */
 @custom-variant light (&:where([data-theme="light"], [data-theme="light"] *));
@@ -73,121 +75,7 @@
 
 /* Black and green (default), Midnight, Ember, Light: see the shared tokens file. */
 
-/* ---------------------------------------------------------------------
-   Calendar views (Month, Week). Built from the theme tokens only; tints
-   are color-mix()es of existing tokens, not new colours.
-   --------------------------------------------------------------------- */
-/* In the components layer, so Tailwind utilities on the same element win. */
 @layer components {
-  .cal-ctl {
-    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-    height: 36px; padding: 0 12px; border-radius: 9px;
-    border: 1px solid var(--control-border); background: transparent;
-    font-size: 13px; font-weight: 500; color: var(--text);
-  }
-  .cal-ctl:hover { background: var(--raised-2); border-color: var(--text-2); }
-  .cal-kbd {
-    font-family: "Geist Mono", ui-monospace, monospace; font-size: 11px; line-height: 1; color: var(--subtle);
-    border: 1px solid var(--border-strong); border-bottom-width: 2px; border-radius: 5px; padding: 3px 5px; background: var(--raised);
-  }
-  .cal-weekend { background: color-mix(in srgb, var(--text) 3.2%, transparent); }
-
-  .month-cell {
-    position: relative; min-width: 0; min-height: 0; padding: 5px 6px 4px;
-    display: flex; flex-direction: column; gap: 2px; overflow: hidden; outline: none; user-select: none;
-    border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
-  }
-  .month-cell:hover { background: var(--raised); }
-  .month-cell.is-selected { background: var(--raised-2); }
-  .month-cell:focus-visible { box-shadow: inset 0 0 0 2px var(--text); z-index: 2; }
-  .month-cell-body { display: flex; flex-direction: column; gap: 2px; flex: 1; min-height: 0; }
-  .month-cell.is-out .month-cell-body { opacity: 0.38; }
-  .month-day {
-    width: 22px; height: 22px; border-radius: 11px; display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 500; color: var(--text);
-  }
-  .month-day.is-today { background: var(--text); color: var(--surface); font-weight: 600; }
-  .month-plus {
-    width: 20px; height: 20px; padding: 0; border: 0; border-radius: 6px; background: transparent;
-    box-shadow: inset 0 0 0 1px var(--control-border); color: var(--text-2);
-    display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.12s ease;
-  }
-  .month-cell:hover .month-plus, .month-cell:focus-within .month-plus, .month-cell:focus .month-plus { opacity: 1; }
-  .month-plus:hover { background: var(--raised-2); color: var(--text); }
-  .month-ring-track { stroke: color-mix(in srgb, var(--text) 16%, transparent); }
-  .month-chip {
-    height: 19px; display: flex; align-items: center; gap: 6px; padding: 0 6px; border-radius: 5px; min-width: 0;
-    background: color-mix(in srgb, var(--c) 16%, transparent); font-size: 11.5px; line-height: 1;
-  }
-  .month-dot { width: 7px; height: 7px; border-radius: 4px; background: var(--c); flex: 0 0 auto; }
-  .month-more {
-    height: 16px; padding: 0 6px; border: 0; background: transparent; color: var(--text-2);
-    font-size: 11px; text-align: left; border-radius: 4px; align-self: flex-start;
-  }
-  .month-more:hover { color: var(--text); background: var(--raised-2); }
-  .month-pop { box-shadow: 0 18px 40px rgb(0 0 0 / 0.45); }
-  .month-prow { display: flex; align-items: center; gap: 10px; min-height: 32px; padding: 0 6px; border-radius: 8px; background: transparent; border: 0; color: inherit; }
-  .month-prow:hover { background: var(--raised-2); }
-
-  .week-grid { outline: none; }
-  .week-grid:focus-visible { box-shadow: inset 0 0 0 2px var(--text); }
-  .week-head { display: flex; flex-direction: column; justify-content: center; gap: 2px; padding: 0 10px; border-left: 1px solid var(--border); min-width: 0; }
-  .week-daynum {
-    min-width: 24px; height: 24px; border-radius: 12px; padding: 0 4px; border: 0; background: transparent;
-    display: inline-flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 500; color: var(--text);
-  }
-  .week-daynum:hover { background: var(--raised-2); }
-  .week-head.is-today .week-daynum { background: var(--text); color: var(--surface); font-weight: 600; }
-  .week-tag {
-    font-family: "Geist Mono", ui-monospace, monospace; font-size: 9.5px; letter-spacing: 0.06em; line-height: 1;
-    color: var(--warning); border: 1px solid var(--warning-border); border-radius: 4px; padding: 2px 4px;
-  }
-  .week-allday {
-    height: 20px; display: block; margin: 0 3px; padding: 0 8px; border-radius: 6px; border: 0; text-align: left;
-    background: color-mix(in srgb, var(--c) 24%, var(--surface));
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 42%, transparent);
-    font-size: 11.5px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .week-line { position: absolute; left: 56px; right: 0; height: 1px; background: var(--border); }
-  .week-line.is-half { background: color-mix(in srgb, var(--text) 4.5%, transparent); }
-  .week-col { position: relative; border-left: 1px solid var(--border); min-width: 0; cursor: crosshair; user-select: none; }
-  .week-ev {
-    position: absolute; z-index: 1; display: flex; align-items: baseline; gap: 6px; min-width: 0;
-    border: 0; border-radius: 6px; padding: 2px 6px; overflow: hidden; text-align: left; cursor: pointer;
-    background: color-mix(in srgb, var(--c) 24%, var(--surface));
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 42%, transparent);
-    color: var(--text); font-size: 11.5px; line-height: 1.25;
-    container-type: inline-size;
-  }
-  .week-ev.is-tall { flex-direction: column; align-items: stretch; gap: 0; }
-  .week-ev:hover { background: color-mix(in srgb, var(--c) 32%, var(--surface)); }
-  .week-ev.is-past {
-    background: color-mix(in srgb, var(--c) 13%, var(--surface));
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 26%, transparent);
-    color: var(--text-2);
-  }
-  .week-ev-title { min-width: 0; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .week-ev-title.is-wrap { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-height: 1.2; }
-  .week-meta { font-family: "Geist Mono", ui-monospace, monospace; font-size: 10px; color: var(--text-2); white-space: nowrap; flex: 0 0 auto; }
-  /* Narrow blocks: title only; the time is in the tooltip and the label. */
-  @container (max-width: 110px) {
-    .week-ev-time { display: none; }
-    .week-ev-title.is-wrap { white-space: nowrap; display: block; -webkit-line-clamp: unset; }
-  }
-  .week-goal {
-    position: absolute; z-index: 1; display: flex; align-items: center; gap: 6px; padding: 0 6px; overflow: hidden;
-    border-radius: 7px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--control-border);
-    font-size: 11.5px; font-weight: 500; cursor: default;
-  }
-  .week-goal.is-past { color: var(--text-2); }
-  .week-ghost {
-    position: absolute; left: 2px; right: 2px; z-index: 3; pointer-events: none; display: flex; flex-direction: column; gap: 1px;
-    border-radius: 6px; border: 1.5px dashed var(--text); padding: 3px 6px;
-    background: color-mix(in srgb, var(--text) 10%, transparent);
-  }
-  .week-cursor { position: absolute; border-radius: 6px; box-shadow: 0 0 0 2px var(--text); opacity: 0; }
-  .week-grid:focus-visible .week-cursor { opacity: 1; }
-
   /* Toasts (sonner) in the theme's colours. Sonner only knows light and dark
      and injects its own styles at runtime, so these selectors start with
      "html" to outrank its [data-sonner-toaster][data-sonner-theme=…] rules. */

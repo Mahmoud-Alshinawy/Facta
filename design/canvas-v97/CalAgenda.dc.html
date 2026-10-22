@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Facta — Calendar, Agenda</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+
+<style>
+
+body{margin:0}
+.fx,.fx[data-theme="bg"]{color-scheme:dark;--bg:#060706;--surface:#0C0D0C;--raised:#121412;--raised-2:#191C18;--border:#1A1D1A;--border-strong:#262A25;--control-border:#5F685E;--text:#F1F4F1;--text-2:#A6AEA6;--muted:#868F86;--accent:#22C55E;--accent-hover:#2DD46A;--accent-text:#03210F;--accent-soft:rgba(34,197,94,.10);--accent-border:#1C7E40;--success:#22C55E;--warning:#E0A33B;--danger:#EF5A5A;--danger-soft:rgba(239,90,90,.12);--danger-text:#1A0505;--event-blue:#5B8DEF;--event-purple:#A47CF0;--event-red:#EF6B6B;--event-green:#4CC38A;--event-orange:#F0904A;--event-pink:#EC6FB0;--note-a:#E8C547;--note-b:#5B8DEF;--note-c:#EC6FB0;--note-d:#4CC38A;--text-rgb:241,244,241;--surface-rgb:12,13,12;--logo-tile:#0A0B0A;--logo-mark:#22C55E;--slant:-10deg}
+.fx[data-theme="mid"]{color-scheme:dark;--bg:#04070E;--surface:#090E1A;--raised:#0E1524;--raised-2:#141C30;--border:#161F33;--border-strong:#212C45;--control-border:#55668F;--text:#EEF2FA;--text-2:#A3AECB;--muted:#7D89A8;--accent:#4C8DF6;--accent-hover:#6AA1F8;--accent-text:#04122B;--accent-soft:rgba(76,141,246,.12);--accent-border:#3B6BBB;--success:#4C8DF6;--warning:#E8B04B;--danger:#F06A6A;--danger-soft:rgba(240,106,106,.12);--danger-text:#1F0606;--event-blue:#67C1F5;--event-purple:#A88BF5;--event-red:#F07A7A;--event-green:#52C98F;--event-orange:#F2A05C;--event-pink:#EE7DB8;--note-a:#E8B04B;--note-b:#67C1F5;--note-c:#EE7DB8;--note-d:#52C98F;--text-rgb:238,242,250;--surface-rgb:9,14,26;--logo-tile:#04070E;--logo-mark:#4C8DF6}
+.fx[data-theme="ember"]{color-scheme:dark;--bg:#060504;--surface:#0C0A08;--raised:#120F0D;--raised-2:#191512;--border:#1A1613;--border-strong:#27201C;--control-border:#6E6053;--text:#F6F1EC;--text-2:#B8ADA3;--muted:#938778;--accent:#FF8000;--accent-hover:#FF9426;--accent-text:#1F0E00;--accent-soft:rgba(255,128,0,.12);--accent-border:#A55505;--success:#FF8000;--warning:#E8C547;--danger:#F25F5C;--danger-soft:rgba(242,95,92,.12);--danger-text:#1F0606;--event-blue:#6E9CF0;--event-purple:#B08AF0;--event-red:#F07070;--event-green:#55C08A;--event-orange:#F0A040;--event-pink:#EE78B4;--note-a:#E8C547;--note-b:#6E9CF0;--note-c:#EE78B4;--note-d:#55C08A;--text-rgb:246,241,236;--surface-rgb:12,10,8;--logo-tile:#060504;--logo-mark:#FF8000}
+.fx[data-theme="light"]{color-scheme:light;--bg:#F6F6F3;--surface:#FFFFFF;--raised:#F0F1EC;--raised-2:#E7E9E3;--border:#E3E5DF;--border-strong:#CDD1C8;--control-border:#7E857B;--text:#141713;--text-2:#4E554D;--muted:#626A60;--accent:#15803D;--accent-hover:#166534;--accent-text:#FFFFFF;--accent-soft:rgba(21,128,61,.10);--accent-border:#15803D;--success:#16A34A;--warning:#B45309;--danger:#DC2626;--danger-soft:rgba(220,38,38,.08);--danger-text:#FFFFFF;--event-blue:#2563EB;--event-purple:#7C3AED;--event-red:#DC2626;--event-green:#059669;--event-orange:#EA580C;--event-pink:#DB2777;--note-a:#B45309;--note-b:#2563EB;--note-c:#DB2777;--note-d:#059669;--text-rgb:20,23,19;--surface-rgb:255,255,255;--logo-tile:#15803D;--logo-mark:#FFFFFF}
+
+
+.fx{position:relative;container-type:inline-size;container-name:app;display:flex;height:920px;overflow:hidden;font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased}
+.fx *{box-sizing:border-box}
+:where(.fx) button{color:inherit}
+.fx button{font-family:inherit;cursor:pointer}
+.fx button:focus-visible,.fx input:focus-visible,.fx textarea:focus-visible,.fx [tabindex]:focus-visible{outline:2px solid var(--text);outline-offset:2px}
+.mono{font-family:'Geist Mono',ui-monospace,monospace;font-feature-settings:"tnum"}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.kbd{font-family:'Geist Mono',ui-monospace,monospace;font-size:10.5px;line-height:1;color:var(--muted);border:1px solid var(--border-strong);border-bottom-width:2px;border-radius:5px;padding:3px 5px;background:var(--raised);white-space:nowrap}
+.sec{font-family:'Geist Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.08em;color:var(--muted)}
+/* sidebar */
+.sb{flex:0 0 240px;display:flex;flex-direction:column;gap:22px;padding:22px 14px 18px;background:var(--surface);border-right:1px solid var(--border)}
+.sb .nv{display:flex;align-items:center;gap:12px;height:40px;padding:0 12px;border:0;border-radius:9px;background:transparent;font-size:14px;color:var(--text-2);text-align:left;width:100%}
+.sb .nv:hover{background:var(--raised)}
+.sb .nv[aria-current="page"]{background:var(--raised);color:var(--text);font-weight:500}
+.sb .nv .lbl{flex:1}
+.sb .nv .mk{width:6px;height:6px;border-radius:3px;background:var(--accent)}
+.sb .tdot{width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:14px;background:transparent;border:1.5px solid transparent}
+.sb .tdot:hover{border-color:var(--text-2)}
+.fx.sb-c .sb{flex-basis:64px;align-items:center;padding:20px 8px 16px}
+.fx.sb-c .sb .lbl,.fx.sb-c .sb .mk,.fx.sb-c .sb .sbsearch,.fx.sb-c .sb .wordmark,.fx.sb-c .sb .sync-t,.fx.sb-c .sb .theme-l{display:none}
+.fx.sb-c .sb .nv{width:44px;justify-content:center;padding:0}
+.fx.sb-c .sb .themes{flex-direction:column}
+.fx.sb-c .sb .sbtop{flex-direction:column;padding:0}
+.fx.sb-c .sbtog .i-l{display:none}.fx.sb-c .sbtog .i-r{display:flex}
+.sbtog .i-l{display:flex}.sbtog .i-r{display:none}
+.sbtog{margin-left:auto}
+@container app (max-width:1200px){
+  .fx:not(.sb-o) .sb{flex-basis:64px;align-items:center;padding:20px 8px 16px}
+  .fx:not(.sb-o) .sb .lbl,.fx:not(.sb-o) .sb .mk,.fx:not(.sb-o) .sb .sbsearch,.fx:not(.sb-o) .sb .wordmark,.fx:not(.sb-o) .sb .sync-t,.fx:not(.sb-o) .sb .theme-l{display:none}
+  .fx:not(.sb-o) .sb .nv{width:44px;justify-content:center;padding:0}
+  .fx:not(.sb-o) .sb .themes{flex-direction:column}
+  .fx:not(.sb-o) .sb .sbtop{flex-direction:column;padding:0}
+  .fx:not(.sb-o) .sbtog .i-l{display:none}.fx:not(.sb-o) .sbtog .i-r{display:flex}
+  .side-panel{display:none !important}
+  .hd .hide-s{display:none !important}
+}
+/* controls */
+.ctl{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:36px;padding:0 12px;border-radius:9px;border:1px solid var(--control-border);background:transparent;font-size:13px;font-weight:500;color:var(--text);white-space:nowrap}
+.ctl:hover{background:var(--raised-2);border-color:var(--text-2)}
+.ctl-icon{width:36px;padding:0}
+.ctl[aria-pressed="true"],.ctl[aria-checked="true"]{background:var(--text);color:var(--bg);border-color:var(--text)}
+.b{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;font-size:14px;font-weight:600;line-height:1;white-space:nowrap;transition:background .14s ease,color .14s ease,box-shadow .14s ease,transform .08s ease}
+.b-commit{height:40px;padding:0;border-radius:9px;transform:skewX(var(--slant));overflow:hidden}
+.b-commit > span{transform:skewX(calc(var(--slant) * -1))}
+.b-commit .lab{display:inline-flex;align-items:center;gap:8px;padding:0 16px 0 18px}
+.b-commit .key{height:100%;display:inline-flex;align-items:center;padding:0 12px;font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;font-weight:500;background:rgba(0,0,0,.16);border-left:1px solid rgba(0,0,0,.18);transform:none}
+.b-commit:active{transform:skewX(var(--slant)) scale(.97)}
+.b-primary{background:var(--accent);color:var(--accent-text)}
+.b-primary:hover{background:var(--accent-hover)}
+.b-quiet{height:36px;padding:0 12px;border-radius:9px;background:transparent;color:var(--text-2);font-weight:500;font-size:13px}
+.b-quiet:hover{background:var(--raised-2);color:var(--text)}
+.b-del{height:36px;padding:0 12px;border-radius:9px;background:transparent;color:var(--danger);font-weight:500;font-size:13px}
+.b-del:hover{background:var(--danger-soft)}
+.b-icon{width:32px;height:32px;padding:0;border-radius:8px;background:transparent;color:var(--muted)}
+.b-icon:hover{background:var(--raised-2);color:var(--text)}
+.opt{height:32px;padding:0;border-radius:8px;transform:skewX(var(--slant));background:transparent;box-shadow:inset 0 0 0 1px var(--control-border);color:var(--text-2);font-size:13px;font-weight:500;border:0}
+.opt > span{display:inline-flex;align-items:center;gap:8px;padding:0 14px;transform:skewX(calc(var(--slant) * -1))}
+.opt:hover{box-shadow:inset 0 0 0 1px var(--text-2);color:var(--text)}
+.opt[aria-checked="true"],.opt[aria-pressed="true"]{background:var(--text);color:var(--bg);box-shadow:none}
+.seg{display:flex;gap:2px;padding:3px;background:var(--surface);border:1px solid var(--border);border-radius:11px}
+.seg button{display:flex;align-items:center;gap:8px;height:30px;padding:0 11px;border:0;border-radius:8px;font-size:13px;font-weight:500;background:transparent;color:var(--text-2)}
+.seg button:hover{color:var(--text);background:var(--raised)}
+.seg button[aria-pressed="true"],.seg button[aria-checked="true"]{background:var(--text);color:var(--bg)}
+.seg button .mono{font-size:10.5px;color:var(--muted)}
+.seg button[aria-pressed="true"] .mono,.seg button[aria-checked="true"] .mono{color:var(--bg);opacity:.7}
+.cb{width:16px;height:16px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:5px;border:0;background:transparent;box-shadow:inset 0 0 0 1.5px var(--control-border);flex:0 0 auto;color:var(--accent-text)}
+.cb[aria-checked="true"]{background:var(--accent);box-shadow:none}
+.cb:hover{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.cb[aria-checked="true"]:hover{box-shadow:none}
+.evdot{width:7px;height:7px;border-radius:4px;background:var(--c);flex:0 0 auto}
+.pop{position:absolute;z-index:20;display:flex;flex-direction:column;background:var(--raised);border:1px solid var(--border-strong);border-radius:14px;box-shadow:0 18px 40px rgba(0,0,0,.45);overflow:hidden}
+.scrim{position:absolute;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55)}
+.modal{display:flex;flex-direction:column;background:var(--raised);border:1px solid var(--border-strong);border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.55);overflow:hidden}
+.toast{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:10px;height:38px;padding:0 14px;border-radius:10px;background:var(--text);color:var(--surface);font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.hd{display:flex;flex-wrap:wrap;align-items:center;gap:14px 18px;padding:16px 28px;border-bottom:1px solid var(--border);min-height:72px}
+.hd h1{margin:0;font-size:24px;font-weight:600;letter-spacing:-.03em;line-height:1.15}
+.qa{position:relative;flex:1 1 220px;max-width:380px}
+.qa input{width:100%;height:36px;padding:0 44px 0 34px;background:var(--surface);border:1px solid var(--control-border);border-radius:9px;color:var(--text);font:inherit;font-size:13px}
+.qa input::placeholder{color:var(--muted)}
+.foot{display:flex;align-items:center;gap:16px;height:32px;padding:0 28px;border-top:1px solid var(--border);background:var(--surface);font-size:12px;color:var(--muted);overflow:hidden;white-space:nowrap}
+.foot span.k{display:inline-flex;align-items:center;gap:6px}
+.side-panel{flex:0 0 272px;display:flex;flex-direction:column;gap:18px;padding:18px 16px;border-right:1px solid var(--border);overflow:hidden;background:var(--bg)}
+.mm{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;text-align:center}
+.mm .d{height:28px;padding:0;border:0;border-radius:14px;background:transparent;font-size:12px;color:var(--text);position:relative}
+.mm .d:hover{background:var(--raised)}
+.mm .d.out{color:var(--muted);opacity:.55}
+.mm .d.in-week{background:var(--raised)}
+.mm .d.today{background:var(--text);color:var(--bg);font-weight:600}
+.mm .d .dt{position:absolute;left:50%;bottom:2px;width:3px;height:3px;border-radius:2px;margin-left:-1.5px;background:var(--text-2)}
+.mm .d.today .dt{background:var(--bg)}
+
+
+.ag{flex:1;min-width:0;min-height:0;overflow-y:auto;position:relative;outline:none}
+.ag:focus-visible{outline:2px solid var(--text);outline-offset:-2px}
+.agw{max-width:860px;margin:0 auto;padding:0 28px 40px}
+.agbar{position:sticky;top:0;z-index:14;display:flex;align-items:center;gap:12px;padding:14px 0;background:var(--bg)}
+.dh2{position:sticky;top:60px;z-index:10;display:flex;align-items:baseline;gap:12px;padding:10px 0 8px;background:var(--bg);border-bottom:1px solid var(--border)}
+.dh2 .dd{font-size:15px;font-weight:600}
+.dh2.is-today .dd{color:var(--accent)}
+.dh2 .tag{height:20px;padding:0 8px;border-radius:10px;background:var(--text);color:var(--bg);font-size:10.5px;font-weight:600;display:flex;align-items:center}
+.arow{display:grid;grid-template-columns:96px 1fr;gap:0 16px;min-height:44px}
+.arow .tm{padding:12px 0 0;font-size:12px;color:var(--muted);text-align:right}
+.arow .bd{display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;margin:2px 0;border-radius:9px;font-size:14px;font-weight:500;border:0;background:transparent;text-align:left;width:100%}
+.arow .bd:hover{background:var(--raised)}
+.arow .bd.ev{background:color-mix(in srgb,var(--c) 18%,var(--surface))}
+.arow .bd.ev:hover{background:color-mix(in srgb,var(--c) 28%,var(--surface))}
+.arow .bd .t{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.arow .bd .m{font-family:'Geist Mono',ui-monospace,monospace;font-size:11.5px;color:var(--text-2)}
+.arow.is-past .bd{opacity:.62}
+.arow .bd.cur{box-shadow:inset 0 0 0 2px var(--text)}
+.nowrow{display:grid;grid-template-columns:96px 1fr;gap:0 16px;align-items:center;height:22px}
+.nowrow span.p{justify-self:end;height:18px;padding:0 8px;border-radius:9px;background:var(--text);color:var(--bg);font-size:10.5px;font-weight:500;line-height:18px}
+.nowrow i{display:block;height:2px;background:var(--text);border-radius:1px}
+.addrow{display:grid;grid-template-columns:96px 1fr;gap:0 16px}
+.addrow button{grid-column:2;display:flex;align-items:center;gap:8px;height:32px;padding:0 12px;border:0;border-radius:8px;background:transparent;color:var(--muted);font-size:13px;opacity:0;text-align:left}
+.dgroup:hover .addrow button,.addrow button:focus-visible{opacity:1}
+.addrow button:hover{background:var(--raised);color:var(--text)}
+.aempty{display:flex;flex-direction:column;gap:12px;align-items:flex-start;margin:60px 0 0 112px;max-width:420px}
+
+</style>
+</helmet>
+<div class="fx {{ rootCls }}" data-theme="{{ themeKey }}">
+  <aside class="sb" aria-label="Sidebar">
+    <div class="sbtop" style="display:flex;align-items:center;gap:10px;padding:0 6px">
+      <svg width="30" height="30" viewBox="0 0 120 120" role="img" aria-label="Facta logo"><rect width="120" height="120" rx="27" style="fill: var(--logo-tile)"></rect><polygon style="fill: var(--logo-mark); stroke: var(--logo-mark)" stroke-width="7" stroke-linejoin="round" points="46,31 93,31 90.4,41 55.4,41 51.3,57 73,57 70.9,65 49.2,65 42.5,91 30.5,91"></polygon></svg>
+      <span class="wordmark" style="font-size:19px;font-weight:700;letter-spacing:-.03em">Facta</span>
+      <button type="button" class="b b-icon sbtog" aria-label="Collapse or expand sidebar" title="Collapse or expand sidebar" onClick="{{ sbToggle }}"><span class="i-l"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></span><span class="i-r"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></span></button>
+    </div>
+    <div class="sbsearch" style="position:relative">
+      <label for="sb-search" class="sr-only">Search</label>
+      <span style="position:absolute;left:12px;top:12px;color:var(--muted);display:flex"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg></span>
+      <input id="sb-search" type="search" placeholder="Search" style="width:100%;height:40px;padding:0 70px 0 36px;background:var(--bg);border:1px solid var(--control-border);border-radius:10px;color:var(--text);font:inherit;font-size:14px">
+      <span class="kbd" style="position:absolute;right:8px;top:11px">Ctrl K</span>
+    </div>
+    <nav aria-label="Main" style="display:flex;flex-direction:column;gap:2px">
+<button type="button" class="nv" title="Today"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg><span class="lbl">Today</span></button>
+<button type="button" class="nv" title="Calendar" aria-current="page"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg><span class="lbl">Calendar</span><span class="mk"></span></button>
+<button type="button" class="nv" title="Goals"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg><span class="lbl">Goals</span></button>
+<button type="button" class="nv" title="Notes"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6M8 13h8M8 17h5"></path></svg><span class="lbl">Notes</span></button>
+<button type="button" class="nv" title="Diary"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14Z"></path><path d="M9 8h7"></path></svg><span class="lbl">Diary</span></button>
+<button type="button" class="nv" title="Settings"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9M14 17H5"></path><circle cx="17" cy="17" r="3"></circle><circle cx="7" cy="7" r="3"></circle></svg><span class="lbl">Settings</span></button>
+    </nav>
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:12px">
+      <div role="group" aria-label="Theme" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 2px 0 8px">
+        <span class="theme-l" style="font-size:12px;font-weight:500;color:var(--muted)">Theme</span>
+        <div class="themes" style="display:flex;align-items:center;gap:4px">
+          <sc-for list="{{ themes }}" as="t" hint-placeholder-count="4">
+            <button type="button" class="tdot" title="{{ t.name }}" aria-label="{{ t.name }} theme" aria-pressed="{{ t.pressed }}" onClick="{{ t.pick }}" style="border-color: {{ t.ring }}">
+              <span aria-hidden="true" style="width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-strong);background:{{ t.sw1 }}"><span style="width:7px;height:7px;border-radius:4px;background:{{ t.sw2 }}"></span></span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 8px 0;border-top:1px solid var(--border);font-size:12px;color:var(--muted)">
+        <span style="width:7px;height:7px;border-radius:4px;background:var(--success)"></span><span class="sync-t">Synced · just now</span>
+      </div>
+    </div>
+  </aside>
+  <main style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <header class="hd">
+      <div style="display:flex;flex-direction:column;gap:2px;min-width:150px">
+        <span class="mono" style="font-size:11px;color:var(--muted);letter-spacing:.06em">{{ subtitle }}</span>
+        <h1>{{ title }}</h1>
+      </div>
+      <div role="group" aria-label="Navigate" style="display:flex;gap:6px;align-items:center">
+        <button type="button" class="ctl ctl-icon" aria-label="{{ prevLabel }}" title="{{ prevLabel }}" onClick="{{ prev }}"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></button>
+        <button type="button" class="ctl" title="Jump to today (T)" onClick="{{ goToday }}">Today <span class="kbd">T</span></button>
+        <button type="button" class="ctl ctl-icon" aria-label="{{ nextLabel }}" title="{{ nextLabel }}" onClick="{{ next }}"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></button>
+      </div>
+      <div class="qa hide-s">
+        <label for="qa-in" class="sr-only">Quick add</label>
+        <span style="position:absolute;left:11px;top:10px;color:var(--muted);display:flex"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"></path></svg></span>
+        <input id="qa-in" type="text" autocomplete="off" placeholder="Quick add: Lunch with Alex Fri 1pm" value="{{ q }}" onChange="{{ onQ }}" onKeyDown="{{ onQKey }}">
+        <span class="kbd" style="position:absolute;right:8px;top:9px">Q</span>
+      </div>
+      <div style="flex:1"></div>
+      <div class="seg" role="radiogroup" aria-label="Calendar view">
+        <sc-for list="{{ views }}" as="v" hint-placeholder-count="4">
+          <button type="button" role="radio" aria-checked="{{ v.checked }}" title="{{ v.name }} ({{ v.key }})" onClick="{{ v.pick }}"><span>{{ v.name }}</span><span class="mono hide-s">{{ v.key }}</span></button>
+        </sc-for>
+      </div>
+      <button type="button" class="b b-commit b-primary" onClick="{{ newEvent }}"><span class="lab"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"></path></svg>New event</span><span class="key hide-s">N</span></button>
+    </header>
+    <div style="flex:1;min-height:0;display:flex">
+      <div class="ag" role="list" tabindex="0" aria-label="Agenda. Arrow keys move through items, Enter opens or toggles." ref="{{ scRef }}" onKeyDown="{{ onKey }}">
+        <div class="agw">
+          <div class="agbar">
+            <div class="seg" role="radiogroup" aria-label="Show">
+              <sc-for list="{{ filters }}" as="f" hint-placeholder-count="3"><button type="button" role="radio" aria-checked="{{ f.checked }}" onClick="{{ f.pick }}">{{ f.name }}</button></sc-for>
+            </div>
+            <span style="flex:1"></span><span class="mono" style="font-size:11.5px;color:var(--muted)">{{ summary }}</span>
+          </div>
+          <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+            <div class="aempty"><h2 style="margin:0;font-size:18px;font-weight:600">Nothing in this range</h2><span style="font-size:13px;color:var(--text-2)">{{ emptyText }}</span>
+              <div style="display:flex;gap:8px"><button type="button" class="b b-commit b-primary" onClick="{{ newEvent }}"><span class="lab">New event</span><span class="key">N</span></button><button type="button" class="ctl" onClick="{{ newGoal }}">New goal <span class="kbd">G</span></button></div></div>
+          </sc-if>
+          <sc-for list="{{ groups }}" as="g" hint-placeholder-count="5">
+            <section class="dgroup" aria-label="{{ g.aria }}">
+              <div class="{{ g.cls }}"><span class="dd">{{ g.title }}</span><span class="mono sec">{{ g.sub }}</span></div>
+              <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="4">
+                <div>
+                  <sc-if value="{{ r.isNow }}" hint-placeholder-val="{{ false }}"><div class="nowrow" aria-hidden="true"><span class="mono p">{{ r.time }}</span></div></sc-if>
+                  <sc-if value="{{ r.isEv }}" hint-placeholder-val="{{ true }}"><div class="{{ r.cls }}" role="listitem"><span class="mono tm">{{ r.time }}</span><button type="button" class="bd ev {{ r.cur }}" style="--c: {{ r.c }}" tabindex="-1" aria-label="{{ r.aria }}" onClick="{{ r.open }}"><span class="evdot" style="--c: {{ r.c }}"></span><span class="t">{{ r.title }}</span><span class="m">{{ r.meta }}</span></button></div></sc-if>
+                  <sc-if value="{{ r.isGoal }}" hint-placeholder-val="{{ false }}"><div class="{{ r.cls }}" role="listitem"><span class="mono tm">{{ r.time }}</span><div class="bd {{ r.cur }}"><button type="button" class="cb" role="checkbox" tabindex="-1" aria-checked="{{ r.checked }}" aria-label="{{ r.cbLabel }}" onClick="{{ r.toggle }}"><sc-if value="{{ r.done }}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></sc-if></button><span class="t" style="text-decoration: {{ r.deco }}">{{ r.title }}</span><span class="m">Goal</span></div></div></sc-if>
+                </div>
+              </sc-for>
+              <div class="addrow"><button type="button" tabindex="-1" onClick="{{ g.add }}"><svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"></path></svg> Add to {{ g.title }}</button></div>
+            </section>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+    <div class="foot" aria-label="Keyboard hints"><span class="k"><span class="kbd">↑</span><span class="kbd">↓</span>item</span><span class="k"><span class="kbd">Enter</span>open or toggle</span><span class="k"><span class="kbd">F</span>filter</span><span class="k"><span class="kbd">N</span>event</span><span style="flex:1"></span><span class="k"><span class="kbd">?</span>all shortcuts</span></div>
+  </main>
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}"><div class="toast" role="status">{{ toast }}</div></sc-if>
+  <div class="sr-only" aria-live="polite">{{ liveText }}</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme": {"editor": "enum", "options": ["bg", "mid", "ember", "light"], "default": "bg"}, "state": {"editor": "enum", "options": ["default", "events", "goals", "empty"], "default": "default"}, "weekStart": {"editor": "enum", "options": ["sun", "mon", "sat"], "default": "sun"}, "timeFormat": {"editor": "enum", "options": ["24h", "12h"], "default": "24h"}, "$preview": {"width": 1440, "height": 920}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); const st = props.state || 'default'; this.listenPrefs(); this._sc = null;
+    this.state = { theme: props.theme || 'bg', anchor: '2026-10-17', mmY: null, mmM: null, toggled: {}, toast: '', q: '', filter: st === 'goals' ? 'goals' : st === 'events' ? 'events' : 'both', cur: 0 }; }
+
+  sbVals() {
+    const m = this.state.sbMode || '';
+    return { rootCls: m === 'c' ? 'sb-c' : (m === 'o' ? 'sb-o' : ''), sbToggle: (e) => {
+      const el = e && e.currentTarget && e.currentTarget.closest ? e.currentTarget.closest('.fx') : null;
+      const narrow = !!el && el.getBoundingClientRect().width <= 1200; const cur = this.state.sbMode || '';
+      const collapsed = narrow ? cur !== 'o' : cur === 'c';
+      this.setState({ sbMode: collapsed ? (narrow ? 'o' : '') : (narrow ? '' : 'c') }); } };
+  }
+  prefs() {
+    let o = {}; try { o = (typeof window !== 'undefined' && window.__factaPrefs) || JSON.parse(window.localStorage.getItem('facta.prefs') || '{}') || {}; } catch (e) { o = {}; }
+    const p = this.props || {};
+    const wsKey = ['sun', 'mon', 'sat'].indexOf(o.weekStart) >= 0 ? o.weekStart : (['sun', 'mon', 'sat'].indexOf(p.weekStart) >= 0 ? p.weekStart : 'sun');
+    const tf = (o.timeFormat === '12h' || o.timeFormat === '24h') ? o.timeFormat : (p.timeFormat === '12h' ? '12h' : '24h');
+    return { wsKey, ws: { sun: 0, mon: 1, sat: 6 }[wsKey], tf };
+  }
+  listenPrefs() {
+    this._onPrefs = () => { try { this.setState({ prefTick: Date.now() }); } catch (e) {} };
+    try { window.addEventListener('facta-prefs', this._onPrefs); window.addEventListener('storage', this._onPrefs); } catch (e) {}
+  }
+  unlistenPrefs() { try { window.removeEventListener('facta-prefs', this._onPrefs); window.removeEventListener('storage', this._onPrefs); } catch (e) {} }
+  componentWillUnmount() { this.unlistenPrefs(); }
+  say(text) {
+    this.setState({ toast: text });
+    if (this._t) clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ toast: '' }), 2400);
+  }
+  themeDots() {
+    const cur = this.state.theme;
+    return [{ id: 'bg', name: 'Black & green', sw1: '#060706', sw2: '#22C55E' }, { id: 'mid', name: 'Midnight', sw1: '#04070E', sw2: '#4C8DF6' },
+      { id: 'ember', name: 'Ember', sw1: '#060504', sw2: '#FF8000' }, { id: 'light', name: 'Light', sw1: '#F6F6F3', sw2: '#15803D' }]
+      .map((t) => ({ ...t, pressed: cur === t.id ? 'true' : 'false', ring: cur === t.id ? 'var(--text)' : 'transparent', pick: () => this.setState({ theme: t.id }) }));
+  }
+
+  renderVals() {
+    const s = this.state, p = this.props, st = p.state || 'default', VIEW = 'agenda';
+
+    const PF = this.prefs();
+    const TODAY = { y: 2026, m: 9, d: 17 }, NOW_MIN = 13 * 60 + 12;
+    const pad = (n) => (n < 10 ? '0' : '') + n;
+    const keyOf = (y, m, d) => y + '-' + pad(m + 1) + '-' + pad(d);
+    const fmt = (min, mode) => { const h = Math.floor(min / 60), mm = min % 60;
+      if (PF.tf === '24h') return pad(h) + ':' + pad(mm);
+      const h12 = h % 12 === 0 ? 12 : h % 12, hh = h % 24, ap = hh < 12 ? 'AM' : 'PM';
+      if (mode === 'hour') return h12 + ' ' + ap;
+      if (mode === 'chip') return h12 + (mm ? ':' + pad(mm) : '') + (hh < 12 ? 'a' : 'p');
+      return h12 + ':' + pad(mm) + ' ' + ap; };
+    const rng = (a, b, mode) => fmt(a, mode) + '–' + fmt(b, mode);
+    const dur = (a, b) => { const d = b - a, h = Math.floor(d / 60), m = d % 60; return (h ? h + 'h' : '') + (h && m ? ' ' : '') + (m ? m + 'm' : ''); };
+    const T = (x) => { const q = x.split(':'); return Number(q[0]) * 60 + Number(q[1]); };
+    const DOW = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+    const DOWL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const MON = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const MONS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const COL = { blue: 'var(--event-blue)', red: 'var(--event-red)', green: 'var(--event-green)', orange: 'var(--event-orange)', purple: 'var(--event-purple)', pink: 'var(--event-pink)' };
+    const COLN = { blue: 'Blue', red: 'Red', green: 'Green', orange: 'Orange', purple: 'Purple', pink: 'Pink' };
+    const ev = (id, title, a, b, c) => ({ id, title, s: T(a), e: T(b), c });
+    const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    const todayD = new Date(TODAY.y, TODAY.m, TODAY.d);
+    // Sample timed events. Only October 2026 has data.
+    const eventsFor = (y, m, d) => {
+      if (y !== 2026 || m !== 9) return [];
+      const X = {
+        11: [ev('sg', 'Study group', '18:00', '19:30', 'orange')],
+        12: [ev('alg', 'Algorithms lecture', '09:00', '10:30', 'blue'), ev('ss', 'Study session', '14:00', '15:30', 'orange')],
+        13: [ev('lab', 'Database lab', '13:00', '15:00', 'green'), ev('gym', 'Gym', '18:00', '19:00', 'orange')],
+        14: [ev('alg2', 'Algorithms lecture', '09:00', '10:30', 'blue'), ev('adv', 'Advisor meeting', '12:00', '12:30', 'purple'), ev('gp', 'Group project', '15:00', '17:00', 'purple')],
+        15: [ev('sem', 'Seminar', '10:00', '11:00', 'purple'), ev('lab2', 'Database lab', '13:00', '15:00', 'green'), ev('lib', 'Library', '15:30', '17:00', 'orange'), ev('gym2', 'Gym', '17:30', '18:30', 'orange')],
+        16: [ev('chk', 'Project check-in', '11:00', '11:30', 'purple'), ev('lun', 'Lunch with Alex', '12:30', '13:30', 'pink')],
+        17: [ev('dbl', 'Database lecture', '10:00', '11:30', 'blue'), ev('tm', 'Team meeting', '16:00', '17:00', 'purple')],
+        18: [ev('sg2', 'Study group', '18:00', '19:30', 'orange')],
+        19: [ev('alg3', 'Algorithms lecture', '09:00', '10:30', 'blue')],
+        20: [ev('car', 'Career fair', '10:00', '12:00', 'pink'), ev('ss2', 'Study session', '16:00', '17:30', 'orange')],
+        21: [ev('oh', 'Office hours', '11:00', '12:00', 'green'), ev('lun2', 'Lunch', '12:30', '13:15', 'orange'), ev('gp2', 'Group project', '14:00', '16:00', 'purple'), ev('rev', 'Review session', '16:30', '17:30', 'red'), ev('gym3', 'Gym', '18:00', '19:00', 'orange')],
+        22: [ev('mid', 'Midterm: Databases', '10:00', '12:00', 'red')],
+        26: [ev('demo', 'Project demo', '14:00', '15:00', 'pink')],
+        29: [ev('tm2', 'Team meeting', '16:00', '17:00', 'purple')]
+      };
+      return (X[d] || []).slice().sort((a, b) => a.s - b.s);
+    };
+    // All-day and multi-day events: [id, title, first day, last day, colour]
+    const ALLDAY = [['ex', 'Exam prep week', 12, 15, 'orange'], ['dl', 'Project deadline', 15, 15, 'red'], ['hk', 'Hackathon', 14, 16, 'purple'], ['bd', 'Mom’s birthday', 19, 19, 'pink'], ['fb', 'Fall break', 24, 25, 'green'], ['mw', 'Midterm week', 26, 28, 'red']];
+    const goalsFor = (y, m, d) => {
+      if (y !== 2026 || m !== 9) return [];
+      const dow = new Date(y, m, d).getDay();
+      if (d === 17) return [
+        { id: 'lab', title: 'Finish lab report', time: '14:00', done: false }, { id: 'gma', title: 'Call grandma', time: '', done: false },
+        { id: 'gym', title: 'Gym — push day', time: '', done: true }, { id: 'read', title: 'Read 20 pages', time: '', done: true },
+        { id: 'sql', title: 'Review SQL joins', time: '09:00', done: true }, { id: 'pl', title: 'Water the plants', time: '', done: true }];
+      const past = d < 17;
+      const dn = (id) => past && ((d * 7 + id.length * 3) % 9 !== 0);
+      const g = [{ id: 'gym', title: 'Gym — push day', time: '', done: dn('gym') }];
+      if (dow >= 1 && dow <= 5) g.push({ id: 'read', title: 'Read 20 pages', time: dow === 3 ? '20:00' : '', done: dn('read') });
+      if (dow === 6) g.push({ id: 'pl', title: 'Water the plants', time: '', done: dn('pl') });
+      if (d % 4 === 0) g.push({ id: 'asg', title: 'Submit assignment', time: '', done: dn('asg') });
+      return g;
+    };
+    const isoWeek = (y, m, d) => { const t = new Date(Date.UTC(y, m, d)); const n = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - n); const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1)); return Math.ceil(((t - y0) / 86400000 + 1) / 7); };
+    const lab = (dt) => DOW[dt.getDay()].charAt(0) + DOW[dt.getDay()].slice(1).toLowerCase() + ' ' + dt.getDate() + ' ' + MONS[dt.getMonth()];
+
+    const anchorD = new Date(2026, 9, 17); const weekDays = null;
+    const dkey = (dt) => keyOf(dt.getFullYear(), dt.getMonth(), dt.getDate());
+    const empty = st === 'empty';
+    const groups = []; let flat = 0; const flatActs = [];
+    for (let i = 0; i < 14 && !empty; i++) {
+      const dt = new Date(2026, 9, 17 + i), k = dkey(dt), isToday = i === 0;
+      let evs = eventsFor(dt.getFullYear(), dt.getMonth(), dt.getDate()), gs = goalsFor(dt.getFullYear(), dt.getMonth(), dt.getDate()).map((g) => ({ ...g, done: s.toggled[k + ':' + g.id] ? !g.done : g.done }));
+      const ad = ALLDAY.filter((a) => dt.getMonth() === 9 && dt.getDate() >= a[2] && dt.getDate() <= a[3]);
+      if (s.filter === 'goals') { evs = []; } if (s.filter === 'events') { gs = []; }
+      const rows = [];
+      ad.forEach((a) => { if (s.filter === 'goals') return; rows.push({ at: -1, kind: 'ev', title: a[1], time: 'All day', c: COL[a[4]], meta: dt.getDate() === a[2] && a[3] > a[2] ? 'Until ' + a[3] + ' Oct' : '' }); });
+      evs.forEach((e) => rows.push({ at: e.s, kind: 'ev', title: e.title, time: fmt(e.s, 'chip'), c: COL[e.c], meta: dur(e.s, e.e), past: isToday && e.e <= NOW_MIN }));
+      gs.forEach((g) => rows.push({ at: g.time ? T(g.time) : 1439, kind: 'goal', title: g.title, time: g.time ? fmt(T(g.time), 'chip') : '', done: g.done, g, k, past: isToday && g.done }));
+      rows.sort((a, b) => a.at - b.at);
+      if (isToday) { let ins = rows.findIndex((r) => r.at >= NOW_MIN); if (ins < 0) ins = rows.length; rows.splice(ins, 0, { kind: 'now', time: fmt(NOW_MIN) }); }
+      if (!rows.length) continue;
+      const view = rows.map((r) => {
+        if (r.kind === 'now') return { isNow: true, isEv: false, isGoal: false, time: r.time };
+        const idx = flat++; const cur = s.cur === idx ? 'cur' : ''; const cls = 'arow' + (r.past ? ' is-past' : '');
+        if (r.kind === 'ev') { flatActs.push(() => this.say('Open event · ' + r.title)); return { isNow: false, isEv: true, isGoal: false, cls, cur, c: r.c, title: r.title, time: r.time, meta: r.meta, aria: r.title + ', ' + r.time, open: () => this.say('Open event · ' + r.title) }; }
+        const tg = () => { const kk = r.k + ':' + r.g.id; this.setState({ toggled: { ...s.toggled, [kk]: !s.toggled[kk] } }); }; flatActs.push(tg);
+        return { isNow: false, isEv: false, isGoal: true, cls, cur, title: r.title, time: r.time, done: r.done, checked: r.done ? 'true' : 'false', deco: r.done ? 'line-through' : 'none', cbLabel: (r.done ? 'Mark not done: ' : 'Mark done: ') + r.title, toggle: tg }; });
+      groups.push({ aria: lab(dt), cls: 'dh2' + (isToday ? ' is-today' : ''), title: isToday ? 'Today' : (i === 1 ? 'Tomorrow' : DOWL[dt.getDay()]), sub: dt.getDate() + ' ' + MONS[dt.getMonth()].toUpperCase(), today: isToday, rows: view, add: () => this.say('New item on ' + lab(dt)) });
+    }
+    const total = flat;
+    const gdone = (() => { let d = 0, n = 0; for (let i = 0; i < 14; i++) { const dt = new Date(2026, 9, 17 + i); goalsFor(2026, 9, dt.getDate()).forEach((g) => { n++; const dn = s.toggled[dkey(dt) + ':' + g.id] ? !g.done : g.done; if (dn) d++; }); } return d + '/' + n; })();
+    const FIL = [['both', 'Events and goals'], ['events', 'Events'], ['goals', 'Goals']];
+    const filters = FIL.map((f) => ({ name: f[1], checked: s.filter === f[0] ? 'true' : 'false', pick: () => this.setState({ filter: f[0], cur: 0 }) }));
+    const shift = () => this.say('Next 14 days');
+
+    const VIEWS = [['day', 'Day', '1'], ['week', 'Week', '2'], ['month', 'Month', '3'], ['agenda', 'Agenda', '4']];
+    const views = VIEWS.map((v) => ({ name: v[1], key: v[2], checked: v[0] === VIEW ? 'true' : 'false', pick: () => this.say(v[1] + ' view') }));
+
+
+    const mmY = s.mmY != null ? s.mmY : anchorD.getFullYear(), mmM = s.mmM != null ? s.mmM : anchorD.getMonth();
+    const mmFirst = (new Date(mmY, mmM, 1).getDay() - PF.ws + 7) % 7;
+    const mmStart = new Date(mmY, mmM, 1 - mmFirst);
+    const inWeek = (dt) => weekDays && weekDays.some((x) => sameDay(x, dt));
+    const mmCells = []; for (let i = 0; i < 42; i++) { const dt = new Date(mmStart.getFullYear(), mmStart.getMonth(), mmStart.getDate() + i);
+      const has = dt.getMonth() === 9 && dt.getFullYear() === 2026 && (eventsFor(2026, 9, dt.getDate()).length > 0);
+      mmCells.push({ n: String(dt.getDate()), dot: has, aria: lab(dt) + (sameDay(dt, todayD) ? ', today' : ''),
+        cls: 'd' + (dt.getMonth() !== mmM ? ' out' : '') + (sameDay(dt, todayD) ? ' today' : '') + (inWeek(dt) && !sameDay(dt, todayD) ? ' in-week' : ''),
+        pick: () => { this.setState({ anchor: keyOf(dt.getFullYear(), dt.getMonth(), dt.getDate()) }); } }); }
+    const shiftMM = (n) => { const t = new Date(mmY, mmM + n, 1); this.setState({ mmY: t.getFullYear(), mmM: t.getMonth() }); };
+    const sdEv = eventsFor(anchorD.getFullYear(), anchorD.getMonth(), anchorD.getDate());
+    const sdGoals = goalsFor(anchorD.getFullYear(), anchorD.getMonth(), anchorD.getDate()).map((g) => ({ ...g, done: s.toggled[keyOf(anchorD.getFullYear(), anchorD.getMonth(), anchorD.getDate()) + ':' + g.id] ? !g.done : g.done }));
+    const sdItems = sdEv.map((e) => ({ at: e.s, isEv: true, isGoal: false, color: COL[e.c], title: e.title, time: fmt(e.s, 'chip'), fg: 'var(--text)', deco: 'none' }))
+      .concat(sdGoals.map((g) => ({ at: g.time ? T(g.time) : 24 * 60, isEv: false, isGoal: true, title: g.title, time: g.time ? fmt(T(g.time), 'chip') : '', done: g.done, checked: g.done ? 'true' : 'false',
+        fg: 'var(--text)', deco: g.done ? 'line-through' : 'none', cbLabel: (g.done ? 'Mark not done: ' : 'Mark done: ') + g.title,
+        toggle: () => { const k = keyOf(anchorD.getFullYear(), anchorD.getMonth(), anchorD.getDate()) + ':' + g.id; this.setState({ toggled: { ...s.toggled, [k]: !s.toggled[k] } }); } })))
+      .sort((a, b) => a.at - b.at);
+    const side = { title: MON[mmM] + ' ' + mmY, prev: () => shiftMM(-1), next: () => shiftMM(1),
+      dows: [0, 1, 2, 3, 4, 5, 6].map((i) => DOW[(PF.ws + i) % 7].charAt(0)), cells: mmCells,
+      dayTitle: (sameDay(anchorD, todayD) ? 'Today, ' : '') + lab(anchorD), dayCount: sdEv.length + ' events · ' + sdGoals.filter((g) => g.done).length + '/' + sdGoals.length + ' goals',
+      items: sdItems.slice(0, 7), hasMore: sdItems.length > 7, moreText: '+' + (sdItems.length - 7) + ' more' };
+
+    const onKey = (e) => { const k = e.key;
+      if (k === 'ArrowDown') { e.preventDefault(); this.setState({ cur: Math.min(total - 1, s.cur + 1) }); } else if (k === 'ArrowUp') { e.preventDefault(); this.setState({ cur: Math.max(0, s.cur - 1) }); }
+      else if (k === 'Enter') { e.preventDefault(); if (flatActs[s.cur]) flatActs[s.cur](); }
+      else if (k === 'f' || k === 'F') { e.preventDefault(); const o = ['both', 'events', 'goals']; this.setState({ filter: o[(o.indexOf(s.filter) + 1) % 3], cur: 0 }); }
+      else if (k === 'n' || k === 'N') { e.preventDefault(); this.say('New event'); } };
+    return { ...this.sbVals(), themeKey: s.theme, themes: this.themeDots(), views, title: 'Next 14 days', subtitle: 'AGENDA · 17–30 OCT 2026', prevLabel: 'Earlier', nextLabel: 'Later', prev: shift, next: shift, goToday: () => this.setState({ cur: 0 }),
+      q: s.q, onQ: (e) => this.setState({ q: e.target.value }), onQKey: (e) => { if (e.key === 'Enter') { e.preventDefault(); if (s.q.trim()) { this.say('Event added · ' + s.q.trim()); this.setState({ q: '' }); } } },
+      newEvent: () => this.say('New event'), newGoal: () => this.say('New goal'), side, filters, groups, isEmpty: empty || groups.length === 0,
+      emptyText: s.filter === 'goals' ? 'No goals in the next two weeks. Add one with G.' : 'Your next two weeks are clear. Add an event with N or type a line above.',
+      summary: total + ' items · ' + gdone + ' goals done', onKey, scRef: (el) => { this._sc = el; }, liveText: total + ' items', hasToast: !!s.toast, toast: s.toast };
+  }
+}
+</script>
+</body>
+</html>

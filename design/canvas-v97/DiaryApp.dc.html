@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Facta — Diary</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+
+<style>
+
+body{margin:0}
+.fx,.fx[data-theme="bg"]{color-scheme:dark;--bg:#060706;--surface:#0C0D0C;--raised:#121412;--raised-2:#191C18;--border:#1A1D1A;--border-strong:#262A25;--control-border:#5F685E;--text:#F1F4F1;--text-2:#A6AEA6;--muted:#868F86;--accent:#22C55E;--accent-hover:#2DD46A;--accent-text:#03210F;--accent-soft:rgba(34,197,94,.10);--accent-border:#1C7E40;--success:#22C55E;--warning:#E0A33B;--danger:#EF5A5A;--danger-soft:rgba(239,90,90,.12);--danger-text:#1A0505;--event-blue:#5B8DEF;--event-purple:#A47CF0;--event-red:#EF6B6B;--event-green:#4CC38A;--event-orange:#F0904A;--event-pink:#EC6FB0;--note-a:#E8C547;--note-b:#5B8DEF;--note-c:#EC6FB0;--note-d:#4CC38A;--text-rgb:241,244,241;--surface-rgb:12,13,12;--logo-tile:#0A0B0A;--logo-mark:#22C55E;--slant:-10deg}
+.fx[data-theme="mid"]{color-scheme:dark;--bg:#04070E;--surface:#090E1A;--raised:#0E1524;--raised-2:#141C30;--border:#161F33;--border-strong:#212C45;--control-border:#55668F;--text:#EEF2FA;--text-2:#A3AECB;--muted:#7D89A8;--accent:#4C8DF6;--accent-hover:#6AA1F8;--accent-text:#04122B;--accent-soft:rgba(76,141,246,.12);--accent-border:#3B6BBB;--success:#4C8DF6;--warning:#E8B04B;--danger:#F06A6A;--danger-soft:rgba(240,106,106,.12);--danger-text:#1F0606;--event-blue:#67C1F5;--event-purple:#A88BF5;--event-red:#F07A7A;--event-green:#52C98F;--event-orange:#F2A05C;--event-pink:#EE7DB8;--note-a:#E8B04B;--note-b:#67C1F5;--note-c:#EE7DB8;--note-d:#52C98F;--text-rgb:238,242,250;--surface-rgb:9,14,26;--logo-tile:#04070E;--logo-mark:#4C8DF6}
+.fx[data-theme="ember"]{color-scheme:dark;--bg:#060504;--surface:#0C0A08;--raised:#120F0D;--raised-2:#191512;--border:#1A1613;--border-strong:#27201C;--control-border:#6E6053;--text:#F6F1EC;--text-2:#B8ADA3;--muted:#938778;--accent:#FF8000;--accent-hover:#FF9426;--accent-text:#1F0E00;--accent-soft:rgba(255,128,0,.12);--accent-border:#A55505;--success:#FF8000;--warning:#E8C547;--danger:#F25F5C;--danger-soft:rgba(242,95,92,.12);--danger-text:#1F0606;--event-blue:#6E9CF0;--event-purple:#B08AF0;--event-red:#F07070;--event-green:#55C08A;--event-orange:#F0A040;--event-pink:#EE78B4;--note-a:#E8C547;--note-b:#6E9CF0;--note-c:#EE78B4;--note-d:#55C08A;--text-rgb:246,241,236;--surface-rgb:12,10,8;--logo-tile:#060504;--logo-mark:#FF8000}
+.fx[data-theme="light"]{color-scheme:light;--bg:#F6F6F3;--surface:#FFFFFF;--raised:#F0F1EC;--raised-2:#E7E9E3;--border:#E3E5DF;--border-strong:#CDD1C8;--control-border:#7E857B;--text:#141713;--text-2:#4E554D;--muted:#626A60;--accent:#15803D;--accent-hover:#166534;--accent-text:#FFFFFF;--accent-soft:rgba(21,128,61,.10);--accent-border:#15803D;--success:#16A34A;--warning:#B45309;--danger:#DC2626;--danger-soft:rgba(220,38,38,.08);--danger-text:#FFFFFF;--event-blue:#2563EB;--event-purple:#7C3AED;--event-red:#DC2626;--event-green:#059669;--event-orange:#EA580C;--event-pink:#DB2777;--note-a:#B45309;--note-b:#2563EB;--note-c:#DB2777;--note-d:#059669;--text-rgb:20,23,19;--surface-rgb:255,255,255;--logo-tile:#15803D;--logo-mark:#FFFFFF}
+
+
+.fx{position:relative;container-type:inline-size;container-name:app;display:flex;height:920px;overflow:hidden;font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased}
+.fx *{box-sizing:border-box}
+:where(.fx) button{color:inherit}
+.fx button{font-family:inherit;cursor:pointer}
+.fx button:focus-visible,.fx input:focus-visible,.fx textarea:focus-visible,.fx [tabindex]:focus-visible{outline:2px solid var(--text);outline-offset:2px}
+.mono{font-family:'Geist Mono',ui-monospace,monospace;font-feature-settings:"tnum"}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.kbd{font-family:'Geist Mono',ui-monospace,monospace;font-size:10.5px;line-height:1;color:var(--muted);border:1px solid var(--border-strong);border-bottom-width:2px;border-radius:5px;padding:3px 5px;background:var(--raised);white-space:nowrap}
+.sec{font-family:'Geist Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.08em;color:var(--muted)}
+/* sidebar */
+.sb{flex:0 0 240px;display:flex;flex-direction:column;gap:22px;padding:22px 14px 18px;background:var(--surface);border-right:1px solid var(--border)}
+.sb .nv{display:flex;align-items:center;gap:12px;height:40px;padding:0 12px;border:0;border-radius:9px;background:transparent;font-size:14px;color:var(--text-2);text-align:left;width:100%}
+.sb .nv:hover{background:var(--raised)}
+.sb .nv[aria-current="page"]{background:var(--raised);color:var(--text);font-weight:500}
+.sb .nv .lbl{flex:1}
+.sb .nv .mk{width:6px;height:6px;border-radius:3px;background:var(--accent)}
+.sb .tdot{width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:14px;background:transparent;border:1.5px solid transparent}
+.sb .tdot:hover{border-color:var(--text-2)}
+.fx.sb-c .sb{flex-basis:64px;align-items:center;padding:20px 8px 16px}
+.fx.sb-c .sb .lbl,.fx.sb-c .sb .mk,.fx.sb-c .sb .sbsearch,.fx.sb-c .sb .wordmark,.fx.sb-c .sb .sync-t,.fx.sb-c .sb .theme-l{display:none}
+.fx.sb-c .sb .nv{width:44px;justify-content:center;padding:0}
+.fx.sb-c .sb .themes{flex-direction:column}
+.fx.sb-c .sb .sbtop{flex-direction:column;padding:0}
+.fx.sb-c .sbtog .i-l{display:none}.fx.sb-c .sbtog .i-r{display:flex}
+.sbtog .i-l{display:flex}.sbtog .i-r{display:none}
+.sbtog{margin-left:auto}
+@container app (max-width:1200px){
+  .fx:not(.sb-o) .sb{flex-basis:64px;align-items:center;padding:20px 8px 16px}
+  .fx:not(.sb-o) .sb .lbl,.fx:not(.sb-o) .sb .mk,.fx:not(.sb-o) .sb .sbsearch,.fx:not(.sb-o) .sb .wordmark,.fx:not(.sb-o) .sb .sync-t,.fx:not(.sb-o) .sb .theme-l{display:none}
+  .fx:not(.sb-o) .sb .nv{width:44px;justify-content:center;padding:0}
+  .fx:not(.sb-o) .sb .themes{flex-direction:column}
+  .fx:not(.sb-o) .sb .sbtop{flex-direction:column;padding:0}
+  .fx:not(.sb-o) .sbtog .i-l{display:none}.fx:not(.sb-o) .sbtog .i-r{display:flex}
+  .side-panel{display:none !important}
+  .hd .hide-s{display:none !important}
+}
+/* controls */
+.ctl{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:36px;padding:0 12px;border-radius:9px;border:1px solid var(--control-border);background:transparent;font-size:13px;font-weight:500;color:var(--text);white-space:nowrap}
+.ctl:hover{background:var(--raised-2);border-color:var(--text-2)}
+.ctl-icon{width:36px;padding:0}
+.ctl[aria-pressed="true"],.ctl[aria-checked="true"]{background:var(--text);color:var(--bg);border-color:var(--text)}
+.b{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;font-size:14px;font-weight:600;line-height:1;white-space:nowrap;transition:background .14s ease,color .14s ease,box-shadow .14s ease,transform .08s ease}
+.b-commit{height:40px;padding:0;border-radius:9px;transform:skewX(var(--slant));overflow:hidden}
+.b-commit > span{transform:skewX(calc(var(--slant) * -1))}
+.b-commit .lab{display:inline-flex;align-items:center;gap:8px;padding:0 16px 0 18px}
+.b-commit .key{height:100%;display:inline-flex;align-items:center;padding:0 12px;font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;font-weight:500;background:rgba(0,0,0,.16);border-left:1px solid rgba(0,0,0,.18);transform:none}
+.b-commit:active{transform:skewX(var(--slant)) scale(.97)}
+.b-primary{background:var(--accent);color:var(--accent-text)}
+.b-primary:hover{background:var(--accent-hover)}
+.b-quiet{height:36px;padding:0 12px;border-radius:9px;background:transparent;color:var(--text-2);font-weight:500;font-size:13px}
+.b-quiet:hover{background:var(--raised-2);color:var(--text)}
+.b-del{height:36px;padding:0 12px;border-radius:9px;background:transparent;color:var(--danger);font-weight:500;font-size:13px}
+.b-del:hover{background:var(--danger-soft)}
+.b-icon{width:32px;height:32px;padding:0;border-radius:8px;background:transparent;color:var(--muted)}
+.b-icon:hover{background:var(--raised-2);color:var(--text)}
+.opt{height:32px;padding:0;border-radius:8px;transform:skewX(var(--slant));background:transparent;box-shadow:inset 0 0 0 1px var(--control-border);color:var(--text-2);font-size:13px;font-weight:500;border:0}
+.opt > span{display:inline-flex;align-items:center;gap:8px;padding:0 14px;transform:skewX(calc(var(--slant) * -1))}
+.opt:hover{box-shadow:inset 0 0 0 1px var(--text-2);color:var(--text)}
+.opt[aria-checked="true"],.opt[aria-pressed="true"]{background:var(--text);color:var(--bg);box-shadow:none}
+.seg{display:flex;gap:2px;padding:3px;background:var(--surface);border:1px solid var(--border);border-radius:11px}
+.seg button{display:flex;align-items:center;gap:8px;height:30px;padding:0 11px;border:0;border-radius:8px;font-size:13px;font-weight:500;background:transparent;color:var(--text-2)}
+.seg button:hover{color:var(--text);background:var(--raised)}
+.seg button[aria-pressed="true"],.seg button[aria-checked="true"]{background:var(--text);color:var(--bg)}
+.seg button .mono{font-size:10.5px;color:var(--muted)}
+.seg button[aria-pressed="true"] .mono,.seg button[aria-checked="true"] .mono{color:var(--bg);opacity:.7}
+.cb{width:16px;height:16px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:5px;border:0;background:transparent;box-shadow:inset 0 0 0 1.5px var(--control-border);flex:0 0 auto;color:var(--accent-text)}
+.cb[aria-checked="true"]{background:var(--accent);box-shadow:none}
+.cb:hover{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.cb[aria-checked="true"]:hover{box-shadow:none}
+.evdot{width:7px;height:7px;border-radius:4px;background:var(--c);flex:0 0 auto}
+.pop{position:absolute;z-index:20;display:flex;flex-direction:column;background:var(--raised);border:1px solid var(--border-strong);border-radius:14px;box-shadow:0 18px 40px rgba(0,0,0,.45);overflow:hidden}
+.scrim{position:absolute;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55)}
+.modal{display:flex;flex-direction:column;background:var(--raised);border:1px solid var(--border-strong);border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.55);overflow:hidden}
+.toast{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:10px;height:38px;padding:0 14px;border-radius:10px;background:var(--text);color:var(--surface);font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.hd{display:flex;flex-wrap:wrap;align-items:center;gap:14px 18px;padding:16px 28px;border-bottom:1px solid var(--border);min-height:72px}
+.hd h1{margin:0;font-size:24px;font-weight:600;letter-spacing:-.03em;line-height:1.15}
+.qa{position:relative;flex:1 1 220px;max-width:380px}
+.qa input{width:100%;height:36px;padding:0 44px 0 34px;background:var(--surface);border:1px solid var(--control-border);border-radius:9px;color:var(--text);font:inherit;font-size:13px}
+.qa input::placeholder{color:var(--muted)}
+.foot{display:flex;align-items:center;gap:16px;height:32px;padding:0 28px;border-top:1px solid var(--border);background:var(--surface);font-size:12px;color:var(--muted);overflow:hidden;white-space:nowrap}
+.foot span.k{display:inline-flex;align-items:center;gap:6px}
+.side-panel{flex:0 0 272px;display:flex;flex-direction:column;gap:18px;padding:18px 16px;border-right:1px solid var(--border);overflow:hidden;background:var(--bg)}
+.mm{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;text-align:center}
+.mm .d{height:28px;padding:0;border:0;border-radius:14px;background:transparent;font-size:12px;color:var(--text);position:relative}
+.mm .d:hover{background:var(--raised)}
+.mm .d.out{color:var(--muted);opacity:.55}
+.mm .d.in-week{background:var(--raised)}
+.mm .d.today{background:var(--text);color:var(--bg);font-weight:600}
+.mm .d .dt{position:absolute;left:50%;bottom:2px;width:3px;height:3px;border-radius:2px;margin-left:-1.5px;background:var(--text-2)}
+.mm .d.today .dt{background:var(--bg)}
+
+
+.gmain{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;position:relative}
+.gscroll{flex:1;min-height:0;overflow-y:auto;outline:none}
+.gwrap{max-width:1120px;margin:0 auto;padding:0 28px 40px}
+.ov{display:grid;grid-template-columns:minmax(0,1.5fr) repeat(3,minmax(0,1fr));gap:0;margin:20px 0 0;border:1px solid var(--border);border-radius:14px;background:var(--surface)}
+.ov > div{padding:16px 20px;display:flex;flex-direction:column;gap:6px;min-width:0;border-left:1px solid var(--border)}
+.ov > div:first-child{border-left:0;flex-direction:row;align-items:center;gap:18px}
+.ov .k{font-family:'Geist Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.08em;color:var(--muted)}
+.ov .big{font-size:26px;font-weight:600;letter-spacing:-.03em;line-height:1.1}
+.ov .small{font-size:12.5px;color:var(--text-2)}
+.wkd{display:flex;gap:5px;margin-top:6px}
+.wkd i{display:flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:6px;font-style:normal;font-family:'Geist Mono',ui-monospace,monospace;font-size:10px;color:var(--muted);box-shadow:inset 0 0 0 1px var(--border-strong)}
+.wkd i.on{background:var(--accent);color:var(--accent-text);box-shadow:none}
+.wkd i.part{background:var(--accent-soft);color:var(--text);box-shadow:inset 0 0 0 1px var(--accent-border)}
+.wkd i.td{box-shadow:inset 0 0 0 1.5px var(--text);color:var(--text)}
+.mbar{height:4px;border-radius:2px;background:var(--raised-2);overflow:hidden}
+.mbar i{display:block;height:100%;background:var(--accent);border-radius:2px}
+.gbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:16px 0 10px}
+.gsec{display:flex;align-items:center;gap:10px;height:34px;margin-top:14px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600}
+.gsec .n{font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;font-weight:400;color:var(--muted)}
+.gsec button.tg{display:flex;align-items:center;gap:8px;border:0;background:transparent;font:inherit;font-weight:600;color:var(--text);padding:0;height:34px}
+.gr{display:flex;align-items:center;gap:12px;min-height:44px;padding:0 10px;margin:0 -10px;border-radius:9px;font-size:14px;position:relative}
+.gr:hover{background:var(--raised)}
+.gr.is-cur.force,.glist:focus .gr.is-cur{background:var(--raised);box-shadow:inset 0 0 0 2px var(--text)}
+.gr .tt{flex:0 1 auto;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-weight:500}
+.gr.is-done .tt{text-decoration:line-through;text-decoration-color:rgba(var(--text-rgb),.5);color:var(--text-2)}
+.gr .sp{flex:1}
+.gr .mt{font-family:'Geist Mono',ui-monospace,monospace;font-size:11.5px;color:var(--muted);white-space:nowrap}
+.gr .rm{display:flex;color:var(--warning)}
+.gr .edit{display:none}
+.gr:hover .edit{display:flex}
+.chp{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:6px;font-size:11.5px;font-weight:500;white-space:nowrap}
+.chp.rep{background:transparent;box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--text-2)}
+.chp.must{background:var(--raised-2);color:var(--text);font-weight:600}
+.chp.should{background:transparent;box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--text-2)}
+.chp.nice{background:transparent;color:var(--muted)}
+.chp.strk{background:var(--accent-soft);color:var(--text)}
+.chp.shr{background:var(--raised-2);color:var(--text)}
+.pb{display:inline-flex;gap:2px;align-items:flex-end}
+.pb i{display:block;width:2.5px;height:9px;border-radius:1px;background:currentColor;opacity:.28}
+.pb i.on{opacity:1}
+.addr{display:flex;align-items:center;gap:10px;height:46px;padding:0 12px;margin:10px 0 2px;border-radius:10px;border:1px dashed var(--control-border);color:var(--muted)}
+.addr:focus-within{border-style:solid;border-color:var(--text);color:var(--text)}
+.addr input{flex:1;min-width:0;height:100%;border:0;background:transparent;color:var(--text);font:inherit;font-size:14px;outline:none}
+.addr input::placeholder{color:var(--muted)}
+.cols3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:6px}
+.bcol{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:12px;background:var(--surface);border:1px solid var(--border);min-height:300px}
+.bcard{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:10px;background:var(--raised);border:1px solid var(--border)}
+.bcard.is-done .tt{text-decoration:line-through;color:var(--text-2)}
+.bcard .r1{display:flex;align-items:flex-start;gap:10px;font-size:14px;font-weight:500}
+.bcard .r2{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.gempty{display:flex;flex-direction:column;align-items:flex-start;gap:12px;margin:48px auto 0;max-width:460px;padding:22px 24px;border-radius:14px;background:var(--surface);border:1px solid var(--border-strong)}
+.av{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:13px;background:color-mix(in srgb,var(--c) 30%,var(--surface));box-shadow:inset 0 0 0 1.5px var(--c);font-size:11.5px;font-weight:600;color:var(--text);flex:0 0 auto}
+.av.pend{background:transparent;box-shadow:none;border:1.5px dashed var(--control-border);color:var(--muted)}
+.avs{display:flex}
+.avs .av{margin-left:-7px;border:2px solid var(--surface);width:30px;height:30px}
+.avs .av:first-child{margin-left:0}
+.avs .more{display:inline-flex;align-items:center;justify-content:center;margin-left:-7px;width:30px;height:30px;border-radius:15px;background:var(--raised-2);border:2px solid var(--surface);font-size:11px;font-weight:600;color:var(--text-2)}
+.scards{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:16px;margin-top:6px}
+.sc{display:flex;flex-direction:column;gap:14px;padding:18px 20px;border-radius:14px;background:var(--surface);border:1px solid var(--border)}
+.tile{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;background:var(--raised-2);color:var(--text);flex:0 0 auto}
+.rk{display:grid;grid-template-columns:20px 26px 72px minmax(0,1fr) 44px;align-items:center;gap:10px;min-height:32px;padding:0 8px;margin:0 -8px;border-radius:8px;font-size:13px}
+.rk.is-you{background:var(--raised)}
+.rk .n{font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;color:var(--muted);text-align:right}
+.rk .nm{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-weight:500}
+.rk .pc{font-family:'Geist Mono',ui-monospace,monospace;font-size:12px;text-align:right}
+.rk .bar{height:6px;border-radius:3px;background:var(--raised-2);overflow:hidden}
+.rk .bar i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.rk .bar i.low{background:var(--text-2)}
+.rk.pend .nm,.rk.pend .pc{color:var(--muted);font-weight:400}
+.ci{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;background:var(--raised);font-size:13px}
+.banner{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:10px;background:var(--raised);border:1px solid var(--border-strong);font-size:13px;color:var(--text);margin-top:16px}
+.banner svg{color:var(--warning);flex:0 0 auto}
+.inv{display:flex;align-items:center;gap:14px;padding:16px 20px;border-radius:14px;background:var(--raised);border:1px solid var(--border-strong);margin-top:16px}
+.pnl{padding:18px 20px;border-radius:14px;background:var(--surface);border:1px solid var(--border);display:flex;flex-direction:column;gap:12px;min-width:0}
+.pnl h2{margin:0;font-size:14px;font-weight:600}
+.stp{display:inline-flex;align-items:center;gap:2px}
+.stp button{width:28px;height:28px;padding:0;border:0;border-radius:7px;background:var(--raised-2);color:var(--text);display:flex;align-items:center;justify-content:center}
+.stp button:hover{background:var(--control-border)}
+.stp button[aria-disabled="true"]{opacity:.35;cursor:default}
+.stp .v{min-width:40px;text-align:center;font-family:'Geist Mono',ui-monospace,monospace;font-size:13px}
+.tbl{display:grid;grid-template-columns:110px repeat(7,minmax(0,1fr)) 64px;align-items:center;row-gap:2px}
+.tbl .h{font-family:'Geist Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.08em;color:var(--muted);text-align:center;padding-bottom:6px}
+.tbl .h.td{color:var(--text)}
+.tbl .who{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;height:34px;min-width:0}
+.tbl .who span.t{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.tbl .cell{display:flex;align-items:center;justify-content:center;height:34px}
+.dotc{width:22px;height:22px;border-radius:7px;display:flex;align-items:center;justify-content:center;color:var(--accent-text)}
+.dotc.ok{background:var(--accent)}
+.dotc.miss{box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--muted)}
+.dotc.now{box-shadow:inset 0 0 0 1.5px var(--text)}
+.dotc.fut{box-shadow:inset 0 0 0 1px var(--border)}
+.dotc.rest{width:6px;height:6px;border-radius:3px;background:var(--border-strong)}
+.tbl .tot{font-family:'Geist Mono',ui-monospace,monospace;font-size:12px;text-align:right}
+.hist{display:grid;grid-template-columns:44px minmax(0,1fr) 40px;gap:8px 10px;align-items:center;font-size:12.5px}
+.hist .wl{font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;color:var(--muted)}
+.hist .wn{grid-column:2 / 4;color:var(--text-2);font-size:11.5px;margin-top:-4px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label,.flab{font-size:12px;font-weight:500;color:var(--text-2)}
+.inp{height:42px;padding:0 12px;background:var(--bg);border:1px solid var(--control-border);border-radius:9px;color:var(--text);font:inherit;font-size:14px;width:100%}
+.inp:focus{outline:2px solid var(--text);outline-offset:1px}
+.tpl{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:16px;border-radius:12px;border:0;background:transparent;box-shadow:inset 0 0 0 1px var(--control-border);text-align:left;color:var(--text);width:100%}
+.tpl:hover{box-shadow:inset 0 0 0 1px var(--text-2)}
+.tpl[aria-checked="true"]{background:var(--text);color:var(--bg);box-shadow:none}
+.tpl[aria-checked="true"] .sub{color:var(--bg);opacity:.75}
+.tpl .sub{font-size:12.5px;color:var(--text-2);font-weight:400}
+.steps{display:flex;gap:6px;align-items:center}
+.steps span{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+.steps span b{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:11px;font-weight:600;font-size:11.5px;box-shadow:inset 0 0 0 1px var(--border-strong)}
+.steps span.on{color:var(--text)}
+.steps span.on b{background:var(--text);color:var(--bg);box-shadow:none}
+.steps span.dn b{background:var(--accent);color:var(--accent-text);box-shadow:none}
+.steps i{width:22px;height:1px;background:var(--border-strong)}
+.iconpick{display:flex;gap:8px;flex-wrap:wrap}
+.iconpick button{width:40px;height:40px;padding:0;border:0;border-radius:10px;background:transparent;box-shadow:inset 0 0 0 1px var(--control-border);color:var(--text);display:flex;align-items:center;justify-content:center}
+.iconpick button:hover{box-shadow:inset 0 0 0 1px var(--text-2)}
+.iconpick button[aria-checked="true"]{background:var(--text);color:var(--bg);box-shadow:none}
+.prow{display:flex;align-items:center;gap:12px;min-height:50px;padding:0 4px;border-bottom:1px solid var(--border);font-size:14px}
+.prow .nm{flex:1;min-width:0;font-weight:500}
+.prow .st{font-size:12px;color:var(--muted)}
+@container app (max-width:1200px){.gwrap{padding:0 20px 40px}.ov{grid-template-columns:repeat(3,minmax(0,1fr))}.ov > div:first-child{grid-column:1 / -1;border-bottom:1px solid var(--border)}.ov > div:nth-child(2){border-left:0}.scards{grid-template-columns:minmax(0,1fr)}}
+
+.only-s{display:none !important}
+.nwrap{flex:1;min-width:0;min-height:0;display:flex}
+.npa{flex:0 0 212px;display:flex;flex-direction:column;gap:18px;padding:18px 12px;border-right:1px solid var(--border);overflow:hidden;background:var(--bg)}
+.npa .grp{display:flex;flex-direction:column;gap:1px}
+.npi{display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border:0;border-radius:8px;background:transparent;font-size:13.5px;color:var(--text-2);text-align:left;width:100%}
+.npi:hover{background:var(--raised)}
+.npi[aria-current="true"]{background:var(--raised);color:var(--text);font-weight:500}
+.npi .n{margin-left:auto;font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;color:var(--muted)}
+.nlist{flex:0 0 336px;display:flex;flex-direction:column;border-right:1px solid var(--border);min-width:0;min-height:0}
+.nlh{display:flex;flex-direction:column;gap:10px;padding:16px 16px 10px}
+.nsearch{position:relative}
+.nsearch input{width:100%;height:36px;padding:0 44px 0 34px;background:var(--surface);border:1px solid var(--control-border);border-radius:9px;color:var(--text);font:inherit;font-size:13.5px}
+.nsearch input::placeholder{color:var(--muted)}
+.nsearch input:focus{outline:2px solid var(--text);outline-offset:1px}
+.ncap{position:relative}
+.ncap input{width:100%;height:38px;padding:0 62px 0 12px;border-radius:10px;border:1px dashed var(--control-border);background:transparent;color:var(--text);font:inherit;font-size:13.5px}
+.ncap input::placeholder{color:var(--muted)}
+.ncap input:focus{outline:none;border-style:solid;border-color:var(--text)}
+.nitems{flex:1;min-height:0;overflow-y:auto;padding:0 8px 16px;outline:none}
+.nit{display:flex;gap:12px;width:100%;padding:11px 10px;margin:0;border:0;border-radius:10px;background:transparent;text-align:left;color:var(--text)}
+.nit:hover{background:var(--raised)}
+.nit.is-sel{background:var(--raised)}
+.nitems:focus .nit.is-sel{box-shadow:inset 0 0 0 2px var(--text)}
+.nit .bar{flex:0 0 8px;width:8px;height:8px;margin-top:5px;border-radius:50%;background:var(--c)}
+.nit .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.nit .tl{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nit .pv{font-size:12.5px;line-height:1.4;color:var(--text-2);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.nit .dt{font-family:'Geist Mono',ui-monospace,monospace;font-size:10.5px;color:var(--muted);display:flex;align-items:center;gap:6px;margin-top:1px}
+.nit .wgt{display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border-radius:5px;background:var(--raised-2);color:var(--text-2)}
+.ned{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column}
+.nbar{display:flex;align-items:center;gap:10px;padding:12px 24px;border-bottom:1px solid var(--border);flex-wrap:wrap;min-height:56px}
+.nbody{flex:1;min-height:0;overflow-y:auto;position:relative}
+.ndoc{max-width:720px;margin:0 auto;padding:28px 32px 60px;display:flex;flex-direction:column;gap:12px;position:relative}
+.ntitle{width:100%;border:0;background:transparent;color:var(--text);font:inherit;font-size:32px;font-weight:700;letter-spacing:-.03em;line-height:1.15;outline:none;padding:0}
+.ntitle::placeholder{color:var(--muted)}
+.nmeta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.tagc{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 9px;border-radius:7px;background:var(--raised-2);font-size:12px;color:var(--text-2);border:0}
+.blk{position:relative;font-size:15.5px;line-height:1.65;color:var(--text)}
+.blk h2{margin:10px 0 0;font-size:22px;font-weight:600;letter-spacing:-.02em;line-height:1.25}
+.blk p{margin:0}
+.blk .ck{display:flex;align-items:flex-start;gap:12px;min-height:30px}
+.blk .ck .cb{margin-top:6px;width:18px;height:18px}
+.blk .ck.is-done span.t{text-decoration:line-through;text-decoration-color:rgba(var(--text-rgb),.5);color:var(--text-2)}
+.blk .li{display:flex;gap:12px;min-height:28px}
+.blk .li i{flex:0 0 6px;height:6px;border-radius:3px;background:var(--text-2);margin-top:12px}
+.blk .lnk2{color:var(--text);text-decoration:underline;text-decoration-color:var(--text-2);text-underline-offset:3px}
+.blk .bl{color:var(--text);text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;font-weight:500}
+.blk mark{background:var(--text);color:var(--bg);border-radius:3px;padding:0 1px}
+.blk pre{margin:0;padding:14px 16px;border-radius:10px;background:var(--surface);border:1px solid var(--border-strong);font-family:'Geist Mono',ui-monospace,monospace;font-size:13px;line-height:1.55;overflow:auto;color:var(--text)}
+.blk blockquote{margin:0;padding:2px 0 2px 16px;border-left:3px solid var(--border-strong);color:var(--text-2);font-style:italic}
+.blk hr{border:0;height:1px;background:var(--border-strong);margin:14px 0}
+.nnew{width:100%;border:0;background:transparent;color:var(--text);font:inherit;font-size:15.5px;line-height:1.65;outline:none;padding:0;height:30px}
+.nnew::placeholder{color:var(--muted)}
+.slash{position:absolute;z-index:30;left:0;top:34px;width:280px;display:flex;flex-direction:column;padding:6px;background:var(--raised);border:1px solid var(--border-strong);border-radius:12px;box-shadow:0 18px 40px rgba(0,0,0,.45)}
+.slash .sh{padding:6px 8px 4px;font-family:'Geist Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.08em;color:var(--muted)}
+.slash button{display:flex;align-items:center;gap:12px;height:38px;padding:0 10px;border:0;border-radius:8px;background:transparent;color:var(--text);font-size:13.5px;text-align:left;width:100%}
+.slash button.on{background:var(--text);color:var(--bg)}
+.slash button .ic{display:flex;width:26px;height:26px;align-items:center;justify-content:center;border-radius:6px;background:var(--raised-2);color:var(--text)}
+.slash button.on .ic{background:rgba(var(--surface-rgb),.2);color:var(--bg)}
+.slash button .k{margin-left:auto;font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;opacity:.7}
+.seltb{position:absolute;z-index:30;display:flex;gap:2px;padding:4px;background:var(--text);border-radius:10px;box-shadow:0 10px 26px rgba(0,0,0,.4)}
+.seltb button{width:32px;height:30px;padding:0;border:0;border-radius:7px;background:transparent;color:var(--bg);display:flex;align-items:center;justify-content:center}
+.seltb button:hover{background:rgba(var(--surface-rgb),.2)}
+.seltb .fbtn{display:flex;align-items:center;justify-content:space-between;gap:8px;width:auto;min-width:132px;padding:0 8px;color:var(--bg)}
+.seltb [aria-pressed="true"],.seltb [role=radio][aria-checked="true"]{background:rgba(var(--surface-rgb),.3)}
+.seltb .swt[aria-checked="true"]{background-clip:padding-box;box-shadow:0 0 0 2px var(--text),0 0 0 3.5px var(--bg)}
+.seltb i{width:1px;margin:4px 3px;background:rgba(var(--surface-rgb),.3)}
+.backl{display:flex;flex-direction:column;gap:6px;margin-top:22px;padding-top:16px;border-top:1px solid var(--border)}
+.backl button{display:flex;align-items:center;gap:10px;padding:8px 10px;margin:0 -10px;border:0;border-radius:8px;background:transparent;text-align:left;color:var(--text)}
+.backl button:hover{background:var(--raised)}
+.gridw{flex:1;min-width:0;min-height:0;overflow-y:auto}
+.ngrid{column-count:3;column-gap:16px;padding:6px 28px 40px}
+.nc{break-inside:avoid;display:flex;flex-direction:column;gap:8px;width:100%;margin:0 0 16px;padding:14px 16px 12px;border:0;border-top:4px solid var(--c);border-radius:12px;background:color-mix(in srgb,var(--c) 14%,var(--surface));text-align:left;color:var(--text);position:relative}
+.nc:hover{background:color-mix(in srgb,var(--c) 22%,var(--surface))}
+.nc .tl{font-size:15.5px;font-weight:600;letter-spacing:-.01em}
+.nc .pv{font-size:13.5px;line-height:1.5;color:var(--text-2);white-space:pre-line}
+.nc .ft{display:flex;align-items:center;gap:8px;font-family:'Geist Mono',ui-monospace,monospace;font-size:10.5px;color:var(--muted);margin-top:2px}
+.fomode{position:absolute;inset:0;z-index:15;background:var(--bg);display:flex;flex-direction:column}
+.undo{position:absolute;left:50%;bottom:52px;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:14px;height:44px;padding:0 8px 0 16px;border-radius:12px;background:var(--text);color:var(--bg);font-size:13.5px;font-weight:500;box-shadow:0 12px 30px rgba(0,0,0,.4)}
+.undo button{height:30px;padding:0 12px;border:0;border-radius:8px;background:rgba(var(--surface-rgb),.2);color:var(--bg);font-weight:600;font-size:13px;display:flex;align-items:center;gap:6px}
+.qcap{width:600px;max-width:calc(100% - 40px)}
+.qcap textarea{width:100%;min-height:130px;resize:none;padding:16px 18px;border:0;background:transparent;color:var(--text);font:inherit;font-size:17px;line-height:1.55;outline:none}
+.qsw{width:640px;max-width:calc(100% - 40px);align-self:flex-start;margin-top:90px}
+.qsw .inp2{width:100%;height:54px;padding:0 20px 0 52px;border:0;border-bottom:1px solid var(--border-strong);background:transparent;color:var(--text);font:inherit;font-size:17px;outline:none}
+.qsw .res{display:flex;align-items:center;gap:12px;width:100%;min-height:50px;padding:6px 14px;border:0;border-radius:10px;background:transparent;color:var(--text);text-align:left}
+.qsw .res.on{background:var(--text);color:var(--bg)}
+.qsw .res .sn{font-size:12px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qsw .res .kk{margin-left:auto;font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;opacity:.7}
+@container app (max-width:1200px){.npa{display:none}.only-s{display:flex !important}.ngrid{column-count:2}.nlist{flex-basis:304px}.ndoc{padding:24px 24px 60px}}
+
+.fx{--m1:var(--danger);--m2:var(--warning);--m3:var(--text-2);--m4:color-mix(in srgb,var(--accent) 45%,var(--text-2));--m5:var(--accent)}
+.dwrap{flex:1;min-width:0;min-height:0;overflow-y:auto;outline:none}
+.dtoday{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:28px;max-width:1120px;margin:0 auto;padding:24px 28px 48px}
+.dcol{display:flex;flex-direction:column;gap:16px;min-width:0}
+.dcard{display:flex;flex-direction:column;gap:12px;padding:18px 20px;border:1px solid var(--border);border-radius:14px;background:var(--surface)}
+.dline{width:100%;height:58px;padding:0 74px 0 18px;border:1px solid var(--control-border);border-radius:12px;background:var(--bg);color:var(--text);font:inherit;font-size:20px;font-weight:500;letter-spacing:-.02em}
+.dline::placeholder{color:var(--muted);font-weight:400}
+.dline:focus{outline:2px solid var(--text);outline-offset:1px;border-color:var(--text)}
+.dbig{font-size:26px;line-height:1.25;font-weight:600;letter-spacing:-.025em;margin:0}
+.mood{display:flex;gap:8px;flex-wrap:wrap}
+.mood .opt > span{gap:8px}
+.mdot{width:9px;height:9px;border-radius:5px;background:var(--mc);flex:0 0 auto;display:inline-block}
+.m1{--mc:var(--m1)}.m2{--mc:var(--m2)}.m3{--mc:var(--m3)}.m4{--mc:var(--m4)}.m5{--mc:var(--m5)}.m0{--mc:transparent}
+.opt[aria-checked="true"] .mdot{box-shadow:0 0 0 2px var(--bg)}
+.chip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:8px;border:0;box-shadow:inset 0 0 0 1px var(--control-border);background:transparent;color:var(--text-2);font-size:13px;font-weight:500}
+.chip:hover{color:var(--text);box-shadow:inset 0 0 0 1px var(--text-2)}
+.chip[aria-pressed="true"]{background:var(--text);color:var(--bg);box-shadow:none}
+.dtext{width:100%;min-height:110px;resize:vertical;padding:14px 16px;border:1px solid var(--control-border);border-radius:12px;background:var(--bg);color:var(--text);font:inherit;font-size:15px;line-height:1.6}
+.dtext:focus{outline:2px solid var(--text);outline-offset:1px}
+.ctxrow{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--text-2);min-height:30px}
+.ctxrow .t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ctxrow.done .t{text-decoration:line-through;text-decoration-color:rgba(var(--text-rgb),.5)}
+.ctxrow .ck{width:16px;height:16px;border-radius:5px;box-shadow:inset 0 0 0 1.5px var(--control-border);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.ctxrow.done .ck{background:var(--accent);box-shadow:none;color:var(--accent-text)}
+.tl{max-width:780px;margin:0 auto;padding:20px 28px 48px;display:flex;flex-direction:column;gap:6px}
+.otd{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.otd .c{display:flex;flex-direction:column;gap:8px;padding:14px 16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);text-align:left;color:var(--text)}
+.otd .c:hover{background:var(--raised)}
+.erow{display:grid;grid-template-columns:96px minmax(0,1fr);gap:20px;padding:18px 4px;border-bottom:1px solid var(--border)}
+.erow .dd{display:flex;flex-direction:column;gap:6px}
+.erow .one{margin:0;font-size:22px;line-height:1.3;font-weight:500;letter-spacing:-.02em}
+.erow .one mark{background:var(--text);color:var(--bg);border-radius:3px;padding:0 2px}
+.erow.gap{padding:12px 4px;border-bottom:1px dashed var(--border-strong);align-items:center}
+.erow .more{font-size:14.5px;line-height:1.6;color:var(--text-2);margin:2px 0 0}
+.erow .more.clamp{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.cwrap{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:24px;max-width:1220px;margin:0 auto;padding:20px 28px 40px;width:100%}
+.cgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.chd{font-family:'Geist Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.08em;color:var(--muted);padding:0 4px 4px}
+.cc{display:flex;flex-direction:column;align-items:stretch;gap:6px;min-height:104px;padding:8px 9px;border:1px solid var(--border);border-radius:10px;background:var(--surface);text-align:left;color:var(--text);overflow:hidden}
+.cc:hover{background:var(--raised)}
+.cc.out{opacity:.35;pointer-events:none}
+.cc.sel{background:var(--text);color:var(--bg);border-color:var(--text)}
+.cc.today .n{box-shadow:inset 0 0 0 1.5px currentColor}
+.cc .n{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;border-radius:11px;padding:0 5px;font-size:12px;font-weight:600}
+.cc .tx{font-size:11.5px;line-height:1.35;color:var(--text-2);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+.cc.sel .tx{color:var(--bg);opacity:.85}
+.cc .md{height:5px;border-radius:3px;background:var(--mc)}
+.cc.sel .md{box-shadow:0 0 0 1.5px var(--bg)}
+.dstats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+.dstats > div{padding:12px 14px;display:flex;flex-direction:column;gap:4px;border-left:1px solid var(--border)}
+.dstats > div:first-child{border-left:0}
+.fhd{display:flex;flex-direction:column;gap:10px;max-width:780px;margin:0 auto;padding:20px 28px 0;width:100%}
+.banner{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--accent-border);background:var(--accent-soft);border-radius:12px;font-size:13.5px;color:var(--text)}
+@container app (max-width:1200px){.dtoday{grid-template-columns:minmax(0,1fr);max-width:760px}.cwrap{grid-template-columns:minmax(0,1fr)}.cc{min-height:84px}.otd{grid-template-columns:minmax(0,1fr)}}
+
+</style>
+</helmet>
+<div class="fx {{ rootCls }}" data-theme="{{ themeKey }}" onKeyDown="{{ onKey }}">
+  <aside class="sb" aria-label="Sidebar">
+    <div class="sbtop" style="display:flex;align-items:center;gap:10px;padding:0 6px">
+      <svg width="30" height="30" viewBox="0 0 120 120" role="img" aria-label="Facta logo"><rect width="120" height="120" rx="27" style="fill: var(--logo-tile)"></rect><polygon style="fill: var(--logo-mark); stroke: var(--logo-mark)" stroke-width="7" stroke-linejoin="round" points="46,31 93,31 90.4,41 55.4,41 51.3,57 73,57 70.9,65 49.2,65 42.5,91 30.5,91"></polygon></svg>
+      <span class="wordmark" style="font-size:19px;font-weight:700;letter-spacing:-.03em">Facta</span>
+      <button type="button" class="b b-icon sbtog" aria-label="Collapse or expand sidebar" title="Collapse or expand sidebar" onClick="{{ sbToggle }}"><span class="i-l"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></span><span class="i-r"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></span></button>
+    </div>
+    <div class="sbsearch" style="position:relative">
+      <label for="sb-search" class="sr-only">Search</label>
+      <span style="position:absolute;left:12px;top:12px;color:var(--muted);display:flex"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg></span>
+      <input id="sb-search" type="search" placeholder="Search" style="width:100%;height:40px;padding:0 70px 0 36px;background:var(--bg);border:1px solid var(--control-border);border-radius:10px;color:var(--text);font:inherit;font-size:14px">
+      <span class="kbd" style="position:absolute;right:8px;top:11px">Ctrl K</span>
+    </div>
+    <nav aria-label="Main" style="display:flex;flex-direction:column;gap:2px">
+<button type="button" class="nv" title="Today"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg><span class="lbl">Today</span></button>
+<button type="button" class="nv" title="Calendar"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg><span class="lbl">Calendar</span></button>
+<button type="button" class="nv" title="Goals"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg><span class="lbl">Goals</span></button>
+<button type="button" class="nv" title="Notes"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6M8 13h8M8 17h5"></path></svg><span class="lbl">Notes</span></button>
+<button type="button" class="nv" title="Diary" aria-current="page"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14Z"></path><path d="M9 8h7"></path></svg><span class="lbl">Diary</span><span class="mk"></span></button>
+<button type="button" class="nv" title="Settings"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9M14 17H5"></path><circle cx="17" cy="17" r="3"></circle><circle cx="7" cy="7" r="3"></circle></svg><span class="lbl">Settings</span></button>
+    </nav>
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:12px">
+      <div role="group" aria-label="Theme" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 2px 0 8px">
+        <span class="theme-l" style="font-size:12px;font-weight:500;color:var(--muted)">Theme</span>
+        <div class="themes" style="display:flex;align-items:center;gap:4px">
+          <sc-for list="{{ themes }}" as="t" hint-placeholder-count="4">
+            <button type="button" class="tdot" title="{{ t.name }}" aria-label="{{ t.name }} theme" aria-pressed="{{ t.pressed }}" onClick="{{ t.pick }}" style="border-color: {{ t.ring }}">
+              <span aria-hidden="true" style="width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-strong);background:{{ t.sw1 }}"><span style="width:7px;height:7px;border-radius:4px;background:{{ t.sw2 }}"></span></span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 8px 0;border-top:1px solid var(--border);font-size:12px;color:var(--muted)">
+        <span style="width:7px;height:7px;border-radius:4px;background:var(--success)"></span><span class="sync-t">Synced · just now</span>
+      </div>
+    </div>
+  </aside>
+  <main class="gmain">
+    <header class="hd">
+      <div style="display:flex;flex-direction:column;gap:2px;min-width:110px"><span class="mono" style="font-size:11px;color:var(--muted);letter-spacing:.06em">{{ subtitle }}</span><h1>Diary</h1></div>
+      <div class="seg" role="radiogroup" aria-label="Diary view"><sc-for list="{{ views }}" as="v" hint-placeholder-count="4"><button type="button" role="radio" aria-checked="{{ v.checked }}" title="{{ v.name }} ({{ v.key }})" onClick="{{ v.pick }}"><span>{{ v.name }}</span><span class="mono hide-s">{{ v.key }}</span></button></sc-for></div>
+      <div style="flex:1"></div>
+      <button type="button" class="b b-commit b-primary" onClick="{{ writeToday }}"><span class="lab"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>{{ writeLabel }}</span><span class="key hide-s">W</span></button>
+    </header>
+
+    <sc-if value="{{ isToday }}" hint-placeholder-val="{{ true }}"><div class="dwrap" tabindex="-1"><div class="dtoday">
+      <div class="dcol">
+        <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap"><h2 style="margin:0;font-size:22px;font-weight:600;letter-spacing:-.025em">Saturday 17 Oct</h2><span style="font-size:13.5px;color:var(--text-2)">{{ dayNote }}</span></div>
+        <sc-if value="{{ showYest }}" hint-placeholder-val="{{ false }}"><div class="banner" role="group" aria-label="Yesterday" style="flex-wrap:wrap"><span style="flex:1 1 100%;min-width:0"><b style="font-weight:600">Write yesterday's line?</b> Fri 16 Oct is empty. A few words is enough, and your run is only paused.</span><label for="y-line" class="sr-only">Yesterday's line</label><input id="y-line" class="dline" style="height:40px;font-size:14px;flex:1.4;padding:0 12px" type="text" maxlength="120" placeholder="What stood out yesterday?" value="{{ yDraft }}" onChange="{{ onY }}" onKeyDown="{{ onYKey }}"><button type="button" class="b b-commit b-primary" onClick="{{ saveY }}"><span class="lab">Save</span></button><button type="button" class="ctl" onClick="{{ skipY }}">Not now</button></div></sc-if>
+        <sc-if value="{{ showWelcome }}" hint-placeholder-val="{{ false }}"><div class="dcard"><h3 style="margin:0;font-size:17px;font-weight:600">Welcome to your diary</h3><span style="font-size:14px;line-height:1.55;color:var(--text-2)">One line a day is the whole idea. Write it, pick a mood, done. Add more only when you feel like it.</span></div></sc-if>
+        <section class="dcard" aria-label="One line a day">
+          <div style="display:flex;align-items:center;gap:10px"><span class="sec">ONE LINE A DAY</span><span style="flex:1"></span><sc-if value="{{ hasToday }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--accent)"><svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg> Saved</span></sc-if></div>
+          <sc-if value="{{ hasToday }}" hint-placeholder-val="{{ false }}"><h3 class="dbig">{{ todayLine }}</h3><div style="display:flex;gap:8px"><button type="button" class="ctl" onClick="{{ editToday }}"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg> Edit line</button></div></sc-if>
+          <sc-if value="{{ noToday }}" hint-placeholder-val="{{ true }}"><div style="position:relative"><label for="d-line" class="sr-only">Today's line</label>
+  <input id="d-line" class="dline" type="text" maxlength="120" autocomplete="off" placeholder="{{ linePh }}" value="{{ draftLine }}" onChange="{{ onLine }}" onKeyDown="{{ onLineKey }}">
+  <span class="mono" style="position:absolute;right:14px;top:21px;font-size:11px;color:var(--muted)">{{ draftLen }}/120</span></div><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--text-2)"><span style="flex:1;min-width:0">{{ prompt }}</span><button type="button" class="b-quiet b" onClick="{{ nextPrompt }}">Another prompt</button></div></sc-if>
+        </section>
+        <section class="dcard" aria-label="Mood"><span class="sec">HOW WAS TODAY</span><div class="mood" role="radiogroup" aria-label="Mood">
+  <sc-for list="{{ moods }}" as="m" hint-placeholder-count="5"><button type="button" role="radio" class="opt" aria-checked="{{ m.on }}" title="{{ m.name }} ({{ m.n }})" onClick="{{ m.pick }}"><span><i class="mdot {{ m.cls }}"></i>{{ m.name }}<span class="mono" style="font-size:10.5px;opacity:.7">{{ m.n }}</span></span></button></sc-for></div></section>
+        <section class="dcard" aria-label="Tags"><span class="sec">TAGS</span><div role="group" aria-label="Tags" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+  <sc-for list="{{ tagsRow }}" as="t" hint-placeholder-count="5"><button type="button" class="chip" aria-pressed="{{ t.on }}" onClick="{{ t.pick }}"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"></path></svg>{{ t.name }}</button></sc-for></div></section>
+        <section class="dcard" aria-label="Longer entry"><div style="display:flex;align-items:center;gap:10px"><span class="sec">MORE, IF YOU WANT</span><span style="flex:1"></span><sc-if value="{{ moreCollapsed }}" hint-placeholder-val="{{ true }}"><button type="button" class="ctl" onClick="{{ openMore }}"><svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"></path></svg> Add more</button></sc-if></div>
+          <sc-if value="{{ moreOpen }}" hint-placeholder-val="{{ false }}"><label for="d-more" class="sr-only">Longer entry</label><textarea id="d-more" class="dtext" placeholder="Anything else from today?" onChange="{{ onMore }}">{{ moreText }}</textarea></sc-if></section>
+      </div>
+      <aside class="dcol" aria-label="Today for context">
+        <section class="dcard"><div style="display:flex;align-items:center;gap:8px"><span class="sec">STREAK</span><span style="flex:1"></span></div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:34px;font-weight:600;letter-spacing:-.03em;line-height:1"><svg aria-hidden="true" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.3 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>{{ streak }}<span style="font-size:14px;font-weight:400;color:var(--text-2)">days</span></div>
+          <span style="font-size:13px;color:var(--text-2);line-height:1.5">{{ streakNote }}</span>
+          <div style="display:flex;gap:6px" role="img" aria-label="Last 7 days"><sc-for list="{{ week }}" as="w" hint-placeholder-count="7"><span title="{{ w.t }}" style="display:flex;flex-direction:column;align-items:center;gap:5px;font-size:10px;color:var(--muted)" class="mono"><i class="mdot {{ w.cls }}" style="width:22px;height:22px;border-radius:7px;background:{{ w.bg }};box-shadow:{{ w.ring }}"></i>{{ w.l }}</span></sc-for></div></section>
+        <section class="dcard" aria-label="Today at a glance"><div style="display:flex;align-items:center"><span class="sec">TODAY, FOR CONTEXT</span><span style="flex:1"></span><button type="button" class="b-quiet b" style="height:28px" onClick="{{ openToday }}">Open Today <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></button></div>
+          <div style="display:flex;flex-direction:column"><sc-for list="{{ ctx }}" as="c" hint-placeholder-count="5"><div class="{{ c.cls }}"><span class="ck">{{ c.mark }}</span><span class="t">{{ c.t }}</span><span class="mono" style="font-size:11px;color:var(--muted)">{{ c.time }}</span></div></sc-for></div>
+          <span style="font-size:12px;color:var(--muted)">Read only. Edit goals and events in Today.</span></section>
+        <section class="dcard" aria-label="On this day"><span class="sec">ON THIS DAY</span><sc-for list="{{ otd }}" as="o" hint-placeholder-count="2"><div style="display:flex;flex-direction:column;gap:3px"><span class="mono" style="font-size:11px;color:var(--muted)">{{ o.when }}</span><span style="font-size:14px;line-height:1.45">{{ o.t }}</span></div></sc-for></section>
+      </aside>
+    </div></div></sc-if>
+
+    <sc-if value="{{ isList }}" hint-placeholder-val="{{ false }}"><div class="dwrap" tabindex="-1">
+      <div class="fhd">
+        <sc-if value="{{ isSearch }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:12px">
+          <div class="qa" style="max-width:none;flex:none"><label for="d-search" class="sr-only">Search the diary</label><span style="position:absolute;left:11px;top:10px;color:var(--muted);display:flex"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg></span><input id="d-search" type="search" autocomplete="off" placeholder="Search lines and entries" value="{{ q }}" onChange="{{ onQ }}"><span class="kbd" style="position:absolute;right:8px;top:9px">/</span></div>
+          <div role="group" aria-label="Filter by mood" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span class="sec" style="width:44px">MOOD</span><sc-for list="{{ moodF }}" as="m" hint-placeholder-count="5"><button type="button" class="chip" aria-pressed="{{ m.on }}" onClick="{{ m.pick }}"><i class="mdot {{ m.cls }}"></i>{{ m.name }}</button></sc-for></div>
+          <div role="group" aria-label="Filter by tag" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span class="sec" style="width:44px">TAG</span><sc-for list="{{ tagF }}" as="t" hint-placeholder-count="5"><button type="button" class="chip" aria-pressed="{{ t.on }}" onClick="{{ t.pick }}"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"></path></svg>{{ t.name }}</button></sc-for><sc-if value="{{ hasFilter }}" hint-placeholder-val="{{ false }}"><button type="button" class="b-quiet b" onClick="{{ clearF }}">Clear filters</button></sc-if></div>
+          <span style="font-size:13px;color:var(--text-2)">{{ resultText }}</span></div></sc-if>
+        <sc-if value="{{ isTimeline }}" hint-placeholder-val="{{ true }}"><div style="display:flex;flex-direction:column;gap:12px">
+          <sc-if value="{{ noToday }}" hint-placeholder-val="{{ true }}"><div style="display:flex;flex-direction:column;gap:8px"><span class="sec">TODAY'S LINE</span><div style="position:relative"><label for="d-line" class="sr-only">Today's line</label>
+  <input id="d-line" class="dline" type="text" maxlength="120" autocomplete="off" placeholder="{{ linePh }}" value="{{ draftLine }}" onChange="{{ onLine }}" onKeyDown="{{ onLineKey }}">
+  <span class="mono" style="position:absolute;right:14px;top:21px;font-size:11px;color:var(--muted)">{{ draftLen }}/120</span></div></div></sc-if>
+          <sc-if value="{{ hasOtd }}" hint-placeholder-val="{{ true }}"><div style="display:flex;flex-direction:column;gap:8px;padding-top:6px"><span class="sec">ON THIS DAY, 17 OCT</span><div class="otd"><sc-for list="{{ otdCards }}" as="o" hint-placeholder-count="3"><button type="button" class="c" onClick="{{ o.open }}"><span style="display:flex;align-items:center;gap:8px" class="mono"><span style="font-size:11px;color:var(--muted)">{{ o.when }}</span><span style="flex:1"></span><i class="mdot {{ o.cls }}"></i></span><span style="font-size:14.5px;line-height:1.45">{{ o.t }}</span></button></sc-for></div></div></sc-if></div></sc-if>
+      </div>
+      <div class="tl">
+        <sc-if value="{{ emptyList }}" hint-placeholder-val="{{ false }}"><div style="padding:40px 0;display:flex;flex-direction:column;gap:10px;align-items:flex-start"><h2 style="margin:0;font-size:20px;font-weight:600;letter-spacing:-.02em">{{ emptyHead }}</h2><span style="font-size:14px;line-height:1.55;color:var(--text-2);max-width:420px">{{ emptyBody }}</span><button type="button" class="b b-commit b-primary" onClick="{{ writeToday }}"><span class="lab">Write today's line</span><span class="key">W</span></button></div></sc-if>
+        <sc-for list="{{ rows }}" as="r" hint-placeholder-count="5">
+  <sc-if value="{{ r.isGap }}" hint-placeholder-val="{{ false }}"><div class="erow gap"><div class="dd"><span class="mono" style="font-size:11px;color:var(--muted)">{{ r.dd }}</span></div><div style="display:flex;align-items:center;gap:12px;font-size:13.5px;color:var(--text-2)"><span style="flex:1">No line for this day. Add one if you like.</span><button type="button" class="ctl" style="height:30px" onClick="{{ r.write }}">Write {{ r.who }} line</button></div></div></sc-if>
+  <sc-if value="{{ r.isE }}" hint-placeholder-val="{{ true }}"><article class="erow" aria-label="{{ r.aria }}">
+    <div class="dd"><span class="mono" style="font-size:11px;color:var(--muted);letter-spacing:.06em">{{ r.wd }}</span><span style="font-size:20px;font-weight:600;letter-spacing:-.02em;line-height:1">{{ r.dd }}</span><span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2)"><i class="mdot {{ r.mcls }}"></i>{{ r.moodName }}</span></div>
+    <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+      <div><h3 class="one"><sc-for list="{{ r.segs }}" as="s" hint-placeholder-count="2"><sc-if value="{{ s.hit }}" hint-placeholder-val="{{ false }}"><mark>{{ s.t }}</mark></sc-if><sc-if value="{{ s.plain }}" hint-placeholder-val="{{ true }}"><span>{{ s.t }}</span></sc-if></sc-for></h3></div>
+      <sc-if value="{{ r.hasMore }}" hint-placeholder-val="{{ false }}"><div><p class="{{ r.moreCls }}">{{ r.more }}</p><button type="button" class="b b-quiet" style="height:28px;padding:0 6px;margin-left:-6px" aria-expanded="{{ r.open }}" onClick="{{ r.toggle }}">{{ r.toggleText }}</button></div></sc-if>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><sc-for list="{{ r.tags }}" as="t" hint-placeholder-count="2"><span class="tagc"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"></path></svg>{{ t }}</span></sc-for></div>
+    </div></article></sc-if>
+</sc-for>
+      </div></div></sc-if>
+
+    <sc-if value="{{ isCal }}" hint-placeholder-val="{{ false }}"><div class="dwrap" tabindex="-1"><div class="cwrap">
+      <section aria-label="Month of entries" style="min-width:0">
+        <div style="display:flex;align-items:center;gap:10px;padding-bottom:12px"><h2 style="margin:0;font-size:20px;font-weight:600;letter-spacing:-.02em;flex:1">{{ monthName }}</h2>
+          <button type="button" class="ctl ctl-icon" aria-label="Previous month" onClick="{{ prevM }}" title="Previous month ([)"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></button><button type="button" class="ctl" onClick="{{ thisM }}">This month</button><button type="button" class="ctl ctl-icon" aria-label="Next month" onClick="{{ nextM }}" title="Next month (])"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></button></div>
+        <div class="cgrid" role="grid" aria-label="{{ monthName }}"><sc-for list="{{ dows }}" as="d" hint-placeholder-count="7"><span class="chd" role="columnheader">{{ d }}</span></sc-for></div>
+        <div class="cgrid" style="grid-template-rows: {{ rowsCss }}"><sc-for list="{{ cells }}" as="c" hint-placeholder-count="35"><button type="button" class="{{ c.cls }}" style="--mc: {{ c.mc }}" aria-label="{{ c.aria }}" aria-pressed="{{ c.pressed }}" onClick="{{ c.pick }}"><span style="display:flex;align-items:center;gap:6px"><span class="n">{{ c.n }}</span></span><sc-if value="{{ c.has }}" hint-placeholder-val="{{ true }}"><span class="md" aria-hidden="true"></span><span class="tx">{{ c.t }}</span></sc-if></button></sc-for></div>
+        <div style="display:flex;gap:14px;align-items:center;padding-top:12px;font-size:12px;color:var(--text-2);flex-wrap:wrap"><span class="sec">MOOD</span><sc-for list="{{ legend }}" as="m" hint-placeholder-count="5"><span style="display:inline-flex;align-items:center;gap:6px"><i class="mdot {{ m.cls }}"></i>{{ m.name }}</span></sc-for></div>
+      </section>
+      <aside class="dcol" aria-label="Month summary">
+        <div class="dstats"><div><span class="sec">STREAK</span><span style="font-size:22px;font-weight:600;letter-spacing:-.02em">{{ streak }}</span><span style="font-size:11.5px;color:var(--text-2)">days</span></div><div><span class="sec">WRITTEN</span><span style="font-size:22px;font-weight:600;letter-spacing:-.02em">{{ writtenText }}</span><span style="font-size:11.5px;color:var(--text-2)">this month</span></div><div><span class="sec">AVG MOOD</span><span style="font-size:22px;font-weight:600;letter-spacing:-.02em">{{ avgMood }}</span><span style="font-size:11.5px;color:var(--text-2)">of 5</span></div></div>
+        <section class="dcard"><span class="sec">MOOD THIS MONTH</span>
+          <svg viewBox="0 0 290 100" width="100%" role="img" aria-label="{{ trendLabel }}" style="overflow:visible"><sc-for list="{{ grid5 }}" as="g" hint-placeholder-count="3"><line x1="0" x2="290" y1="{{ g.y }}" y2="{{ g.y }}" stroke="var(--border-strong)" stroke-width="1"></line></sc-for><polyline points="{{ trendPts }}" fill="none" stroke="var(--text-2)" stroke-width="1.5" stroke-linejoin="round"></polyline><sc-for list="{{ dots }}" as="p" hint-placeholder-count="12"><circle cx="{{ p.x }}" cy="{{ p.y }}" r="3.5" style="fill: {{ p.col }}" stroke="var(--surface)" stroke-width="1.5"></circle></sc-for></svg>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)" class="mono"><span>1</span><span>15</span><span>31</span></div></section>
+        <section class="dcard" aria-live="polite"><span class="sec">{{ selHead }}</span>
+          <sc-if value="{{ selHas }}" hint-placeholder-val="{{ true }}"><div><h3 style="margin:0;font-size:18px;line-height:1.35;font-weight:500;letter-spacing:-.015em">{{ selLine }}</h3></div><span style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-2)"><i class="mdot {{ selMcls }}"></i>{{ selMood }}<sc-for list="{{ selTags }}" as="t" hint-placeholder-count="2"><span class="tagc"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"></path></svg>{{ t }}</span></sc-for></span><button type="button" class="ctl" style="align-self:flex-start" onClick="{{ selOpen }}">Open in timeline</button></sc-if>
+          <sc-if value="{{ selNone }}" hint-placeholder-val="{{ false }}"><span style="font-size:14px;color:var(--text-2);line-height:1.5">No line on this day.</span><button type="button" class="ctl" style="align-self:flex-start" onClick="{{ selWrite }}">{{ selWriteText }}</button></sc-if></section>
+      </aside>
+    </div></div></sc-if>
+
+    <div class="foot" aria-label="Keyboard hints"><span class="k"><span class="kbd">W</span>write today's line</span><span class="k"><span class="kbd">1</span><span class="kbd">5</span>set mood</span><span class="k"><span class="kbd">T</span><span class="kbd">L</span><span class="kbd">C</span>switch view</span><span style="flex:1"></span><span class="k"><span class="kbd">?</span>all shortcuts</span></div>
+  </main>
+
+  <sc-if value="{{ cheatOn }}" hint-placeholder-val="{{ false }}"><div class="scrim" onClick="{{ closeAll }}"><div class="modal" role="dialog" aria-label="Keyboard shortcuts" style="width:760px;max-width:calc(100% - 40px)" onClick="{{ stop }}">
+    <div style="display:flex;align-items:center;padding:16px 22px;border-bottom:1px solid var(--border)"><h2 style="margin:0;font-size:17px;font-weight:600">Diary shortcuts</h2><span style="flex:1"></span><button type="button" class="ctl" onClick="{{ closeAll }}">Close <span class="kbd">Esc</span></button></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;padding:18px 22px 22px">
+      <sc-for list="{{ cheat }}" as="g" hint-placeholder-count="3"><div style="display:flex;flex-direction:column;gap:8px"><span class="sec">{{ g.name }}</span>
+        <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="5"><div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-2)"><span style="flex:1">{{ r.d }}</span><span class="kbd">{{ r.k }}</span></div></sc-for></div></sc-for>
+    </div></div></div></sc-if>
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}"><div class="toast" role="status">{{ toast }}</div></sc-if>
+  <div class="sr-only" aria-live="polite">{{ liveText }}</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme": {"editor": "enum", "options": ["bg", "mid", "ember", "light"], "default": "bg"}, "state": {"editor": "enum", "options": ["today", "timeline", "calendar", "search", "empty", "missed", "streak", "cheat"], "default": "today"}, "weekStart": {"editor": "enum", "options": ["sun", "mon", "sat"], "default": "sun"}, "timeFormat": {"editor": "enum", "options": ["24h", "12h"], "default": "24h"}, "$preview": {"width": 1440, "height": 920}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); const st = props.state || 'default'; this.listenPrefs();
+    this.state = { theme: props.theme || 'bg', toast: '', view: { timeline: 'timeline', calendar: 'calendar', search: 'search', streak: 'calendar' }[st] || 'today',
+      ent: this.seed(st), draft: { line: '', mood: 0, tags: [], more: '', moreOpen: false }, promptI: 0, yDraft: '', skipY: false, cheat: st === 'cheat', open: {},
+      q: st === 'search' ? 'lab' : '', mf: [], tf: [], selDay: st === 'calendar' || st === 'streak' ? 14 : 17, mOff: 0, base: st === 'streak' ? 112 : 0, firstDay: st === 'empty' }; }
+  seed(st) {
+    if (st === 'empty') return {};
+    const E = (d, line, mood, tags, more) => ({ d, line, mood, tags, more: more || '' });
+    const o = {};
+    [E(1, 'Started the thermodynamics unit. Heavy but interesting.', 4, ['uni']), E(2, 'Rained all day. Stayed in and made lentil soup.', 4, ['home']),
+     E(3, 'Long call with grandma. She laughed about the scarf.', 5, ['family'], 'She told me the story of her first winter coat again, and I let her tell it twice. I want to visit before the holidays and bring the beach photos.'), E(4, 'Slow Sunday. Cleaned the flat and did nothing else.', 3, ['home']),
+     E(6, 'Missed a day, picked it back up. Lab prep done.', 3, ['uni']), E(7, 'Gym with Omar. Legs are done.', 4, ['gym']), E(8, 'Hard quiz, but I think I got most of it.', 3, ['uni']),
+     E(9, 'Booked the quiet room early. Worth getting up for.', 4, ['uni']), E(10, 'Beach cafe with the family. Phone stayed in the bag.', 5, ['family']), E(11, 'Rest day. Read for an hour.', 4, ['home']),
+     E(12, 'Felt behind on the lab report. Made a plan.', 2, ['uni'], '', true), E(13, 'The plan worked. Two sections done.', 4, ['uni']),
+     E(14, 'Sara and I fixed the figure together.', 5, ['uni', 'lab'], 'We went through the error bars one by one and finally understood why the third run looked off. Khalid brought tea. It felt like the first day of the term that was not rushed.'),
+     E(15, 'Tired. A short walk instead of the gym.', 2, ['gym']), E(16, 'Called grandma. Printed the beach photos.', 4, ['family'])].forEach((e) => { o[e.d] = e; });
+    if (st === 'missed') delete o[16];
+    if (st === 'streak') { [5].forEach((d) => { o[d] = E(d, 'Quiet day. Wrote this one before bed.', 3, ['home']); }); }
+    return o;
+  }
+
+  sbVals() {
+    const m = this.state.sbMode || '';
+    return { rootCls: m === 'c' ? 'sb-c' : (m === 'o' ? 'sb-o' : ''), sbToggle: (e) => {
+      const el = e && e.currentTarget && e.currentTarget.closest ? e.currentTarget.closest('.fx') : null;
+      const narrow = !!el && el.getBoundingClientRect().width <= 1200; const cur = this.state.sbMode || '';
+      const collapsed = narrow ? cur !== 'o' : cur === 'c';
+      this.setState({ sbMode: collapsed ? (narrow ? 'o' : '') : (narrow ? '' : 'c') }); } };
+  }
+  prefs() {
+    let o = {}; try { o = (typeof window !== 'undefined' && window.__factaPrefs) || JSON.parse(window.localStorage.getItem('facta.prefs') || '{}') || {}; } catch (e) { o = {}; }
+    const p = this.props || {};
+    const wsKey = ['sun', 'mon', 'sat'].indexOf(o.weekStart) >= 0 ? o.weekStart : (['sun', 'mon', 'sat'].indexOf(p.weekStart) >= 0 ? p.weekStart : 'sun');
+    const tf = (o.timeFormat === '12h' || o.timeFormat === '24h') ? o.timeFormat : (p.timeFormat === '12h' ? '12h' : '24h');
+    return { wsKey, ws: { sun: 0, mon: 1, sat: 6 }[wsKey], tf };
+  }
+  listenPrefs() {
+    this._onPrefs = () => { try { this.setState({ prefTick: Date.now() }); } catch (e) {} };
+    try { window.addEventListener('facta-prefs', this._onPrefs); window.addEventListener('storage', this._onPrefs); } catch (e) {}
+  }
+  unlistenPrefs() { try { window.removeEventListener('facta-prefs', this._onPrefs); window.removeEventListener('storage', this._onPrefs); } catch (e) {} }
+  componentWillUnmount() { this.unlistenPrefs(); }
+  say(text) {
+    this.setState({ toast: text });
+    if (this._t) clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ toast: '' }), 2400);
+  }
+  themeDots() {
+    const cur = this.state.theme;
+    return [{ id: 'bg', name: 'Black & green', sw1: '#060706', sw2: '#22C55E' }, { id: 'mid', name: 'Midnight', sw1: '#04070E', sw2: '#4C8DF6' },
+      { id: 'ember', name: 'Ember', sw1: '#060504', sw2: '#FF8000' }, { id: 'light', name: 'Light', sw1: '#F6F6F3', sw2: '#15803D' }]
+      .map((t) => ({ ...t, pressed: cur === t.id ? 'true' : 'false', ring: cur === t.id ? 'var(--text)' : 'transparent', pick: () => this.setState({ theme: t.id }) }));
+  }
+
+  renderVals() {
+    const s = this.state, p = this.props, st = p.state || 'default', PF = this.prefs();
+    const MN = ['Rough', 'Low', 'Okay', 'Good', 'Great'];
+    const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const MON = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const TODAY = 17, ent = s.ent;
+    const dn = (d) => WD[(3 + d) % 7 === 0 ? 0 : (3 + d) % 7];
+    const wdOf = (d) => WD[(4 + d - 1) % 7];
+    const mcol = (m) => 'var(--m' + m + ')';
+    const hasT = !!ent[TODAY];
+    const days = Object.keys(ent).map(Number).sort((a, b) => a - b);
+    const lastW = days.length ? days[days.length - 1] : 0;
+    let streak = 0; if (lastW) { let d = lastW; while (ent[d]) { streak++; d--; } }
+    streak += (lastW ? s.base : 0);
+    const paused = lastW && lastW < TODAY - 1;
+    const draft = s.draft, TT = ent[TODAY];
+    const cur = TT || { line: draft.line, mood: draft.mood, tags: draft.tags, more: draft.more };
+    const setE = (patch) => { if (TT) this.setState({ ent: { ...ent, [TODAY]: { ...TT, ...patch } } }); else this.setState({ draft: { ...draft, ...patch } }); };
+    const saveLine = () => { const t = (draft.line || '').trim(); if (!t) { this.say('Type a few words first'); return; } this.setState({ ent: { ...ent, [TODAY]: { d: TODAY, line: t, mood: draft.mood || 3, tags: draft.tags, more: draft.more } }, draft: { line: '', mood: 0, tags: [], more: '', moreOpen: false } }); this.say('Saved today\'s line'); };
+    const goView = (v) => this.setState({ view: v });
+    const focusLine = () => { setTimeout(() => { const el = document.getElementById('d-line'); if (el) el.focus(); }, 30); };
+    const OTD = [{ when: '17 SEP · 1 MONTH AGO', t: 'First week of uni. Got lost twice finding the lab.', m: 3 }, { when: '17 AUG · 2 MONTHS AGO', t: 'Started the gym plan with Omar. Legs are done.', m: 4 }, { when: '17 JUL · 3 MONTHS AGO', t: 'Beach with the family. No phone all afternoon.', m: 5 }];
+    const firstDay = s.firstDay && !hasT;
+    // rows (timeline + search)
+    const q = s.q.trim().toLowerCase();
+    const isSearch = s.view === 'search';
+    let list = days.slice().reverse().map((d) => ent[d]);
+    if (isSearch) list = list.filter((e) => (!q || (e.line + ' ' + e.more + ' ' + e.tags.join(' ')).toLowerCase().indexOf(q) >= 0) && (!s.mf.length || s.mf.indexOf(e.mood) >= 0) && (!s.tf.length || s.tf.every((t) => e.tags.indexOf(t) >= 0)));
+    const segsOf = (e) => { if (!isSearch || !q) return [{ t: e.line, hit: false, plain: true }]; const i = e.line.toLowerCase().indexOf(q); if (i < 0) return [{ t: e.line, hit: false, plain: true }]; return [{ t: e.line.slice(0, i), hit: false, plain: true }, { t: e.line.slice(i, i + q.length), hit: true, plain: false }, { t: e.line.slice(i + q.length), hit: false, plain: true }].filter((x) => x.t); };
+    const rows = [];
+    list.forEach((e, idx) => {
+      const isOpen = !!s.open[e.d];
+      rows.push({ isE: true, isGap: false, aria: wdOf(e.d) + ' ' + e.d + ' Oct. ' + e.line, wd: wdOf(e.d).toUpperCase(), dd: e.d + ' OCT', mcls: 'm' + e.mood, moodName: MN[e.mood - 1], segs: segsOf(e),
+        tags: e.tags,
+        hasMore: !!e.more, more: e.more, moreCls: 'more' + (isOpen ? '' : ' clamp'), open: isOpen ? 'true' : 'false', toggleText: isOpen ? 'Show less' : 'Read more', toggle: () => this.setState({ open: { ...s.open, [e.d]: !isOpen } }) });
+      const nextOlder = list[idx + 1];
+      if (!isSearch && nextOlder && e.d - nextOlder.d > 1) for (let g = e.d - 1; g > nextOlder.d; g--) rows.push({ isE: false, isGap: true, dd: wdOf(g).toUpperCase() + ' ' + g + ' OCT', who: g === TODAY - 1 ? "yesterday's" : 'that', write: () => this.setState({ yDraft: '', view: 'today' }) });
+    });
+    const resultText = list.length + (list.length === 1 ? ' entry' : ' entries') + (q || s.mf.length || s.tf.length ? ' match' : '');
+    // calendar
+    const y = 2026, mo = 9 + s.mOff, first = new Date(y, mo, 1), nDays = new Date(y, mo + 1, 0).getDate();
+    const off = (first.getDay() - PF.ws + 7) % 7, nRows = Math.ceil((off + nDays) / 7);
+    const isOct = s.mOff === 0;
+    const cells = []; for (let i = 0; i < nRows * 7; i++) { const d = i - off + 1; if (d < 1 || d > nDays) { cells.push({ cls: 'cc out', mc: 'transparent', n: '', has: false, aria: 'Outside month', pressed: 'false', t: '', pick: () => {} }); continue; }
+      const e = isOct ? ent[d] : null, sel = s.selDay === d && isOct;
+      cells.push({ cls: 'cc' + (isOct && d === TODAY ? ' today' : '') + (sel ? ' sel' : ''), mc: e ? mcol(e.mood) : 'transparent', n: String(d), has: !!e, t: e ? e.line : '',
+        aria: WD[new Date(y, mo, d).getDay()] + ' ' + d + ' ' + MON[mo] + (e ? ', ' + MN[e.mood - 1] + ': ' + e.line : ', no entry'), pressed: sel ? 'true' : 'false', pick: () => this.setState({ selDay: d }) }); }
+    const dows = []; for (let i = 0; i < 7; i++) dows.push(WD[(PF.ws + i) % 7].toUpperCase());
+    const mDays = isOct ? days.filter((d) => d <= nDays) : [];
+    const avg = mDays.length ? (mDays.reduce((a, d) => a + ent[d].mood, 0) / mDays.length).toFixed(1) : '–';
+    const pts = mDays.map((d) => ({ x: ((d - 1) / 30) * 280 + 5, y: 92 - ((ent[d].mood - 1) / 4) * 84, col: mcol(ent[d].mood) }));
+    const sd = isOct ? ent[s.selDay] : null;
+    // today panel
+    const week = []; for (let d = TODAY - 6; d <= TODAY; d++) { const e = ent[d]; week.push({ l: wdOf(d).charAt(0), t: wdOf(d) + ' ' + d + (e ? ': ' + MN[e.mood - 1] : ': no line'), cls: '', bg: e ? mcol(e.mood) : 'transparent', ring: e ? 'none' : 'inset 0 0 0 1.5px var(--control-border)' }); }
+    const PROMPTS = ['What made today a little easier?', 'Name one small thing that went well.', 'What are you looking forward to this week?', 'What would you tell yesterday-you?'];
+    const MOODS = [1, 2, 3, 4, 5].map((n) => ({ n: String(n), name: MN[n - 1], cls: 'm' + n, on: cur.mood === n ? 'true' : 'false', pick: () => setE({ mood: n }) }));
+    const TAGS = ['uni', 'gym', 'family', 'home', 'lab'];
+    const tagsRow = TAGS.map((t) => ({ name: t, on: cur.tags.indexOf(t) >= 0 ? 'true' : 'false', pick: () => setE({ tags: cur.tags.indexOf(t) >= 0 ? cur.tags.filter((x) => x !== t) : cur.tags.concat([t]) }) }));
+    const moreOpen = !!cur.more || draft.moreOpen;
+    const ctx = [{ cls: 'ctxrow done', mark: '✓', t: 'Morning stretch', time: '08:00' }, { cls: 'ctxrow done', mark: '✓', t: 'Read 20 pages', time: '' }, { cls: 'ctxrow', mark: '', t: 'Finish lab report', time: '14:00' }, { cls: 'ctxrow', mark: '', t: 'Gym: legs', time: '18:00' }, { cls: 'ctxrow', mark: '', t: 'Call grandma', time: '' }, { cls: 'ctxrow', mark: '', t: 'Dinner at Lina\'s', time: '19:30' }];
+    const dayNote = firstDay ? 'Day 1' : (hasT ? 'Today is in. Nice.' : (paused ? 'Pick it up whenever you are ready.' : 'One line is plenty.'));
+    const streakNote = firstDay ? 'Your streak starts when you write your first line.' : (hasT ? 'Today counts. Come back tomorrow.' : (paused ? 'Paused, not lost. A line today keeps it going.' : 'Write today\'s line to make it ' + (streak + 1) + '.')) + (st === 'streak' ? ' Best so far: ' + streak + '.' : '');
+    const showYest = st === 'missed' && !ent[16] && !s.skipY;
+    const emptyList = list.length === 0;
+    const w = (st === 'empty') ? 'Nothing here yet' : 'Nothing matches';
+    return { ...this.sbVals(), themeKey: s.theme, themes: this.themeDots(), subtitle: days.length + (days.length === 1 ? ' ENTRY' : ' ENTRIES') + ' · OCT 2026',
+      views: [['today', 'Today', 'T'], ['timeline', 'Timeline', 'L'], ['calendar', 'Calendar', 'C'], ['search', 'Search', '/']].map((v) => ({ name: v[1], key: v[2], checked: s.view === v[0] ? 'true' : 'false', pick: () => goView(v[0]) })),
+      writeLabel: hasT ? 'Edit today\'s line' : 'Write today\'s line', writeToday: () => { this.setState({ view: 'today' }); if (hasT) { this.setState({ ent: { ...ent, [TODAY]: undefined } }); } focusLine(); },
+      isToday: s.view === 'today', isList: s.view === 'timeline' || s.view === 'search', isTimeline: s.view === 'timeline', isSearch, isCal: s.view === 'calendar',
+      dayNote, showYest, yDraft: s.yDraft, onY: (e) => this.setState({ yDraft: e.target.value }), onYKey: (e) => { if (e.key === 'Enter' && e.target.value.trim()) this.setState({ ent: { ...ent, 16: { d: 16, line: e.target.value.trim(), mood: 3, tags: [], more: '' } } }); },
+      saveY: () => { const t = s.yDraft.trim(); if (!t) { this.say('Type a few words first'); return; } this.setState({ ent: { ...ent, 16: { d: 16, line: t, mood: 3, tags: [], more: '' } }, yDraft: '' }); this.say('Added yesterday\'s line'); }, skipY: () => this.setState({ skipY: true }),
+      showWelcome: firstDay && s.view === 'today', hasToday: hasT, noToday: !hasT, todayLine: TT ? TT.line : '', editToday: () => { this.setState({ ent: { ...ent, [TODAY]: undefined }, draft: { line: TT.line, mood: TT.mood, tags: TT.tags, more: TT.more, moreOpen: !!TT.more } }); focusLine(); },
+      linePh: firstDay ? 'Try: Finished my first day of using Facta.' : 'What stood out today?', draftLine: draft.line, draftLen: String((draft.line || '').length), onLine: (e) => this.setState({ draft: { ...draft, line: e.target.value } }), onLineKey: (e) => { if (e.key === 'Enter') { e.preventDefault(); saveLine(); } else if (e.key === 'Escape') e.target.blur(); },
+      prompt: 'Prompt: ' + PROMPTS[s.promptI % PROMPTS.length], nextPrompt: () => this.setState({ promptI: s.promptI + 1 }),
+      moods: MOODS, tagsRow, moreCollapsed: !moreOpen, moreOpen, openMore: () => this.setState({ draft: { ...draft, moreOpen: true } }), moreText: cur.more, onMore: (e) => setE({ more: e.target.value }),
+      streak: String(streak), streakNote, week, ctx, otd: OTD.slice(0, 1).map((o) => ({ when: o.when, t: o.t })), openToday: () => this.say('Opens Today'),
+      q: s.q, onQ: (e) => this.setState({ q: e.target.value }), moodF: [1, 2, 3, 4, 5].map((n) => ({ name: MN[n - 1], cls: 'm' + n, on: s.mf.indexOf(n) >= 0 ? 'true' : 'false', pick: () => this.setState({ mf: s.mf.indexOf(n) >= 0 ? s.mf.filter((x) => x !== n) : s.mf.concat([n]) }) })),
+      tagF: TAGS.map((t) => ({ name: t, on: s.tf.indexOf(t) >= 0 ? 'true' : 'false', pick: () => this.setState({ tf: s.tf.indexOf(t) >= 0 ? s.tf.filter((x) => x !== t) : s.tf.concat([t]) }) })), hasFilter: !!(s.mf.length || s.tf.length), clearF: () => this.setState({ mf: [], tf: [] }), resultText,
+      hasOtd: !firstDay && st !== 'empty', otdCards: OTD.map((o) => ({ when: o.when, t: o.t, cls: 'm' + o.m, open: () => this.say('Opens ' + o.when.split(' · ')[0]) })),
+      rows, emptyList, emptyHead: st === 'empty' ? 'No entries yet' : w, emptyBody: st === 'empty' ? 'Your first line takes ten seconds. Press W anywhere to start.' : 'Try fewer filters, or search for a different word.',
+      monthName: MON[mo] + ' ' + y, rowsCss: 'repeat(' + nRows + ', minmax(0, 1fr))', dows, cells, legend: [1, 2, 3, 4, 5].map((n) => ({ name: MN[n - 1], cls: 'm' + n })),
+      prevM: () => this.setState({ mOff: s.mOff - 1 }), nextM: () => this.setState({ mOff: s.mOff + 1 }), thisM: () => this.setState({ mOff: 0 }),
+      writtenText: isOct ? mDays.length + ' of ' + TODAY : '0 of ' + nDays, avgMood: avg, trendLabel: mDays.length ? 'Mood by day, average ' + avg + ' of 5' : 'No entries this month', grid5: [8, 50, 92].map((v) => ({ y: v })),
+      trendPts: pts.map((q2) => q2.x.toFixed(1) + ',' + q2.y.toFixed(1)).join(' '), dots: pts.map((q2) => ({ x: q2.x.toFixed(1), y: q2.y.toFixed(1), col: q2.col })),
+      selHead: isOct ? (WD[new Date(y, mo, s.selDay).getDay()].toUpperCase() + ' ' + s.selDay + ' OCT') : 'NO DAY SELECTED', selHas: !!sd, selNone: !sd, selLine: sd ? sd.line : '',
+      selMcls: sd ? 'm' + sd.mood : 'm0', selMood: sd ? MN[sd.mood - 1] : '', selTags: sd ? sd.tags : [], selOpen: () => this.setState({ view: 'timeline' }), selWriteText: isOct && s.selDay === TODAY ? 'Write today\'s line' : 'Add a line for this day', selWrite: () => { this.setState({ view: 'today' }); focusLine(); },
+      cheatOn: s.cheat, cheat: [
+        { name: 'ANYWHERE', rows: [{ d: 'Write today\'s line', k: 'W' }, { d: 'Today', k: 'T' }, { d: 'Timeline', k: 'L' }, { d: 'Calendar', k: 'C' }, { d: 'Search', k: '/' }, { d: 'This sheet', k: '?' }] },
+        { name: 'WRITING', rows: [{ d: 'Save the line', k: 'Enter' }, { d: 'Mood 1 to 5', k: '1 to 5' }, { d: 'Leave the field', k: 'Esc' }, { d: 'Next control', k: 'Tab' }, { d: 'Another prompt', k: 'P' }] },
+        { name: 'TIMELINE AND CALENDAR', rows: [{ d: 'Previous month', k: '[' }, { d: 'Next month', k: ']' }, { d: 'Close or exit', k: 'Esc' }] }],
+      closeAll: () => this.setState({ cheat: false }), stop: (e) => e.stopPropagation(),
+      onKey: (e) => { const tag = (e.target && e.target.tagName) || ''; const typing = tag === 'INPUT' || tag === 'TEXTAREA'; const k = e.key;
+        if (k === 'Escape') this.setState({ cheat: false });
+        else if (typing) return;
+        else if (k === 'w') { e.preventDefault(); this.setState({ view: 'today' }); focusLine(); }
+        else if (k === 't') goView('today'); else if (k === 'l') goView('timeline'); else if (k === 'c') goView('calendar');
+        else if (k === '/') { e.preventDefault(); goView('search'); setTimeout(() => { const el = document.getElementById('d-search'); if (el) el.focus(); }, 30); }
+        else if (k === '?') this.setState({ cheat: true }); else if (k === 'p') this.setState({ promptI: s.promptI + 1 });
+        else if (k === '[') this.setState({ mOff: s.mOff - 1 }); else if (k === ']') this.setState({ mOff: s.mOff + 1 });
+        else if (/^[1-5]$/.test(k)) setE({ mood: Number(k) }); },
+      liveText: '', hasToast: !!s.toast, toast: s.toast };
+  }
+}
+</script>
+</body>
+</html>

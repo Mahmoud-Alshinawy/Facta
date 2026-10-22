@@ -9,6 +9,17 @@
 :root,
 [data-theme="default"] {
   color-scheme: dark;
+  --shadow-ink: #000000;
+  /* Wallpaper Shapes board; the preview stays independent of the app theme. */
+  --wallpaper-base: #2B302C;
+  --wallpaper-green: #4C6B5A;
+  --wallpaper-tan: #C9A27A;
+  --wallpaper-cream: #E3DED3;
+  --wallpaper-blue: #3F5A86;
+  --dialog-scrim: rgba(0,0,0,.64);
+  --dialog-shadow: rgba(0,0,0,.55);
+  --danger-text: #1A0505;
+  --swatch-check: #060706;
   --bg: #060706;
   --surface: #0C0D0C;
   --raised: #121412;
@@ -31,12 +42,20 @@
   --bar-other: #C9D0C9;
   --event-blue: #5B8DEF;
   --event-purple: #A47CF0;
+  --event-red: #EF6B6B;
+  --event-green: #4CC38A;
+  --event-orange: #F0904A;
+  --event-pink: #EC6FB0;
   --logo-tile: #0A0B0A;
   --logo-mark: #22C55E;
 }
 
 [data-theme="midnight"] {
   color-scheme: dark;
+  --dialog-scrim: rgba(1,3,10,.66);
+  --dialog-shadow: rgba(0,0,0,.6);
+  --danger-text: #1F0606;
+  --swatch-check: #04070E;
   --bg: #04070E;
   --surface: #090E1A;
   --raised: #0E1524;
@@ -59,12 +78,20 @@
   --bar-other: #C3CCE0;
   --event-blue: #67C1F5;
   --event-purple: #A88BF5;
+  --event-red: #F07A7A;
+  --event-green: #52C98F;
+  --event-orange: #F2A05C;
+  --event-pink: #EE7DB8;
   --logo-tile: #04070E;
   --logo-mark: #4C8DF6;
 }
 
 [data-theme="ember"] {
   color-scheme: dark;
+  --dialog-scrim: rgba(6,3,1,.66);
+  --dialog-shadow: rgba(0,0,0,.6);
+  --danger-text: #1F0606;
+  --swatch-check: #060504;
   --bg: #060504;
   --surface: #0C0A08;
   --raised: #120F0D;
@@ -87,12 +114,20 @@
   --bar-other: #D6CCC2;
   --event-blue: #6E9CF0;
   --event-purple: #B08AF0;
+  --event-red: #F07070;
+  --event-green: #55C08A;
+  --event-orange: #F0A040;
+  --event-pink: #EE78B4;
   --logo-tile: #060504;
   --logo-mark: #FF8000;
 }
 
 [data-theme="light"] {
   color-scheme: light;
+  --dialog-scrim: rgba(20,23,19,.38);
+  --dialog-shadow: rgba(20,23,19,.18);
+  --danger-text: #FFFFFF;
+  --swatch-check: #FFFFFF;
   --bg: #F6F6F3;
   --surface: #FFFFFF;
   --raised: #F0F1EC;
@@ -115,6 +150,10 @@
   --bar-other: #9AA197;
   --event-blue: #2563EB;
   --event-purple: #7C3AED;
+  --event-red: #DC2626;
+  --event-green: #059669;
+  --event-orange: #EA580C;
+  --event-pink: #DB2777;
   --logo-tile: #15803D;
   --logo-mark: #FFFFFF;
 }

@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Facta — Event dialog</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+/* ---- Theme tokens (same values as the Today screen) ---- */
+.dx,.dx[data-theme="bg"]{
+  color-scheme:dark;
+  --bg:#060706;--surface:#0C0D0C;--raised:#121412;--raised-2:#191C18;
+  --border:#1A1D1A;--border-strong:#262A25;--control-border:#5F685E;
+  --text:#F1F4F1;--text-2:#A6AEA6;--muted:#868F86;
+  --accent:#22C55E;--accent-hover:#2DD46A;--accent-text:#03210F;--accent-soft:rgba(34,197,94,.10);--accent-border:#1C7E40;
+  --warning:#E0A33B;--danger:#EF5A5A;--danger-soft:rgba(239,90,90,.12);--danger-border:#9E3B3B;--danger-text:#1A0505;
+  --event-blue:#5B8DEF;--event-red:#EF6B6B;--event-green:#4CC38A;--event-orange:#F0904A;--event-purple:#A47CF0;--event-pink:#EC6FB0;--swatch-check:#060706;
+  --scrim:rgba(0,0,0,.64);--shadow:rgba(0,0,0,.55);
+}
+.dx[data-theme="mid"]{
+  color-scheme:dark;
+  --bg:#04070E;--surface:#090E1A;--raised:#0E1524;--raised-2:#141C30;
+  --border:#161F33;--border-strong:#212C45;--control-border:#55668F;
+  --text:#EEF2FA;--text-2:#A3AECB;--muted:#7D89A8;
+  --accent:#4C8DF6;--accent-hover:#6AA1F8;--accent-text:#04122B;--accent-soft:rgba(76,141,246,.12);--accent-border:#3B6BBB;
+  --warning:#E8B04B;--danger:#F06A6A;--danger-soft:rgba(240,106,106,.12);--danger-border:#A04545;--danger-text:#1F0606;
+  --event-blue:#67C1F5;--event-red:#F07A7A;--event-green:#52C98F;--event-orange:#F2A05C;--event-purple:#A88BF5;--event-pink:#EE7DB8;--swatch-check:#04070E;
+  --scrim:rgba(1,3,10,.66);--shadow:rgba(0,0,0,.6);
+}
+.dx[data-theme="ember"]{
+  color-scheme:dark;
+  --bg:#060504;--surface:#0C0A08;--raised:#120F0D;--raised-2:#191512;
+  --border:#1A1613;--border-strong:#27201C;--control-border:#6E6053;
+  --text:#F6F1EC;--text-2:#B8ADA3;--muted:#938778;
+  --accent:#FF8000;--accent-hover:#FF9426;--accent-text:#1F0E00;--accent-soft:rgba(255,128,0,.12);--accent-border:#A55505;
+  --warning:#E8C547;--danger:#F25F5C;--danger-soft:rgba(242,95,92,.12);--danger-border:#A23F3D;--danger-text:#1F0606;
+  --event-blue:#6E9CF0;--event-red:#F07070;--event-green:#55C08A;--event-orange:#F0A040;--event-purple:#B08AF0;--event-pink:#EE78B4;--swatch-check:#060504;
+  --scrim:rgba(6,3,1,.66);--shadow:rgba(0,0,0,.6);
+}
+.dx[data-theme="light"]{
+  color-scheme:light;
+  --bg:#F6F6F3;--surface:#FFFFFF;--raised:#F0F1EC;--raised-2:#E7E9E3;
+  --border:#E3E5DF;--border-strong:#CDD1C8;--control-border:#7E857B;
+  --text:#141713;--text-2:#4E554D;--muted:#626A60;
+  --accent:#15803D;--accent-hover:#166534;--accent-text:#FFFFFF;--accent-soft:rgba(21,128,61,.10);--accent-border:#15803D;
+  --warning:#B45309;--danger:#DC2626;--danger-soft:rgba(220,38,38,.08);--danger-border:#DC2626;--danger-text:#FFFFFF;
+  --event-blue:#2563EB;--event-red:#DC2626;--event-green:#059669;--event-orange:#EA580C;--event-purple:#7C3AED;--event-pink:#DB2777;--swatch-check:#FFFFFF;
+  --scrim:rgba(20,23,19,.38);--shadow:rgba(20,23,19,.18);
+}
+.dx{
+  --slant:-10deg;
+  font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--text);-webkit-font-smoothing:antialiased;
+}
+.dx *{box-sizing:border-box}
+.dx button{font-family:inherit;color:inherit;cursor:pointer}
+.dx button:focus-visible{outline:2px solid var(--text);outline-offset:3px}
+.mono{font-family:'Geist Mono',ui-monospace,monospace;font-feature-settings:"tnum"}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.inp{height:40px;padding:0 12px;background:var(--bg);border:1px solid var(--control-border);border-radius:10px;color:var(--text);font:inherit;font-size:14px;transition:border-color .15s ease,box-shadow .15s ease}
+.inp::placeholder{color:var(--muted)}
+.inp:hover{border-color:var(--text-2)}
+.inp:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.inp[aria-invalid="true"]{border-color:var(--danger)}
+.lbl{font-size:12px;font-weight:500;color:var(--text-2)}
+
+/* Buttons v2: slanted = commits, straight = everything else, selected = light */
+.b{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;font-size:14px;font-weight:600;line-height:1;white-space:nowrap;transition:background .14s ease,color .14s ease,box-shadow .14s ease,transform .08s ease}
+.b:active{transform:scale(.97)}
+.b-commit{height:44px;padding:0;border-radius:9px;transform:skewX(var(--slant));overflow:hidden}
+.b-commit:active{transform:skewX(var(--slant)) scale(.97)}
+.b-commit > span{transform:skewX(calc(var(--slant) * -1))}
+.b-commit .lab{display:inline-flex;align-items:center;gap:8px;padding:0 16px 0 18px}
+.b-commit .key{height:100%;display:inline-flex;align-items:center;padding:0 12px;font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;font-weight:500;background:rgba(0,0,0,.16);border-left:1px solid rgba(0,0,0,.18);transform:none}
+.b-commit .arrow{transition:transform .14s ease}
+.b-primary{background:var(--accent);color:var(--accent-text)}
+.b-primary:hover{background:var(--accent-hover)}
+.b-primary:hover .arrow{transform:translateX(3px)}
+.b-primary[aria-disabled="true"]{background:var(--raised-2);color:var(--muted);cursor:not-allowed}
+.b-primary[aria-disabled="true"] .key{background:transparent;border-left-color:var(--border-strong)}
+.b-danger{background:var(--danger);color:var(--danger-text)}
+.b-danger:hover{filter:brightness(1.08)}
+.b-quiet{height:40px;padding:0 12px;border-radius:9px;background:transparent;color:var(--text-2);font-weight:500}
+.b-quiet:hover{background:var(--raised-2);color:var(--text)}
+.b-quiet .hint{font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;color:var(--muted)}
+.b-del{height:40px;padding:0 12px 0 10px;border-radius:9px;background:transparent;color:var(--danger);font-weight:500}
+.b-del:hover{background:var(--danger-soft)}
+.b-icon{width:34px;height:34px;padding:0;border-radius:9px;background:transparent;color:var(--muted)}
+.b-icon:hover{background:var(--raised-2);color:var(--text)}
+.opt{height:34px;padding:0;border-radius:8px;transform:skewX(var(--slant));background:transparent;box-shadow:inset 0 0 0 1px var(--control-border);color:var(--text-2);font-size:13px;font-weight:500}
+.opt > span{display:inline-flex;align-items:center;gap:8px;padding:0 12px;transform:skewX(calc(var(--slant) * -1))}
+.opt:hover{box-shadow:inset 0 0 0 1px var(--text-2);color:var(--text)}
+.opt[aria-checked="true"]{background:var(--text);color:var(--bg);box-shadow:none}
+.day{width:34px;height:34px;padding:0;border-radius:17px;background:transparent;box-shadow:inset 0 0 0 1px var(--control-border);color:var(--text-2);font-size:12px;font-weight:600}
+.day:hover{box-shadow:inset 0 0 0 1px var(--text-2);color:var(--text)}
+.day[aria-pressed="true"]{background:var(--text);color:var(--bg);box-shadow:none}
+.sw{position:relative;width:40px;height:24px;padding:0;border-radius:12px;background:transparent;box-shadow:inset 0 0 0 1px var(--control-border)}
+.sw .knob{position:absolute;top:4px;left:4px;width:16px;height:16px;border-radius:8px;background:var(--text-2);transition:left .16s cubic-bezier(.3,1.4,.5,1),background .16s ease}
+.sw[aria-checked="true"]{background:var(--text);box-shadow:none}
+.sw[aria-checked="true"] .knob{left:20px;background:var(--bg)}
+.swatch{width:42px;height:42px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:12px;background:transparent;box-shadow:inset 0 0 0 2px transparent}
+.swatch:hover{box-shadow:inset 0 0 0 2px var(--control-border)}
+.swatch[aria-checked="true"]{box-shadow:inset 0 0 0 2px var(--text)}
+/* calendar cells */
+.cell{height:38px;padding:0;border:0;border-radius:9px;background:transparent;color:var(--text);font-family:'Geist Mono',ui-monospace,monospace;font-size:13px}
+.cell:hover{background:var(--raised-2)}
+.cell.past{color:var(--muted)}
+.cell.today{box-shadow:inset 0 0 0 1px var(--control-border)}
+.cell[aria-pressed="true"]{background:var(--text);color:var(--bg);box-shadow:none;font-weight:600}
+.cell.blank{visibility:hidden}
+.sheet{animation:sheetIn .18s cubic-bezier(.2,.9,.3,1)}
+@keyframes sheetIn{0%{opacity:0;transform:translateY(8px) scale(.985)}100%{opacity:1;transform:none}}
+</style>
+</helmet>
+
+<div class="dx" data-theme="{{ themeKey }}" style="position: relative; min-height: 920px; overflow: hidden; background: var(--bg)">
+  <div aria-hidden="true" style="position: absolute; inset: 0; pointer-events: none"><dc-import name="Main" theme="{{ themeKey }}" hint-size="100%,920px"></dc-import></div>
+  <div aria-hidden="true" style="position: absolute; inset: 0; background: var(--scrim)"></div>
+
+  <div style="position: relative; min-height: 920px; display: flex; align-items: flex-start; justify-content: center; padding: 72px 16px 40px">
+    <sc-if value="{{ open }}" hint-placeholder-val="{{ true }}">
+      <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="ev-h" onKeyDown="{{ onKey }}" style="width: 100%; max-width: 880px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 18px; box-shadow: 0 24px 64px var(--shadow); overflow: hidden">
+        <form onSubmit="{{ onSubmit }}" style="display: flex; flex-direction: column">
+          <div style="display: flex; flex-wrap: wrap">
+
+            <!-- left: what -->
+            <div style="flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 22px; padding: 20px 26px 26px">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+                <h2 id="ev-h" style="margin: 0; display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; color: var(--text-2)">
+                  <span aria-hidden="true" style="width: 10px; height: 10px; border-radius: 3px; transform: skewX(var(--slant)); background: {{ colorVar }}"></span>{{ heading }}
+                </h2>
+              </div>
+              <div>
+                <label for="ev-title" class="sr-only">Title</label>
+                <input id="ev-title" class="inp" ref="{{ setRef }}" type="text" autocomplete="off" placeholder="Event title" value="{{ title }}" onChange="{{ onTitle }}" style="width: 100%; height: 52px; font-size: 20px; font-weight: 600; letter-spacing: -0.02em">
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 10px">
+                <span id="ev-col" class="lbl">Colour</span>
+                <div role="radiogroup" aria-labelledby="ev-col" style="display: flex; flex-wrap: wrap; gap: 6px">
+                  <sc-for list="{{ colors }}" as="c" hint-placeholder-count="6">
+                    <button type="button" class="b swatch" role="radio" aria-checked="{{ c.checked }}" aria-label="{{ c.name }}" title="{{ c.name }}" onClick="{{ c.pick }}">
+                      <span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: {{ c.v }}">
+                        <sc-if value="{{ c.on }}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" style="color: var(--swatch-check)" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></sc-if>
+                      </span>
+                    </button>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 10px; flex: 1">
+                <label for="ev-desc" class="lbl">Description <span style="color: var(--muted)">· optional</span></label>
+                <textarea id="ev-desc" class="inp" rows="6" placeholder="Notes, links, room…" value="{{ desc }}" onChange="{{ onDesc }}" style="height: auto; flex: 1; min-height: 140px; padding: 10px 12px; resize: vertical; line-height: 1.45"></textarea>
+              </div>
+            </div>
+
+            <!-- right: when -->
+            <div style="flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 18px; padding: 16px 22px 24px; background: var(--bg); border-left: 1px solid var(--border)">
+              <div style="display: flex; justify-content: flex-end; margin-bottom: -6px">
+                <button type="button" class="b b-icon" onClick="{{ onCancel }}" aria-label="Close (Escape)">
+                  <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+                </button>
+              </div>
+              <div style="display: flex; align-items: center; justify-content: space-between">
+                <span id="ev-month" style="font-size: 15px; font-weight: 600">{{ monthLabel }}</span>
+                <div style="display: flex; gap: 2px">
+                  <button type="button" class="b b-icon" aria-label="Previous month" onClick="{{ prevMonth }}" style="width: 32px; height: 32px"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></button>
+                  <button type="button" class="b b-icon" aria-label="Next month" onClick="{{ nextMonth }}" style="width: 32px; height: 32px"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></button>
+                </div>
+              </div>
+              <div role="group" aria-labelledby="ev-month" style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px">
+                <sc-for list="{{ weekdays }}" as="w" hint-placeholder-count="7">
+                  <span class="mono" aria-hidden="true" style="height: 24px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--muted)">{{ w }}</span>
+                </sc-for>
+                <sc-for list="{{ cells }}" as="c" hint-placeholder-count="35">
+                  <button type="button" class="{{ c.cls }}" aria-label="{{ c.aria }}" aria-pressed="{{ c.pressed }}" onClick="{{ c.pick }}" tabindex="{{ c.tab }}">{{ c.n }}</button>
+                </sc-for>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 10px">
+                <div style="display: flex; align-items: center; justify-content: space-between">
+                  <span id="ev-time-label" class="lbl">Time</span>
+                  <span style="display: flex; align-items: center; gap: 8px">
+                    <span id="ev-allday" style="font-size: 13px; color: var(--text-2)">All day</span>
+                    <button type="button" class="sw" role="switch" aria-checked="{{ allDayChecked }}" aria-labelledby="ev-allday" onClick="{{ toggleAllDay }}"><span class="knob" aria-hidden="true"></span></button>
+                  </span>
+                </div>
+                <sc-if value="{{ timed }}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+                    <label for="ev-start" class="sr-only">Start time</label>
+                    <input id="ev-start" class="inp mono" type="time" value="{{ start }}" onChange="{{ onStart }}" style="width: 112px">
+                    <span aria-hidden="true" style="color: var(--muted)">–</span>
+                    <label for="ev-end" class="sr-only">End time</label>
+                    <input id="ev-end" class="inp mono" type="time" value="{{ end }}" onChange="{{ onEnd }}" aria-invalid="{{ endInvalid }}" aria-describedby="ev-dur" style="width: 112px">
+                    <span id="ev-dur" style="font-size: 12px; color: {{ durColor }}">{{ durLabel }}</span>
+                  </div>
+                </sc-if>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 10px">
+                <span id="ev-rep" class="lbl">Repeat</span>
+                <div role="radiogroup" aria-labelledby="ev-rep" style="display: flex; flex-wrap: wrap; gap: 6px; padding-left: 4px">
+                  <sc-for list="{{ repeats }}" as="r" hint-placeholder-count="5">
+                    <button type="button" class="b opt" role="radio" aria-checked="{{ r.checked }}" onClick="{{ r.pick }}"><span>{{ r.label }}</span></button>
+                  </sc-for>
+                </div>
+                <sc-if value="{{ isCustom }}" hint-placeholder-val="{{ false }}">
+                  <div role="group" aria-label="Repeat on days" style="display: flex; gap: 5px">
+                    <sc-for list="{{ days }}" as="d" hint-placeholder-count="7">
+                      <button type="button" class="b day" aria-pressed="{{ d.pressed }}" aria-label="{{ d.full }}" onClick="{{ d.toggle }}">{{ d.short }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+          </div>
+
+          <!-- footer -->
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 14px 20px 16px 16px; border-top: 1px solid var(--border)">
+            <sc-if value="{{ showDeleteBtn }}" hint-placeholder-val="{{ false }}">
+              <button type="button" class="b b-del" onClick="{{ askDelete }}">
+                <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"></path></svg>
+                Delete event
+              </button>
+            </sc-if>
+            <sc-if value="{{ showSummary }}" hint-placeholder-val="{{ true }}">
+              <span style="padding-left: 10px; font-size: 13px; color: var(--text-2)">{{ summary }}</span>
+            </sc-if>
+            <span style="flex: 1"></span>
+
+            <sc-if value="{{ confirming }}" hint-placeholder-val="{{ false }}">
+              <span role="alert" style="font-size: 13px; color: var(--text-2); margin-right: 4px">{{ confirmText }}</span>
+              <button type="button" class="b b-quiet" onClick="{{ keep }}">Keep it</button>
+              <button type="button" class="b b-commit b-danger" onClick="{{ doDelete }}">
+                <span class="lab">
+                  <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"></path></svg>
+                  Delete
+                </span>
+              </button>
+            </sc-if>
+
+            <sc-if value="{{ notConfirming }}" hint-placeholder-val="{{ true }}">
+              <button type="button" class="b b-quiet" onClick="{{ onCancel }}">Cancel <span class="hint">Esc</span></button>
+              <button type="submit" class="b b-commit b-primary" aria-disabled="{{ disabledAttr }}">
+                <span class="lab">
+                  {{ primaryLabel }}
+                  <svg class="arrow" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+                </span>
+                <span class="key" aria-hidden="true">Enter</span>
+              </button>
+            </sc-if>
+          </div>
+        </form>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ closed }}" hint-placeholder-val="{{ false }}">
+      <div role="status" style="margin-top: 180px; display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 18px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 14px; box-shadow: 0 16px 40px var(--shadow)">
+        <span style="font-size: 14px">{{ toast }}</span>
+        <button type="button" class="b b-quiet" onClick="{{ reopen }}" style="height: 34px; font-size: 13px">Open again</button>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"mode":{"editor":"enum","options":["new","edit"],"default":"new","section":"States"},"theme":{"editor":"enum","options":["bg","mid","ember","light"],"default":"bg","section":"States"},"timeFormat": {"editor": "enum", "options": ["24h", "12h"], "default": "24h"}, "$preview":{"width":1440,"height":920}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.setRef = (el) => { this.inputEl = el; };
+    this.state = this.initial(props.mode === 'edit');
+    this.listenPrefs();
+  }
+  // ---- shared prefs: Settings writes localStorage 'facta.prefs'; props are the fallback ----
+  prefs() {
+    let o = {}; try { o = (typeof window !== 'undefined' && window.__factaPrefs) || JSON.parse(window.localStorage.getItem('facta.prefs') || '{}') || {}; } catch (e) { o = {}; }
+    const p = this.props || {};
+    return { tf: (o.timeFormat === '12h' || o.timeFormat === '24h') ? o.timeFormat : (p.timeFormat === '12h' ? '12h' : '24h') };
+  }
+  listenPrefs() {
+    this._onPrefs = () => { try { this.setState({ prefTick: Date.now() }); } catch (e) {} };
+    try { window.addEventListener('facta-prefs', this._onPrefs); window.addEventListener('storage', this._onPrefs); } catch (e) {}
+  }
+  unlistenPrefs() { try { window.removeEventListener('facta-prefs', this._onPrefs); window.removeEventListener('storage', this._onPrefs); } catch (e) {} }
+  fmtT(min) { const tf = this.prefs().tf, p2 = (n) => (n < 10 ? '0' : '') + n, h = Math.floor(min / 60), mm = min % 60;
+    if (tf === '24h') return p2(h) + ':' + p2(mm);
+    return (h % 12 === 0 ? 12 : h % 12) + ':' + p2(mm) + ' ' + (h % 24 < 12 ? 'AM' : 'PM'); }
+  componentWillUnmount() { this.unlistenPrefs(); }
+  initial(edit) {
+    const base = { open: true, toast: '', y: 2026, m: 9, d: 17, viewY: 2026, viewM: 9, days: [], confirming: false };
+    if (edit) return { ...base, title: 'Database lecture', allDay: false, start: '10:00', end: '11:30', color: 'blue', repeat: 'weekly', desc: '' };
+    return { ...base, title: '', allDay: false, start: '14:00', end: '15:00', color: 'blue', repeat: 'none', desc: '' };
+  }
+  componentDidMount() { this.focus(); }
+  focus() { try { if (this.inputEl) this.inputEl.focus({ preventScroll: true }); } catch (e) {} }
+  close(toast) { this.setState({ open: false, toast, confirming: false }); }
+  mins(t) { const p = (t || '').split(':'); return p.length === 2 ? Number(p[0]) * 60 + Number(p[1]) : null; }
+  renderVals() {
+    const s = this.state;
+    const edit = this.props.mode === 'edit';
+    const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+    const a = this.mins(s.start), b = this.mins(s.end);
+    const timeOk = s.allDay || (a !== null && b !== null && b > a);
+    const ok = s.title.trim().length > 0 && timeOk;
+    let durLabel = '';
+    if (!s.allDay && a !== null && b !== null) {
+      if (b <= a) durLabel = 'Ends before it starts';
+      else { const d = b - a, h = Math.floor(d / 60), m = d % 60; durLabel = (h ? h + 'h' : '') + (h && m ? ' ' : '') + (m ? m + 'm' : ''); }
+    }
+
+    const first = new Date(s.viewY, s.viewM, 1).getDay();
+    const len = new Date(s.viewY, s.viewM + 1, 0).getDate();
+    const cells = [];
+    for (let i = 0; i < first; i++) cells.push({ n: '', cls: 'cell blank', aria: 'empty', pressed: 'false', tab: '-1', pick: () => {} });
+    for (let n = 1; n <= len; n++) {
+      const sel = s.y === s.viewY && s.m === s.viewM && s.d === n;
+      const isToday = s.viewY === 2026 && s.viewM === 9 && n === 17;
+      const past = s.viewY < 2026 || (s.viewY === 2026 && (s.viewM < 9 || (s.viewM === 9 && n < 17)));
+      cells.push({ n: String(n), pressed: sel ? 'true' : 'false', tab: '0',
+        cls: 'cell' + (isToday ? ' today' : '') + (past ? ' past' : ''),
+        aria: DAYS[new Date(s.viewY, s.viewM, n).getDay()] + ' ' + n + ' ' + MONTHS[s.viewM] + (isToday ? ', today' : ''),
+        pick: () => this.setState({ y: s.viewY, m: s.viewM, d: n }) });
+    }
+    const shift = (dir) => { let m = s.viewM + dir, y = s.viewY; if (m < 0) { m = 11; y--; } if (m > 11) { m = 0; y++; } this.setState({ viewM: m, viewY: y }); };
+
+    const colors = [['blue', 'Blue'], ['red', 'Red'], ['green', 'Green'], ['orange', 'Orange'], ['purple', 'Purple'], ['pink', 'Pink']].map(([id, name]) => ({
+      name, on: s.color === id, checked: s.color === id ? 'true' : 'false', v: 'var(--event-' + id + ')', pick: () => this.setState({ color: id }) }));
+    const repNames = { none: 'None', daily: 'Daily', weekdays: 'Weekdays', weekly: 'Weekly', custom: 'Custom' };
+    const repeats = Object.keys(repNames).map((id) => ({ label: repNames[id], checked: s.repeat === id ? 'true' : 'false', pick: () => this.setState({ repeat: id }) }));
+    const days = [['S', 'Sunday'], ['M', 'Monday'], ['T', 'Tuesday'], ['W', 'Wednesday'], ['T', 'Thursday'], ['F', 'Friday'], ['S', 'Saturday']].map(([short, full], i) => {
+      const on = s.days.indexOf(i) !== -1;
+      return { short, full, pressed: on ? 'true' : 'false', toggle: () => this.setState({ days: on ? s.days.filter((x) => x !== i) : s.days.concat([i]) }) };
+    });
+
+    const isTodaySel = s.y === 2026 && s.m === 9 && s.d === 17;
+    const dateLabel = isTodaySel ? 'Today' : DAYS[new Date(s.y, s.m, s.d).getDay()].slice(0, 3) + ' ' + s.d + ' ' + MONTHS[s.m].slice(0, 3);
+    const summary = [dateLabel, s.allDay ? 'All day' : (a !== null && b !== null ? this.fmtT(a) + '–' + this.fmtT(b) : s.start + '–' + s.end), s.repeat !== 'none' ? repNames[s.repeat] : null].filter(Boolean).join(' · ');
+
+    return {
+      themeKey: this.props.theme || 'bg',
+      open: s.open, closed: !s.open, toast: s.toast,
+      heading: edit ? 'Edit event' : 'New event',
+      colorVar: 'var(--event-' + s.color + ')',
+      setRef: this.setRef, title: s.title, onTitle: (e) => this.setState({ title: e.target.value }),
+      colors, repeats, days, isCustom: s.repeat === 'custom',
+      monthLabel: MONTHS[s.viewM] + ' ' + s.viewY, weekdays: ['S', 'M', 'T', 'W', 'T', 'F', 'S'], cells,
+      prevMonth: () => shift(-1), nextMonth: () => shift(1),
+      timed: !s.allDay, allDayChecked: s.allDay ? 'true' : 'false', toggleAllDay: () => this.setState({ allDay: !s.allDay }),
+      start: s.start, end: s.end, onStart: (e) => this.setState({ start: e.target.value }), onEnd: (e) => this.setState({ end: e.target.value }),
+      endInvalid: timeOk ? 'false' : 'true', durLabel, durColor: timeOk ? 'var(--muted)' : 'var(--danger)',
+      desc: s.desc, onDesc: (e) => this.setState({ desc: e.target.value }),
+      summary, showSummary: !edit && !s.confirming, showDeleteBtn: edit && !s.confirming,
+      primaryLabel: edit ? 'Save changes' : 'Add event', disabledAttr: ok ? 'false' : 'true',
+      confirming: s.confirming, notConfirming: !s.confirming,
+      confirmText: s.repeat === 'none' ? 'Delete for good?' : 'Delete every repeat?',
+      askDelete: () => this.setState({ confirming: true }),
+      keep: () => this.setState({ confirming: false }),
+      doDelete: () => this.close('Event deleted'),
+      onCancel: () => this.close('Closed without saving'),
+      onKey: (e) => { if (e.key === 'Escape') { e.preventDefault(); if (s.confirming) this.setState({ confirming: false }); else this.close('Closed without saving'); } },
+      onSubmit: (e) => {
+        e.preventDefault();
+        if (s.confirming) return;
+        if (!ok) { if (!s.title.trim()) this.focus(); return; }
+        this.close(edit ? 'Changes saved' : 'Event added · ' + summary);
+      },
+      reopen: () => this.setState(this.initial(edit), () => this.focus())
+    };
+  }
+}
+</script>
+</body>
+</html>
