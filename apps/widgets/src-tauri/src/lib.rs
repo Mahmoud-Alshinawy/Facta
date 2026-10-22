@@ -15,6 +15,44 @@ fn tray_icon(theme: tauri::Theme) -> tauri::image::Image<'static> {
     }
 }
 
+// Windows can use a different theme for apps and the taskbar.
+fn tray_theme(_fallback: impl FnOnce() -> tauri::Theme) -> tauri::Theme {
+    #[cfg(target_os = "windows")]
+    {
+        use std::ffi::c_void;
+        #[link(name = "advapi32")]
+        extern "system" {
+            fn RegGetValueW(
+                key: *mut c_void,
+                subkey: *const u16,
+                value: *const u16,
+                flags: u32,
+                value_type: *mut u32,
+                data: *mut c_void,
+                size: *mut u32,
+            ) -> i32;
+        }
+        let key: Vec<u16> = r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"
+            .encode_utf16().chain(Some(0)).collect();
+        let name: Vec<u16> = "SystemUsesLightTheme".encode_utf16().chain(Some(0)).collect();
+        let mut light: u32 = 0;
+        let mut size = std::mem::size_of_val(&light) as u32;
+        // HKCU is a predefined pseudo-handle; both strings are NUL-terminated,
+        // and RRF_RT_REG_DWORD restricts the write to the four-byte buffer.
+        let status = unsafe {
+            RegGetValueW(
+                -2147483647isize as *mut c_void,
+                key.as_ptr(), name.as_ptr(), 0x00000010,
+                std::ptr::null_mut(), &mut light as *mut u32 as *mut c_void,
+                &mut size,
+            )
+        };
+        if status == 0 && light == 1 { tauri::Theme::Light } else { tauri::Theme::Dark }
+    }
+    #[cfg(not(target_os = "windows"))]
+    { _fallback() }
+}
+
 // ─── State ────────────────────────────────────────────────────────────────────
 
 struct WidgetState {
@@ -604,7 +642,7 @@ pub fn run() {
             if window.label() == "keeper" {
                 if let tauri::WindowEvent::ThemeChanged(theme) = event {
                     if let Some(tray) = window.app_handle().tray_by_id("facta-widgets-tray") {
-                        let _ = tray.set_icon(Some(tray_icon(*theme)));
+                        let _ = tray.set_icon(Some(tray_icon(tray_theme(|| *theme))));
                     }
                 }
             }
@@ -617,7 +655,7 @@ pub fn run() {
             let menu = Menu::with_items(app, &[&quit_item])?;
             
             let tray = TrayIconBuilder::with_id("facta-widgets-tray")
-                .icon(tray_icon(tauri::Theme::Dark))
+                .icon(tray_icon(tray_theme(|| tauri::Theme::Dark)))
                 .tooltip("Facta Widgets")
                 .menu(&menu)
                 .on_menu_event(|app, event| match event.id.as_ref() {
@@ -657,8 +695,8 @@ pub fn run() {
                 Err(e) => log(&format!("Keeper window failed: {}", e)),
             }
 
-            let system_theme = app.get_webview_window("keeper")
-                .and_then(|window| window.theme().ok()).unwrap_or(tauri::Theme::Dark);
+            let system_theme = tray_theme(|| app.get_webview_window("keeper")
+                .and_then(|window| window.theme().ok()).unwrap_or(tauri::Theme::Dark));
             tray.set_icon(Some(tray_icon(system_theme)))?;
             let app_handle = app.app_handle().clone();
             let state: tauri::State<WidgetState> = app.state::<WidgetState>();

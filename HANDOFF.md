@@ -1,6 +1,14 @@
 # Handoff: feat/ui-redesign (branch 1 of 3), work in progress
 
 ## Review fixes (22 October 2026)
+- Fix 2: both native apps read HKCU SystemUsesLightTheme through RegGetValueW
+  at tray startup and on ThemeChanged: dark taskbar uses white, light uses
+  black. Window/app theme fallback is compiled only outside Windows. No new
+  dependencies. This host's registry value is 0; live theme switching was not
+  exercised in this revision.
+- Fix 2 checks passed: frozen install; npx tsc x3; desktop Vitest 260/260,
+  calendar 152/152; desktop build with required env; cargo check --offline
+  in both apps on Windows. Existing Vite chunk-size warning only.
 - Owner reports checks and native Windows testing passed for 0ad41a8.
 - Fix 1: sign-out falls back to local scope after remote failure; the hook
   clears its user after either successful path. Only local failure propagates.
