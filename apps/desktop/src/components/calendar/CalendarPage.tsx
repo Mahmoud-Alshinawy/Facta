@@ -44,9 +44,20 @@ export default function CalendarPage({ anchor, view, onAnchor, onView, actions, 
   }, [miniOpen]);
   const heading = calendarHeading(anchor, now, view, prefs);
   const say = useCallback((text: string) => { setLive(text); toast.message(text); }, []);
-  const go = useCallback((date: Date) => { setPopOpen(false); onAnchor(date); setMiniMonth(date); }, [onAnchor]);
-  const changeView = (next: CalendarView) => { setPopOpen(false); onView(next); };
-  const openDay = (date: Date) => { go(date); onView("day"); };
+  const focusCanvas = useCallback(() => root.current?.querySelector<HTMLElement>('.calendar-body [role="grid"]:not(.date-grid), .calendar-body .ag')?.focus({ preventScroll: true }), []);
+  const moveAnchor = useCallback((date: Date) => {
+    const fromCanvas = document.activeElement?.matches('.wk-scroll, .dscroll, .mgrid, .ag');
+    onAnchor(date);
+    // Period keys remount a view; keep arrow navigation in the new grid.
+    if (fromCanvas) requestAnimationFrame(focusCanvas);
+  }, [onAnchor, focusCanvas]);
+  const go = useCallback((date: Date) => { setPopOpen(false); moveAnchor(date); setMiniMonth(date); }, [moveAnchor]);
+  const changeView = useCallback((next: CalendarView) => {
+    const fromCanvas = document.activeElement?.matches('.wk-scroll, .dscroll, .mgrid, .ag');
+    setPopOpen(false); onView(next);
+    if (fromCanvas) requestAnimationFrame(focusCanvas);
+  }, [onView, focusCanvas]);
+  const openDay = (date: Date) => { go(date); onView("day"); requestAnimationFrame(focusCanvas); };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -55,7 +66,7 @@ export default function CalendarPage({ anchor, view, onAnchor, onView, actions, 
         || target?.closest('input, textarea, select, [contenteditable="true"], [role="dialog"]')) return;
       const key = e.key.toLowerCase();
       const views: Record<string, CalendarView> = { "1": "day", "2": "week", "3": "month", "4": "agenda" };
-      if (views[key]) { e.preventDefault(); setPopOpen(false); onView(views[key]); }
+      if (views[key]) { e.preventDefault(); changeView(views[key]); }
       else if (key === "n") { e.preventDefault(); actions.newEvent({ date: keyOf(anchor) }); }
       else if (key === "g") { e.preventDefault(); actions.newGoal(keyOf(anchor)); }
       else if (key === "t") { e.preventDefault(); go(new Date()); }
@@ -68,7 +79,7 @@ export default function CalendarPage({ anchor, view, onAnchor, onView, actions, 
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [anchor, view, keyboardBlocked, actions, onView, go]);
+  }, [anchor, view, keyboardBlocked, actions, changeView, go]);
 
   const periodKey = view === "week" ? keyOf(startOfWeekFor(anchor, prefs.weekStart))
     : view === "month" ? `${anchor.getFullYear()}-${anchor.getMonth()}` : keyOf(anchor);
@@ -94,9 +105,9 @@ export default function CalendarPage({ anchor, view, onAnchor, onView, actions, 
             onSelectDate={(date) => { go(date); }} />
         </aside>}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          {view === "week" && <WeekView key={periodKey} anchor={anchor} now={now} prefs={prefs} actions={actions} onAnchor={onAnchor} onOpenDay={openDay} say={say} />}
-          {view === "day" && <DayView key={periodKey} anchor={anchor} now={now} prefs={prefs} actions={actions} onAnchor={onAnchor} say={say} />}
-          {view === "month" && <MonthView key={periodKey} anchor={anchor} now={now} prefs={prefs} actions={actions} onAnchor={onAnchor} onOpenDay={openDay} popOpen={popOpen} onPop={setPopOpen} />}
+          {view === "week" && <WeekView key={periodKey} anchor={anchor} now={now} prefs={prefs} actions={actions} onAnchor={moveAnchor} onOpenDay={openDay} say={say} />}
+          {view === "day" && <DayView key={periodKey} anchor={anchor} now={now} prefs={prefs} actions={actions} onAnchor={moveAnchor} say={say} />}
+          {view === "month" && <MonthView key={periodKey} anchor={anchor} now={now} prefs={prefs} actions={actions} onAnchor={moveAnchor} onOpenDay={openDay} popOpen={popOpen} onPop={setPopOpen} />}
           {view === "agenda" && <AgendaView key={periodKey} start={anchor} now={now} prefs={prefs} actions={actions} filter={filter} onFilter={setFilter} />}
         </div>
       </div>

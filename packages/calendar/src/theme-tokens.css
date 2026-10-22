@@ -10,6 +10,12 @@
 [data-theme="default"] {
   color-scheme: dark;
   --shadow-ink: #000000;
+  /* Wallpaper Shapes board; the preview stays independent of the app theme. */
+  --wallpaper-base: #2B302C;
+  --wallpaper-green: #4C6B5A;
+  --wallpaper-tan: #C9A27A;
+  --wallpaper-cream: #E3DED3;
+  --wallpaper-blue: #3F5A86;
   --dialog-scrim: rgba(0,0,0,.64);
   --dialog-shadow: rgba(0,0,0,.55);
   --danger-text: #1A0505;

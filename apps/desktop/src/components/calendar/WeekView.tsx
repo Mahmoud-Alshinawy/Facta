@@ -502,21 +502,21 @@ export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpen
             );
           })()}
 
-          {empty && (
-            <div className="empty-card">
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600 }}>A clear week</h2>
-                <span style={{ fontSize: 13, color: "var(--text-2)" }}>Click a time slot, drag across it, or type a line and press Enter.</span>
-              </div>
-              <div className="crow"><span>Quick add</span><span className="mono" style={{ fontSize: 12, color: "var(--text)" }}>Lunch with Alex Fri 1pm</span></div>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <Commit keyHint="N" onClick={() => actions.newEvent({ date: keys[curIdx] })}>New event</Commit>
-                <button type="button" className="ctl" onClick={() => actions.newGoal(keys[curIdx])}>New goal <Kbd>G</Kbd></button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
+      {empty && !drag && !qa && !detail && (
+        <div className="empty-card">
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600 }}>A clear week</h2>
+            <span style={{ fontSize: 13, color: "var(--text-2)" }}>Click a time slot, drag across it, or type a line and press Enter.</span>
+          </div>
+          <div className="crow"><span>Quick add</span><span className="mono" style={{ fontSize: 12, color: "var(--text)" }}>Lunch with Alex Fri 1pm</span></div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <Commit keyHint="N" onClick={() => actions.newEvent({ date: keys[curIdx] })}>New event</Commit>
+            <button type="button" className="ctl" onClick={() => actions.newGoal(keys[curIdx])}>New goal <Kbd>G</Kbd></button>
+          </div>
+        </div>
+      )}
       <div className="sr-only" aria-live="polite">{liveText}</div>
     </section>
   );

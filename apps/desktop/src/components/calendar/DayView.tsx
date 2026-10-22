@@ -111,100 +111,102 @@ export default function DayView({ anchor, now, prefs, actions, onAnchor, say }: 
 
   return (
     <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
-      <div ref={scRef} className="dscroll" role="grid" tabIndex={0} onKeyDown={onKey}
-        aria-label={`${dayLabel(anchor)}. Arrow up and down move by half-hours, left and right change day, Enter opens or toggles.`}>
-        <div className="dwrap">
-          <div className="dband">
-            <div className="row">
-              <span className="mono sec lbl">ALL DAY</span>
-              {allDay.length === 0 && <span style={{ fontSize: 13, color: "var(--subtle)" }}>Nothing all day</span>}
-              {allDay.map((a) => (
-                <button key={a.id} type="button" className="ad1" style={{ ["--c" as string]: colorVar(a.color) }} onClick={() => setDetail(a.id)}>
-                  <span className="ee" aria-hidden="true" />{a.title}
-                </button>
+      <div className="day-timeline">
+        <div ref={scRef} className="dscroll" role="grid" tabIndex={0} onKeyDown={onKey}
+          aria-label={`${dayLabel(anchor)}. Arrow up and down move by half-hours, left and right change day, Enter opens or toggles.`}>
+          <div className="dwrap">
+            <div className="dband">
+              <div className="row">
+                <span className="mono sec lbl">ALL DAY</span>
+                {allDay.length === 0 && <span style={{ fontSize: 13, color: "var(--subtle)" }}>Nothing all day</span>}
+                {allDay.map((a) => (
+                  <button key={a.id} type="button" className="ad1" style={{ ["--c" as string]: colorVar(a.color) }} onClick={() => setDetail(a.id)}>
+                    <span className="ee" aria-hidden="true" />{a.title}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div ref={gridRef} className="dgrid" style={{ height: 24 * H }}
+              onMouseDown={(e) => {
+                if (e.button !== 0) return;
+                const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                if (e.clientX - r.left < LEFT) return;
+                const s = Math.max(0, Math.min(SLOTS - 1, Math.floor(((e.clientY - r.top) / H) * 2)));
+                setSlot(s);
+                setDetail(null);
+                setQa({ a: s, b: Math.min(SLOTS - 1, s + 1) });
+              }}>
+              {Array.from({ length: 23 }, (_, h) => <div key={`l${h}`} className="dl" style={{ top: (h + 1) * H }} />)}
+              {Array.from({ length: 24 }, (_, h) => <div key={`m${h}`} className="dl half" style={{ top: h * H + H / 2 }} />)}
+              {Array.from({ length: 24 }, (_, h) => (
+                <span key={`h${h}`} className="mono dh" style={{ top: h === 0 ? 2 : h * H - 7, opacity: hasNow && Math.abs(h * H - nowTop) < 16 ? 0 : 1 }}>{C.hour(h * 60)}</span>
               ))}
+              {laid.map((t) => {
+                const h = Math.max(28, ((t.realEnd - t.start) / 60) * H - 2);
+                const row = h < 46;
+                const past = isPast || (isToday && t.realEnd <= nowMin);
+                const cl = clash.ids.has(t.event.id);
+                return (
+                  <button key={t.event.id} type="button"
+                    className={`dev${row ? " row" : ""}${past ? " is-past" : ""}${cl ? " clash" : ""}`}
+                    aria-label={`${t.event.title}, ${C.range(t.start, t.realEnd)}${cl ? ", overlaps another event" : ""}`}
+                    title={`${t.event.title}, ${C.range(t.start, t.realEnd)}`}
+                    style={{ top: (t.start / 60) * H + 1, height: h, left: `calc(${LEFT}px + (100% - ${LEFT}px) * ${(t.col / t.cols).toFixed(4)})`, width: `calc((100% - ${LEFT}px) / ${t.cols} - 4px)`, ["--c" as string]: colorVar(t.event.color) }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={() => { setQa(null); setDetail(t.event.id); }}>
+                    <span className="ee" aria-hidden="true" />
+                    <span className="in"><span className="et">{t.event.title}</span><span className="em">{C.chipRange(t.start, t.realEnd)}</span></span>
+                    {cl && <span className="ci" title="Overlaps another event"><IconWarn size={12} /></span>}
+                  </button>
+                );
+              })}
+              {dayGoals.filter((g) => g.at !== null).map((g) => {
+                const t = g.at!;
+                const over = timed.some((x) => x.start <= t && x.end > t);
+                const style: CSSProperties = over
+                  ? { top: (t / 60) * H, left: "calc(100% - 236px)", width: 230, boxShadow: "inset 0 0 0 1px var(--control-border), 0 6px 16px color-mix(in srgb,var(--shadow-ink) 35%,transparent)" }
+                  : { top: (t / 60) * H + 1, left: `calc(${LEFT}px + 6px)`, width: `calc(100% - ${LEFT + 6}px)` };
+                return (
+                  <div key={g.goal.id} className={`dgc${g.done ? " is-done" : ""}`} style={style} onMouseDown={(e) => e.stopPropagation()}>
+                    <Check done={g.done} label={g.goal.title} onToggle={() => toggle(g)} tabIndex={0} />
+                    <span className="gt">{g.goal.title}</span><span className="em">{C.chip(t)}</span>
+                  </div>
+                );
+              })}
+              {hasNow && <span className="mono dnowP" style={{ top: nowTop - 10 }} aria-hidden="true">{C.full(nowMin)}</span>}
+              {!qa && !detail && <div className="dcur" style={{ top: (slot * H) / 2, height: H / 2 }} />}
+              {qa && (
+                <div className="ghost" style={{ left: LEFT + 3, top: (qa.a * H) / 2 + 1, height: ((qa.b - qa.a + 1) * H) / 2 - 2 }}>
+                  <span className="gt1">New event</span><span className="gt2">{C.chipRange(qa.a * 30, (qa.b + 1) * 30)}</span>
+                </div>
+              )}
+              {qa && (
+                <QuickAddPopover style={{ ...popHoriz, top: Math.max(8, (qa.a * H) / 2 - 20), width: 348 }}
+                  day={anchor} start={qa.a * 30} end={(qa.b + 1) * 30} now={now} clocks={C}
+                  onClose={() => { setQa(null); focusGrid(); }}
+                  onAdd={(ev) => { addEvent(ev); setQa(null); focusGrid(); say(`Event added · ${ev.title}`); }}
+                  onMore={(draft) => { setQa(null); actions.newEvent(draft); }} />
+              )}
+              {detailEvent && (
+                <DetailPopover event={detailEvent} day={anchor} clocks={C}
+                  style={{ ...popHoriz, top: Math.max(8, detailEvent.allDay ? 8 : (splitDay([detailEvent]).timed[0].start / 60) * H - 12), width: 330 }}
+                  onClose={() => { setDetail(null); focusGrid(); }}
+                  onEdit={() => { setDetail(null); actions.editEvent(detailEvent); }}
+                  onDelete={() => { setDetail(null); deleteEventWithUndo(detailEvent as CalendarEvent, deleteEvent); focusGrid(); }} />
+              )}
             </div>
           </div>
-          <div ref={gridRef} className="dgrid" style={{ height: 24 * H }}
-            onMouseDown={(e) => {
-              if (e.button !== 0) return;
-              const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-              if (e.clientX - r.left < LEFT) return;
-              const s = Math.max(0, Math.min(SLOTS - 1, Math.floor(((e.clientY - r.top) / H) * 2)));
-              setSlot(s);
-              setDetail(null);
-              setQa({ a: s, b: Math.min(SLOTS - 1, s + 1) });
-            }}>
-            {Array.from({ length: 23 }, (_, h) => <div key={`l${h}`} className="dl" style={{ top: (h + 1) * H }} />)}
-            {Array.from({ length: 24 }, (_, h) => <div key={`m${h}`} className="dl half" style={{ top: h * H + H / 2 }} />)}
-            {Array.from({ length: 24 }, (_, h) => (
-              <span key={`h${h}`} className="mono dh" style={{ top: h === 0 ? 2 : h * H - 7, opacity: hasNow && Math.abs(h * H - nowTop) < 16 ? 0 : 1 }}>{C.hour(h * 60)}</span>
-            ))}
-            {laid.map((t) => {
-              const h = Math.max(28, ((t.realEnd - t.start) / 60) * H - 2);
-              const row = h < 46;
-              const past = isPast || (isToday && t.realEnd <= nowMin);
-              const cl = clash.ids.has(t.event.id);
-              return (
-                <button key={t.event.id} type="button"
-                  className={`dev${row ? " row" : ""}${past ? " is-past" : ""}${cl ? " clash" : ""}`}
-                  aria-label={`${t.event.title}, ${C.range(t.start, t.realEnd)}${cl ? ", overlaps another event" : ""}`}
-                  title={`${t.event.title}, ${C.range(t.start, t.realEnd)}`}
-                  style={{ top: (t.start / 60) * H + 1, height: h, left: `calc(${LEFT}px + (100% - ${LEFT}px) * ${(t.col / t.cols).toFixed(4)})`, width: `calc((100% - ${LEFT}px) / ${t.cols} - 4px)`, ["--c" as string]: colorVar(t.event.color) }}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onClick={() => { setQa(null); setDetail(t.event.id); }}>
-                  <span className="ee" aria-hidden="true" />
-                  <span className="in"><span className="et">{t.event.title}</span><span className="em">{C.chipRange(t.start, t.realEnd)}</span></span>
-                  {cl && <span className="ci" title="Overlaps another event"><IconWarn size={12} /></span>}
-                </button>
-              );
-            })}
-            {dayGoals.filter((g) => g.at !== null).map((g) => {
-              const t = g.at!;
-              const over = timed.some((x) => x.start <= t && x.end > t);
-              const style: CSSProperties = over
-                ? { top: (t / 60) * H, left: "calc(100% - 236px)", width: 230, boxShadow: "inset 0 0 0 1px var(--control-border), 0 6px 16px color-mix(in srgb,var(--shadow-ink) 35%,transparent)" }
-                : { top: (t / 60) * H + 1, left: `calc(${LEFT}px + 6px)`, width: `calc(100% - ${LEFT + 6}px)` };
-              return (
-                <div key={g.goal.id} className={`dgc${g.done ? " is-done" : ""}`} style={style} onMouseDown={(e) => e.stopPropagation()}>
-                  <Check done={g.done} label={g.goal.title} onToggle={() => toggle(g)} tabIndex={0} />
-                  <span className="gt">{g.goal.title}</span><span className="em">{C.chip(t)}</span>
-                </div>
-              );
-            })}
-            {hasNow && <span className="mono dnowP" style={{ top: nowTop - 10 }} aria-hidden="true">{C.full(nowMin)}</span>}
-            {!qa && !detail && <div className="dcur" style={{ top: (slot * H) / 2, height: H / 2 }} />}
-            {qa && (
-              <div className="ghost" style={{ left: LEFT + 3, top: (qa.a * H) / 2 + 1, height: ((qa.b - qa.a + 1) * H) / 2 - 2 }}>
-                <span className="gt1">New event</span><span className="gt2">{C.chipRange(qa.a * 30, (qa.b + 1) * 30)}</span>
-              </div>
-            )}
-            {qa && (
-              <QuickAddPopover style={{ ...popHoriz, top: Math.max(8, (qa.a * H) / 2 - 20), width: 348 }}
-                day={anchor} start={qa.a * 30} end={(qa.b + 1) * 30} now={now} clocks={C}
-                onClose={() => { setQa(null); focusGrid(); }}
-                onAdd={(ev) => { addEvent(ev); setQa(null); focusGrid(); say(`Event added · ${ev.title}`); }}
-                onMore={(draft) => { setQa(null); actions.newEvent(draft); }} />
-            )}
-            {detailEvent && (
-              <DetailPopover event={detailEvent} day={anchor} clocks={C}
-                style={{ ...popHoriz, top: Math.max(8, detailEvent.allDay ? 8 : (splitDay([detailEvent]).timed[0].start / 60) * H - 12), width: 330 }}
-                onClose={() => { setDetail(null); focusGrid(); }}
-                onEdit={() => { setDetail(null); actions.editEvent(detailEvent); }}
-                onDelete={() => { setDetail(null); deleteEventWithUndo(detailEvent as CalendarEvent, deleteEvent); focusGrid(); }} />
-            )}
-            {events.length === 0 && dayGoals.length === 0 && (
-              <div className="dempty empty-pass" style={{ position: "absolute", top: 340, left: 0, right: 0, zIndex: 7 }}>
-                <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600 }}>Nothing planned</h2>
-                <span style={{ fontSize: 13, color: "var(--text-2)" }}>A free day. Press Enter on any time to start an event, or type a line above.</span>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <Commit keyHint="N" onClick={() => actions.newEvent({ date: key })}>New event</Commit>
-                  <button type="button" className="ctl" onClick={() => actions.newGoal(key)}>New goal <Kbd>G</Kbd></button>
-                </div>
-              </div>
-            )}
-          </div>
         </div>
+        {events.length === 0 && dayGoals.length === 0 && !qa && !detail && (
+          <div className="dempty empty-pass day-empty-card">
+            <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600 }}>Nothing planned</h2>
+            <span style={{ fontSize: 13, color: "var(--text-2)" }}>A free day. Press Enter on any time to start an event, or type a line above.</span>
+            <div style={{ display: "flex", gap: 8 }}>
+              <Commit keyHint="N" onClick={() => actions.newEvent({ date: key })}>New event</Commit>
+              <button type="button" className="ctl" onClick={() => actions.newGoal(key)}>New goal <Kbd>G</Kbd></button>
+            </div>
+          </div>
+        )}
       </div>
       <aside className="dpanel side-panel-day" aria-label="Goals and agenda for the day">
         <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>

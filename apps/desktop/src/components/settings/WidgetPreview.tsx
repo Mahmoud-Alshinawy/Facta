@@ -12,8 +12,18 @@ import { usePrefs } from "@/hooks/usePrefs";
 import { useNow } from "@/hooks/useNow";
 import { goalsForDay, isCompletedToday, PRIORITY_ORDER } from "@/lib/goalDates";
 import { eventColorVar } from "@/lib/eventColors";
+import { splitDay } from "@/lib/calendarData";
 import { WIDGET_LABELS, type WidgetConfig } from "@/lib/widgetConfig";
 import { IconCheck } from "../shell/Icons";
+import { Calendar, Clock, LayoutGrid, Sun, Target } from "lucide-react";
+
+const PREVIEW_ICONS = {
+  tasks: LayoutGrid,
+  events: Clock,
+  progress: Target,
+  calendar: Calendar,
+  dayview: Sun,
+};
 
 export default function WidgetPreview({
   widget,
@@ -25,12 +35,17 @@ export default function WidgetPreview({
     { goals } = useGoals(),
     { getEventsForDate } = useEvents();
   const today = format(now, "yyyy-MM-dd"),
-    due = goalsForDay(goals, now),
-    events = getEventsForDate(today);
+    due = goalsForDay(goals, now);
+  const dayEvents = splitDay(getEventsForDate(today));
+  const events = [
+    ...dayEvents.allDay,
+    ...dayEvents.timed.map((item) => item.event),
+  ];
   const done = due.filter((goal) => isCompletedToday(goal, now)).length;
   const clock = (minute: number) =>
     formatClock(minute, prefs.timeFormat, "short");
   const nowMin = now.getHours() * 60 + now.getMinutes();
+  const HeaderIcon = PREVIEW_ICONS[widget.type];
   const timeline = buildDayTimeline(
     due.flatMap((goal) => {
       const start = parseClock(goal.time);
@@ -52,22 +67,48 @@ export default function WidgetPreview({
       role="img"
       aria-label={`${WIDGET_LABELS[widget.type]} widget preview, ${widget.theme}, ${widget.translucent ? "transparent" : "solid"}`}
     >
+      <div className="widget-preview-wallpaper" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+        <i />
+      </div>
       <div
         data-theme={widget.theme}
         className={`widget-preview${widget.translucent ? " is-trans" : ""}`}
         aria-hidden="true"
       >
         <div className="widget-preview-head">
-          <span>
-            {WIDGET_LABELS[widget.type].toUpperCase()} ·{" "}
-            {format(now, "EEE d MMM").toUpperCase()}
+          <HeaderIcon size={14} />
+          <span className="flex-1">
+            {widget.type === "tasks"
+              ? "TODAY"
+              : widget.type === "events"
+                ? "EVENTS · TODAY"
+                : widget.type === "calendar"
+                  ? format(now, "MMMM yyyy").toUpperCase()
+                  : widget.type === "progress"
+                    ? "PROGRESS"
+                    : `DAY · ${format(now, "EEE d MMM").toUpperCase()}`}
           </span>
-          <span>
-            {done}/{due.length}
-          </span>
+          {widget.type !== "calendar" && widget.type !== "progress" && (
+            <span>
+              {widget.type === "events"
+                ? events.length
+                : `${done}/${due.length}`}
+            </span>
+          )}
         </div>
         {widget.type === "tasks" && (
           <div className="widget-preview-list">
+            <div className="preview-segments">
+              {due.map((goal) => (
+                <i
+                  key={goal.id}
+                  className={isCompletedToday(goal, now) ? "done" : ""}
+                />
+              ))}
+            </div>
             {due.slice(0, 6).map((goal) => (
               <div className="widget-preview-row" key={goal.id}>
                 <span
@@ -75,7 +116,14 @@ export default function WidgetPreview({
                 >
                   {isCompletedToday(goal, now) && <IconCheck size={11} />}
                 </span>
-                <span className="truncate">{goal.title}</span>
+                <span
+                  className={`min-w-0 flex-1 truncate${isCompletedToday(goal, now) ? " preview-done" : ""}`}
+                >
+                  {goal.title}
+                </span>
+                <span className="mono preview-meta">
+                  {goal.time ? clock(parseClock(goal.time) ?? 0) : ""}
+                </span>
               </div>
             ))}
             {!due.length && <p>No goals today</p>}
@@ -84,16 +132,23 @@ export default function WidgetPreview({
         {widget.type === "events" && (
           <div className="widget-preview-list">
             {events.slice(0, 5).map((event) => (
-              <div className="widget-preview-row" key={event.id}>
+              <div className="widget-preview-event" key={event.id}>
+                <span className="mono preview-meta">
+                  {event.allDay
+                    ? "All day"
+                    : clock(parseClock(event.startTime) ?? 0)}
+                </span>
                 <span
                   className="preview-event-dot"
                   style={{ background: eventColorVar(event.color) }}
                 />
-                <span className="min-w-0 flex-1 truncate">{event.title}</span>
-                <span className="mono">
-                  {event.allDay
-                    ? "All day"
-                    : clock(parseClock(event.startTime) ?? 0)}
+                <span className="min-w-0">
+                  <span className="block truncate">{event.title}</span>
+                  {!event.allDay && (
+                    <span className="preview-meta">
+                      until {clock(parseClock(event.endTime) ?? 0)}
+                    </span>
+                  )}
                 </span>
               </div>
             ))}
@@ -102,15 +157,35 @@ export default function WidgetPreview({
         )}
         {widget.type === "progress" && (
           <div className="widget-preview-list">
-            <strong>
-              {done} of {due.length} done today
-            </strong>
-            <div className="mbar">
-              <i
-                style={{
-                  width: `${due.length ? (done / due.length) * 100 : 0}%`,
-                }}
-              />
+            <div className="preview-progress">
+              <div className="preview-ring">
+                <svg width="76" height="76" viewBox="0 0 76 76">
+                  <circle
+                    cx="38"
+                    cy="38"
+                    r="32"
+                    fill="none"
+                    strokeWidth="8"
+                    className="preview-ring-track"
+                  />
+                  <circle
+                    cx="38"
+                    cy="38"
+                    r="32"
+                    fill="none"
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                    stroke="var(--accent)"
+                    strokeDasharray={`${due.length ? (done / due.length) * 201.062 : 0} 201.062`}
+                  />
+                </svg>
+                <span className="mono">
+                  {done}/{due.length}
+                </span>
+              </div>
+              <strong>
+                {done} of {due.length} done today
+              </strong>
             </div>
             {PRIORITY_ORDER.map((category) => {
               const inGroup = due.filter((goal) => goal.category === category),
@@ -133,7 +208,6 @@ export default function WidgetPreview({
         )}
         {widget.type === "calendar" && (
           <div className="preview-month">
-            <strong>{format(now, "MMMM yyyy")}</strong>
             <div className="preview-month-grid">
               {weekdayOrder(prefs.weekStart).map((day) => (
                 <span className="mono" key={day}>

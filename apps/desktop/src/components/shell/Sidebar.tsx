@@ -76,8 +76,8 @@ export default function Sidebar({ section, onSection, onSearch, onToggle }: Prop
                   onClick={() => chooseTheme(t.id)}
                   style={{ borderColor: pressed ? "var(--text)" : "transparent" }}
                 >
-                  <span aria-hidden="true" style={{ width: 18, height: 18, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--border-strong)", background: t.swatchBg }}>
-                    <span style={{ width: 7, height: 7, borderRadius: 4, background: t.swatchAccent }} />
+                  <span data-theme={t.id} aria-hidden="true" style={{ width: 18, height: 18, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--border-strong)", background: "var(--bg)" }}>
+                    <span style={{ width: 7, height: 7, borderRadius: 4, background: "var(--accent)" }} />
                   </span>
                 </button>
               );
