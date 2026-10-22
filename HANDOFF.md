@@ -1,6 +1,13 @@
 # Handoff: feat/ui-redesign (branch 1 of 3), work in progress
 
 ## Review fixes (22 October 2026)
+- All seven requested review fixes are implemented as separate commits.
+- Fix 7: removed the generated android/ and ios/ subfolders under both native
+  icon directories (70 files). Root desktop icon assets are retained.
+- Fix 7 checks passed: frozen install; npx tsc x3; desktop Vitest 269/269,
+  calendar 152/152; required desktop build; both cargo check --offline.
+  Verified all four mobile folders and preview build artifacts are absent.
+  Existing Vite chunk-size warning only. TodayPanel remains unchanged.
 - Fix 6: overdue unfinished one-offs carry an Overdue sub-label in Goals Mine
   List and Board. Their original date and Today section membership remain;
   Done today still counts today's scheduled occurrences only. Added a mapper
