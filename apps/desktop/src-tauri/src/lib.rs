@@ -50,7 +50,7 @@ fn export_data_for_widgets(
 }
 
 #[tauri::command]
-async fn launch_widget_app() -> Result<(), String> {
+async fn widget_app_running() -> Result<bool, String> {
     // Check if already running (platform-specific)
     #[cfg(target_os = "windows")]
     {
@@ -63,9 +63,8 @@ async fn launch_widget_app() -> Result<(), String> {
             .await
             .map_err(|e| format!("Failed to check running processes: {}", e))?;
         let stdout = String::from_utf8_lossy(&output.stdout);
-        if stdout.contains("facta-widgets.exe") {
-            return Ok(()); // Already running
-        }
+        if !output.status.success() { return Err("Failed to check running processes".to_string()); }
+        return Ok(stdout.to_ascii_lowercase().contains("facta-widgets.exe"));
     }
     
     #[cfg(target_os = "macos")]
@@ -76,9 +75,7 @@ async fn launch_widget_app() -> Result<(), String> {
             .output()
             .await
             .map_err(|e| format!("Failed to check running processes: {}", e))?;
-        if output.status.success() {
-            return Ok(()); // Already running
-        }
+        return Ok(output.status.success());
     }
     
     #[cfg(target_os = "linux")]
@@ -89,10 +86,16 @@ async fn launch_widget_app() -> Result<(), String> {
             .output()
             .await
             .map_err(|e| format!("Failed to check running processes: {}", e))?;
-        if output.status.success() {
-            return Ok(()); // Already running
-        }
+        return Ok(output.status.success());
     }
+
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+    Ok(false)
+}
+
+#[tauri::command]
+async fn launch_widget_app() -> Result<(), String> {
+    if widget_app_running().await? { return Ok(()); }
 
     // Platform-specific installation paths
     #[cfg(target_os = "windows")]
@@ -246,7 +249,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             export_data_for_widgets,
             read_pending_actions,
-            launch_widget_app
+            launch_widget_app,
+            widget_app_running
         ]);
 
     builder = builder.setup(|app| {

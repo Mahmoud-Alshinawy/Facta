@@ -5,11 +5,12 @@ locally: copy `artifact-type/dc-runtime.js` to `project/support.js`, serve
 `project/` and open `<Board>.dc.html` (or a wrapper with
 `<dc-import name="CalWeek" theme="bg" state="drag">`).
 
-State: steps 1, 2a, 2b, 3 and 4 are implemented and checked. App uses the new Sidebar; Today is its
+State: steps 1, 2a, 2b, 3, 4 and 5 are implemented and checked. App uses the new Sidebar; Today is its
 own page with no calendar view switcher. CalendarPage mounts the four new
 views; legacy calendar views/CSS are deleted. TodayPanel.tsx is unchanged.
 GoalDialog and EventDialog now use the v2 layout and shared dialog behaviour.
 Goals Mine is mounted with live statistics, List/Board and quick add. Its visual QA remains pending.
+Settings now mounts Widgets / Appearance / Account. MiniCalendar and icons/tray are next.
 
 ## Current owner instructions (approved 21 October 2026)
 - Rail breakpoint is <=1200px; 1100px is a comparison width.
@@ -71,6 +72,22 @@ Goals Mine is mounted with live statistics, List/Board and quick add. Its visual
   Formal hosted-board comparison at exact 1440/1100 and native-window QA remain.
 
 ## Done (tested)
+- Step 5 (22 October 2026): Settings tabs with arrow/Home/End navigation;
+  Widgets companion status + Launch, saved widget list, enable/remove, new-widget
+  type/theme/transparency/live-data preview, inline Reset all confirmation;
+  Appearance theme cards, week start/time format/weekend; Account email and
+  inline sign-out confirmation. Failed sign-out preserves the signed-in state.
+- Companion status and Launch share the existing native tasklist/pgrep check,
+  extracted as widget_app_running. Existing config JSON/native dayview name and
+  legacy defaults retained; no Notes/Diary types. Four pure compatibility tests.
+- Step 5 passed: frozen install, npx tsc --noEmit in all three packages,
+  desktop Vitest 251/251, calendar 152/152, desktop Vite build (PORT=1420,
+  BASE_PATH=/), cargo check --offline in both apps. After the laptop restart,
+  sandbox access prevented initial checks from starting; retries with access to
+  installed toolchains passed. Existing Vite chunk/cache-link warnings remain.
+- Settings source reviewed against Settings.dc.html. Visual comparison and
+  native companion launch/status smoke were NOT performed; computer control
+  remains stopped. No new dependencies, schema edits or live Supabase access.
 - Step 4: GoalsPage + GoalOverview replace GoalsPanel. Mine/Shared (coming soon),
   weekly ring/day badges, current/best streak, done today, next up, priority filter,
   Time/Priority/A-Z sort, List/Board, recurring rules, collapsed Done, inline
@@ -147,7 +164,6 @@ Goals Mine is mounted with live statistics, List/Board and quick add. Its visual
 
 ## Not started
 - MiniCalendar rewrite (single tab stop, arrows, `.mm` styles).
-- Settings tabs (Widgets / Appearance / Account).
 - Icons (`tauri icon` from `apps/desktop/public/icon.png` for both apps), tray-white/black by system theme.
 - Board comparison in 4 themes at 1440 and 1100; real Tauri window test; branch 2 and 3.
 
@@ -175,7 +191,7 @@ Goals Mine is mounted with live statistics, List/Board and quick add. Its visual
 2a. DONE: rewrite App onto Sidebar + sections; Today is independent. Keep legacy
     calendar views temporarily so this is a separate working commit.
 2b. DONE: CalendarPage and legacy deletion. Formal board comparison still due.
-3. DONE: dialogs v2 and Goals Mine (+ goalStats tests). Next Settings tabs.
+3. DONE: dialogs v2, Goals Mine (+ goalStats tests), Settings tabs.
 4. MiniCalendar side panel, empty-state passthrough, icons/tray.
 5. Every commit: frozen install, tsc in all three packages, Vitest in desktop
    and calendar, desktop build with PORT=1420 BASE_PATH=/, cargo check in both

@@ -1,10 +1,9 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { format, getISOWeek } from "date-fns";
-import { Plus, LogOut } from "lucide-react";
+import { Plus } from "lucide-react";
 import TodayPanel from "@/components/TodayPanel";
 import GoalsPage from "@/components/goals/GoalsPage";
-import WidgetManager from "@/components/WidgetManager";
-import CalendarSettings from "@/components/CalendarSettings";
+import SettingsPage from "@/components/settings/SettingsPage";
 import SearchModal from "@/components/SearchModal";
 import EventDialog from "@/components/EventDialog";
 import GoalDialog from "@/components/GoalDialog";
@@ -23,7 +22,7 @@ import { requestWidgetExport } from "@/lib/widgetExportBus";
 import AuthScreen from "@/components/AuthScreen";
 import { Toaster } from "sonner";
 export default function App() {
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [section, setSection] = useState<Section>("today");
   const [view, setView] = useState<CalendarView>("week");
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -104,7 +103,6 @@ export default function App() {
 
   // Widget export: every data mutation triggers an export via the shared bus
   // (debounced/coalesced); WidgetManager config changes call it directly.
-  const triggerWidgetExport = requestWidgetExport;
 
   // Export once on mount so the shared file is fresh right after app start
   useEffect(() => {
@@ -231,19 +229,7 @@ export default function App() {
         {section === "calendar" && <CalendarPage anchor={selectedDate} view={view} onAnchor={setSelectedDate} onView={setView}
           actions={calendarActions} keyboardBlocked={dialogOpen || goalDialogOpen || searchOpen || cheatOpen} />}
         {section === "goals" && <GoalsPage keyboardBlocked={dialogOpen || goalDialogOpen || searchOpen || cheatOpen} />}
-        {section === "settings" && <div className="flex-1 overflow-auto p-8">
-          <h2 className="mb-6 text-xl font-semibold">Settings</h2>
-          <div className="max-w-md space-y-4">
-            <CalendarSettings /><WidgetManager onWidgetChange={triggerWidgetExport} />
-            <div className="rounded-xl border border-border bg-card p-4">
-              <h3 className="mb-2 text-sm font-medium">Account</h3>
-              <p className="mb-3 text-xs text-muted-foreground">{user.email}</p>
-              <button type="button" onClick={() => void signOut()} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/10">
-                <LogOut size={14} />Sign Out
-              </button>
-            </div>
-          </div>
-        </div>}
+        {section === "settings" && <SettingsPage />}
       </main>
       <GoalDialog open={goalDialogOpen} onClose={() => setGoalDialogOpen(false)} onSave={createGoal}
         initialDate={goalDialogDate ?? format(now, "yyyy-MM-dd")} />
