@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Facta — Desktop widgets</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="position: relative; min-height: 920px; overflow: hidden; background: #2B302C; font-family: 'Geist', ui-sans-serif, system-ui, sans-serif">
+  <!-- sample wallpaper: flat shapes so the transparent option has something to show through -->
+  <div aria-hidden="true" style="position: absolute; inset: 0; pointer-events: none">
+    <div style="position: absolute; width: 760px; height: 760px; left: -160px; top: 260px; border-radius: 50%; background: #4C6B5A"></div>
+    <div style="position: absolute; width: 520px; height: 900px; left: 520px; top: -260px; transform: rotate(24deg); background: #C9A27A"></div>
+    <div style="position: absolute; width: 420px; height: 420px; left: 980px; top: 420px; border-radius: 50%; background: #E3DED3"></div>
+    <div style="position: absolute; width: 300px; height: 300px; left: 1180px; top: -60px; border-radius: 50%; background: #3F5A86"></div>
+    <div style="position: absolute; width: 900px; height: 140px; left: 300px; top: 780px; transform: rotate(-6deg); background: #1B1F1C"></div>
+  </div>
+
+  <div style="position: relative; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 24px; padding: 56px">
+    <div style="display: flex; flex-direction: column; gap: 24px">
+      <dc-import name="Widget" kind="tasks" theme="{{ theme }}" transparent="{{ transparent }}" hint-size="300px,340px"></dc-import>
+      <dc-import name="Widget" kind="progress" theme="{{ theme }}" transparent="{{ transparent }}" hint-size="300px,250px"></dc-import>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 24px">
+      <dc-import name="Widget" kind="day" theme="{{ theme }}" transparent="{{ transparent }}" hint-size="300px,390px"></dc-import>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 24px">
+      <dc-import name="Widget" kind="calendar" theme="{{ theme }}" transparent="{{ transparent }}" hint-size="300px,300px"></dc-import>
+      <dc-import name="Widget" kind="events" theme="{{ theme }}" transparent="{{ transparent }}" hint-size="300px,210px"></dc-import>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["bg","mid","ember","light"],"default":"bg"},"transparent":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":920}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { theme: this.props.theme || 'bg', transparent: !!this.props.transparent };
+  }
+}
+</script>
+</body>
+</html>

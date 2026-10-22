@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Facta — Goals, Mine</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+
+<style>
+
+body{margin:0}
+.fx,.fx[data-theme="bg"]{color-scheme:dark;--bg:#060706;--surface:#0C0D0C;--raised:#121412;--raised-2:#191C18;--border:#1A1D1A;--border-strong:#262A25;--control-border:#5F685E;--text:#F1F4F1;--text-2:#A6AEA6;--muted:#868F86;--accent:#22C55E;--accent-hover:#2DD46A;--accent-text:#03210F;--accent-soft:rgba(34,197,94,.10);--accent-border:#1C7E40;--success:#22C55E;--warning:#E0A33B;--danger:#EF5A5A;--danger-soft:rgba(239,90,90,.12);--danger-text:#1A0505;--event-blue:#5B8DEF;--event-purple:#A47CF0;--event-red:#EF6B6B;--event-green:#4CC38A;--event-orange:#F0904A;--event-pink:#EC6FB0;--note-a:#E8C547;--note-b:#5B8DEF;--note-c:#EC6FB0;--note-d:#4CC38A;--text-rgb:241,244,241;--surface-rgb:12,13,12;--logo-tile:#0A0B0A;--logo-mark:#22C55E;--slant:-10deg}
+.fx[data-theme="mid"]{color-scheme:dark;--bg:#04070E;--surface:#090E1A;--raised:#0E1524;--raised-2:#141C30;--border:#161F33;--border-strong:#212C45;--control-border:#55668F;--text:#EEF2FA;--text-2:#A3AECB;--muted:#7D89A8;--accent:#4C8DF6;--accent-hover:#6AA1F8;--accent-text:#04122B;--accent-soft:rgba(76,141,246,.12);--accent-border:#3B6BBB;--success:#4C8DF6;--warning:#E8B04B;--danger:#F06A6A;--danger-soft:rgba(240,106,106,.12);--danger-text:#1F0606;--event-blue:#67C1F5;--event-purple:#A88BF5;--event-red:#F07A7A;--event-green:#52C98F;--event-orange:#F2A05C;--event-pink:#EE7DB8;--note-a:#E8B04B;--note-b:#67C1F5;--note-c:#EE7DB8;--note-d:#52C98F;--text-rgb:238,242,250;--surface-rgb:9,14,26;--logo-tile:#04070E;--logo-mark:#4C8DF6}
+.fx[data-theme="ember"]{color-scheme:dark;--bg:#060504;--surface:#0C0A08;--raised:#120F0D;--raised-2:#191512;--border:#1A1613;--border-strong:#27201C;--control-border:#6E6053;--text:#F6F1EC;--text-2:#B8ADA3;--muted:#938778;--accent:#FF8000;--accent-hover:#FF9426;--accent-text:#1F0E00;--accent-soft:rgba(255,128,0,.12);--accent-border:#A55505;--success:#FF8000;--warning:#E8C547;--danger:#F25F5C;--danger-soft:rgba(242,95,92,.12);--danger-text:#1F0606;--event-blue:#6E9CF0;--event-purple:#B08AF0;--event-red:#F07070;--event-green:#55C08A;--event-orange:#F0A040;--event-pink:#EE78B4;--note-a:#E8C547;--note-b:#6E9CF0;--note-c:#EE78B4;--note-d:#55C08A;--text-rgb:246,241,236;--surface-rgb:12,10,8;--logo-tile:#060504;--logo-mark:#FF8000}
+.fx[data-theme="light"]{color-scheme:light;--bg:#F6F6F3;--surface:#FFFFFF;--raised:#F0F1EC;--raised-2:#E7E9E3;--border:#E3E5DF;--border-strong:#CDD1C8;--control-border:#7E857B;--text:#141713;--text-2:#4E554D;--muted:#626A60;--accent:#15803D;--accent-hover:#166534;--accent-text:#FFFFFF;--accent-soft:rgba(21,128,61,.10);--accent-border:#15803D;--success:#16A34A;--warning:#B45309;--danger:#DC2626;--danger-soft:rgba(220,38,38,.08);--danger-text:#FFFFFF;--event-blue:#2563EB;--event-purple:#7C3AED;--event-red:#DC2626;--event-green:#059669;--event-orange:#EA580C;--event-pink:#DB2777;--note-a:#B45309;--note-b:#2563EB;--note-c:#DB2777;--note-d:#059669;--text-rgb:20,23,19;--surface-rgb:255,255,255;--logo-tile:#15803D;--logo-mark:#FFFFFF}
+
+
+.fx{position:relative;container-type:inline-size;container-name:app;display:flex;height:920px;overflow:hidden;font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased}
+.fx *{box-sizing:border-box}
+:where(.fx) button{color:inherit}
+.fx button{font-family:inherit;cursor:pointer}
+.fx button:focus-visible,.fx input:focus-visible,.fx textarea:focus-visible,.fx [tabindex]:focus-visible{outline:2px solid var(--text);outline-offset:2px}
+.mono{font-family:'Geist Mono',ui-monospace,monospace;font-feature-settings:"tnum"}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.kbd{font-family:'Geist Mono',ui-monospace,monospace;font-size:10.5px;line-height:1;color:var(--muted);border:1px solid var(--border-strong);border-bottom-width:2px;border-radius:5px;padding:3px 5px;background:var(--raised);white-space:nowrap}
+.sec{font-family:'Geist Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.08em;color:var(--muted)}
+/* sidebar */
+.sb{flex:0 0 240px;display:flex;flex-direction:column;gap:22px;padding:22px 14px 18px;background:var(--surface);border-right:1px solid var(--border)}
+.sb .nv{display:flex;align-items:center;gap:12px;height:40px;padding:0 12px;border:0;border-radius:9px;background:transparent;font-size:14px;color:var(--text-2);text-align:left;width:100%}
+.sb .nv:hover{background:var(--raised)}
+.sb .nv[aria-current="page"]{background:var(--raised);color:var(--text);font-weight:500}
+.sb .nv .lbl{flex:1}
+.sb .nv .mk{width:6px;height:6px;border-radius:3px;background:var(--accent)}
+.sb .tdot{width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:14px;background:transparent;border:1.5px solid transparent}
+.sb .tdot:hover{border-color:var(--text-2)}
+.fx.sb-c .sb{flex-basis:64px;align-items:center;padding:20px 8px 16px}
+.fx.sb-c .sb .lbl,.fx.sb-c .sb .mk,.fx.sb-c .sb .sbsearch,.fx.sb-c .sb .wordmark,.fx.sb-c .sb .sync-t,.fx.sb-c .sb .theme-l{display:none}
+.fx.sb-c .sb .nv{width:44px;justify-content:center;padding:0}
+.fx.sb-c .sb .themes{flex-direction:column}
+.fx.sb-c .sb .sbtop{flex-direction:column;padding:0}
+.fx.sb-c .sbtog .i-l{display:none}.fx.sb-c .sbtog .i-r{display:flex}
+.sbtog .i-l{display:flex}.sbtog .i-r{display:none}
+.sbtog{margin-left:auto}
+@container app (max-width:1200px){
+  .fx:not(.sb-o) .sb{flex-basis:64px;align-items:center;padding:20px 8px 16px}
+  .fx:not(.sb-o) .sb .lbl,.fx:not(.sb-o) .sb .mk,.fx:not(.sb-o) .sb .sbsearch,.fx:not(.sb-o) .sb .wordmark,.fx:not(.sb-o) .sb .sync-t,.fx:not(.sb-o) .sb .theme-l{display:none}
+  .fx:not(.sb-o) .sb .nv{width:44px;justify-content:center;padding:0}
+  .fx:not(.sb-o) .sb .themes{flex-direction:column}
+  .fx:not(.sb-o) .sb .sbtop{flex-direction:column;padding:0}
+  .fx:not(.sb-o) .sbtog .i-l{display:none}.fx:not(.sb-o) .sbtog .i-r{display:flex}
+  .side-panel{display:none !important}
+  .hd .hide-s{display:none !important}
+}
+/* controls */
+.ctl{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:36px;padding:0 12px;border-radius:9px;border:1px solid var(--control-border);background:transparent;font-size:13px;font-weight:500;color:var(--text);white-space:nowrap}
+.ctl:hover{background:var(--raised-2);border-color:var(--text-2)}
+.ctl-icon{width:36px;padding:0}
+.ctl[aria-pressed="true"],.ctl[aria-checked="true"]{background:var(--text);color:var(--bg);border-color:var(--text)}
+.b{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;font-size:14px;font-weight:600;line-height:1;white-space:nowrap;transition:background .14s ease,color .14s ease,box-shadow .14s ease,transform .08s ease}
+.b-commit{height:40px;padding:0;border-radius:9px;transform:skewX(var(--slant));overflow:hidden}
+.b-commit > span{transform:skewX(calc(var(--slant) * -1))}
+.b-commit .lab{display:inline-flex;align-items:center;gap:8px;padding:0 16px 0 18px}
+.b-commit .key{height:100%;display:inline-flex;align-items:center;padding:0 12px;font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;font-weight:500;background:rgba(0,0,0,.16);border-left:1px solid rgba(0,0,0,.18);transform:none}
+.b-commit:active{transform:skewX(var(--slant)) scale(.97)}
+.b-primary{background:var(--accent);color:var(--accent-text)}
+.b-primary:hover{background:var(--accent-hover)}
+.b-quiet{height:36px;padding:0 12px;border-radius:9px;background:transparent;color:var(--text-2);font-weight:500;font-size:13px}
+.b-quiet:hover{background:var(--raised-2);color:var(--text)}
+.b-del{height:36px;padding:0 12px;border-radius:9px;background:transparent;color:var(--danger);font-weight:500;font-size:13px}
+.b-del:hover{background:var(--danger-soft)}
+.b-icon{width:32px;height:32px;padding:0;border-radius:8px;background:transparent;color:var(--muted)}
+.b-icon:hover{background:var(--raised-2);color:var(--text)}
+.opt{height:32px;padding:0;border-radius:8px;transform:skewX(var(--slant));background:transparent;box-shadow:inset 0 0 0 1px var(--control-border);color:var(--text-2);font-size:13px;font-weight:500;border:0}
+.opt > span{display:inline-flex;align-items:center;gap:8px;padding:0 14px;transform:skewX(calc(var(--slant) * -1))}
+.opt:hover{box-shadow:inset 0 0 0 1px var(--text-2);color:var(--text)}
+.opt[aria-checked="true"],.opt[aria-pressed="true"]{background:var(--text);color:var(--bg);box-shadow:none}
+.seg{display:flex;gap:2px;padding:3px;background:var(--surface);border:1px solid var(--border);border-radius:11px}
+.seg button{display:flex;align-items:center;gap:8px;height:30px;padding:0 11px;border:0;border-radius:8px;font-size:13px;font-weight:500;background:transparent;color:var(--text-2)}
+.seg button:hover{color:var(--text);background:var(--raised)}
+.seg button[aria-pressed="true"],.seg button[aria-checked="true"]{background:var(--text);color:var(--bg)}
+.seg button .mono{font-size:10.5px;color:var(--muted)}
+.seg button[aria-pressed="true"] .mono,.seg button[aria-checked="true"] .mono{color:var(--bg);opacity:.7}
+.cb{width:16px;height:16px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:5px;border:0;background:transparent;box-shadow:inset 0 0 0 1.5px var(--control-border);flex:0 0 auto;color:var(--accent-text)}
+.cb[aria-checked="true"]{background:var(--accent);box-shadow:none}
+.cb:hover{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.cb[aria-checked="true"]:hover{box-shadow:none}
+.evdot{width:7px;height:7px;border-radius:4px;background:var(--c);flex:0 0 auto}
+.pop{position:absolute;z-index:20;display:flex;flex-direction:column;background:var(--raised);border:1px solid var(--border-strong);border-radius:14px;box-shadow:0 18px 40px rgba(0,0,0,.45);overflow:hidden}
+.scrim{position:absolute;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55)}
+.modal{display:flex;flex-direction:column;background:var(--raised);border:1px solid var(--border-strong);border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.55);overflow:hidden}
+.toast{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:10px;height:38px;padding:0 14px;border-radius:10px;background:var(--text);color:var(--surface);font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.hd{display:flex;flex-wrap:wrap;align-items:center;gap:14px 18px;padding:16px 28px;border-bottom:1px solid var(--border);min-height:72px}
+.hd h1{margin:0;font-size:24px;font-weight:600;letter-spacing:-.03em;line-height:1.15}
+.qa{position:relative;flex:1 1 220px;max-width:380px}
+.qa input{width:100%;height:36px;padding:0 44px 0 34px;background:var(--surface);border:1px solid var(--control-border);border-radius:9px;color:var(--text);font:inherit;font-size:13px}
+.qa input::placeholder{color:var(--muted)}
+.foot{display:flex;align-items:center;gap:16px;height:32px;padding:0 28px;border-top:1px solid var(--border);background:var(--surface);font-size:12px;color:var(--muted);overflow:hidden;white-space:nowrap}
+.foot span.k{display:inline-flex;align-items:center;gap:6px}
+.side-panel{flex:0 0 272px;display:flex;flex-direction:column;gap:18px;padding:18px 16px;border-right:1px solid var(--border);overflow:hidden;background:var(--bg)}
+.mm{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;text-align:center}
+.mm .d{height:28px;padding:0;border:0;border-radius:14px;background:transparent;font-size:12px;color:var(--text);position:relative}
+.mm .d:hover{background:var(--raised)}
+.mm .d.out{color:var(--muted);opacity:.55}
+.mm .d.in-week{background:var(--raised)}
+.mm .d.today{background:var(--text);color:var(--bg);font-weight:600}
+.mm .d .dt{position:absolute;left:50%;bottom:2px;width:3px;height:3px;border-radius:2px;margin-left:-1.5px;background:var(--text-2)}
+.mm .d.today .dt{background:var(--bg)}
+
+
+.gmain{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;position:relative}
+.gscroll{flex:1;min-height:0;overflow-y:auto;outline:none}
+.gwrap{max-width:1120px;margin:0 auto;padding:0 28px 40px}
+.ov{display:grid;grid-template-columns:minmax(0,1.5fr) repeat(3,minmax(0,1fr));gap:0;margin:20px 0 0;border:1px solid var(--border);border-radius:14px;background:var(--surface)}
+.ov > div{padding:16px 20px;display:flex;flex-direction:column;gap:6px;min-width:0;border-left:1px solid var(--border)}
+.ov > div:first-child{border-left:0;flex-direction:row;align-items:center;gap:18px}
+.ov .k{font-family:'Geist Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.08em;color:var(--muted)}
+.ov .big{font-size:26px;font-weight:600;letter-spacing:-.03em;line-height:1.1}
+.ov .small{font-size:12.5px;color:var(--text-2)}
+.wkd{display:flex;gap:5px;margin-top:6px}
+.wkd i{display:flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:6px;font-style:normal;font-family:'Geist Mono',ui-monospace,monospace;font-size:10px;color:var(--muted);box-shadow:inset 0 0 0 1px var(--border-strong)}
+.wkd i.on{background:var(--accent);color:var(--accent-text);box-shadow:none}
+.wkd i.part{background:var(--accent-soft);color:var(--text);box-shadow:inset 0 0 0 1px var(--accent-border)}
+.wkd i.td{box-shadow:inset 0 0 0 1.5px var(--text);color:var(--text)}
+.mbar{height:4px;border-radius:2px;background:var(--raised-2);overflow:hidden}
+.mbar i{display:block;height:100%;background:var(--accent);border-radius:2px}
+.gbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:16px 0 10px}
+.gsec{display:flex;align-items:center;gap:10px;height:34px;margin-top:14px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600}
+.gsec .n{font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;font-weight:400;color:var(--muted)}
+.gsec button.tg{display:flex;align-items:center;gap:8px;border:0;background:transparent;font:inherit;font-weight:600;color:var(--text);padding:0;height:34px}
+.gr{display:flex;align-items:center;gap:12px;min-height:44px;padding:0 10px;margin:0 -10px;border-radius:9px;font-size:14px;position:relative}
+.gr:hover{background:var(--raised)}
+.gr.is-cur.force,.glist:focus .gr.is-cur{background:var(--raised);box-shadow:inset 0 0 0 2px var(--text)}
+.gr .tt{flex:0 1 auto;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-weight:500}
+.gr.is-done .tt{text-decoration:line-through;text-decoration-color:rgba(var(--text-rgb),.5);color:var(--text-2)}
+.gr .sp{flex:1}
+.gr .mt{font-family:'Geist Mono',ui-monospace,monospace;font-size:11.5px;color:var(--muted);white-space:nowrap}
+.gr .rm{display:flex;color:var(--warning)}
+.gr .edit{display:none}
+.gr:hover .edit{display:flex}
+.chp{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:6px;font-size:11.5px;font-weight:500;white-space:nowrap}
+.chp.rep{background:transparent;box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--text-2)}
+.chp.must{background:var(--raised-2);color:var(--text);font-weight:600}
+.chp.should{background:transparent;box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--text-2)}
+.chp.nice{background:transparent;color:var(--muted)}
+.chp.strk{background:var(--accent-soft);color:var(--text)}
+.chp.shr{background:var(--raised-2);color:var(--text)}
+.pb{display:inline-flex;gap:2px;align-items:flex-end}
+.pb i{display:block;width:2.5px;height:9px;border-radius:1px;background:currentColor;opacity:.28}
+.pb i.on{opacity:1}
+.addr{display:flex;align-items:center;gap:10px;height:46px;padding:0 12px;margin:10px 0 2px;border-radius:10px;border:1px dashed var(--control-border);color:var(--muted)}
+.addr:focus-within{border-style:solid;border-color:var(--text);color:var(--text)}
+.addr input{flex:1;min-width:0;height:100%;border:0;background:transparent;color:var(--text);font:inherit;font-size:14px;outline:none}
+.addr input::placeholder{color:var(--muted)}
+.cols3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:6px}
+.bcol{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:12px;background:var(--surface);border:1px solid var(--border);min-height:300px}
+.bcard{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:10px;background:var(--raised);border:1px solid var(--border)}
+.bcard.is-done .tt{text-decoration:line-through;color:var(--text-2)}
+.bcard .r1{display:flex;align-items:flex-start;gap:10px;font-size:14px;font-weight:500}
+.bcard .r2{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.gempty{display:flex;flex-direction:column;align-items:flex-start;gap:12px;margin:48px auto 0;max-width:460px;padding:22px 24px;border-radius:14px;background:var(--surface);border:1px solid var(--border-strong)}
+.av{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:13px;background:color-mix(in srgb,var(--c) 30%,var(--surface));box-shadow:inset 0 0 0 1.5px var(--c);font-size:11.5px;font-weight:600;color:var(--text);flex:0 0 auto}
+.av.pend{background:transparent;box-shadow:none;border:1.5px dashed var(--control-border);color:var(--muted)}
+.avs{display:flex}
+.avs .av{margin-left:-7px;border:2px solid var(--surface);width:30px;height:30px}
+.avs .av:first-child{margin-left:0}
+.avs .more{display:inline-flex;align-items:center;justify-content:center;margin-left:-7px;width:30px;height:30px;border-radius:15px;background:var(--raised-2);border:2px solid var(--surface);font-size:11px;font-weight:600;color:var(--text-2)}
+.scards{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:16px;margin-top:6px}
+.sc{display:flex;flex-direction:column;gap:14px;padding:18px 20px;border-radius:14px;background:var(--surface);border:1px solid var(--border)}
+.tile{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;background:var(--raised-2);color:var(--text);flex:0 0 auto}
+.rk{display:grid;grid-template-columns:20px 26px 72px minmax(0,1fr) 44px;align-items:center;gap:10px;min-height:32px;padding:0 8px;margin:0 -8px;border-radius:8px;font-size:13px}
+.rk.is-you{background:var(--raised)}
+.rk .n{font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;color:var(--muted);text-align:right}
+.rk .nm{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-weight:500}
+.rk .pc{font-family:'Geist Mono',ui-monospace,monospace;font-size:12px;text-align:right}
+.rk .bar{height:6px;border-radius:3px;background:var(--raised-2);overflow:hidden}
+.rk .bar i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.rk .bar i.low{background:var(--text-2)}
+.rk.pend .nm,.rk.pend .pc{color:var(--muted);font-weight:400}
+.ci{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;background:var(--raised);font-size:13px}
+.banner{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:10px;background:var(--raised);border:1px solid var(--border-strong);font-size:13px;color:var(--text);margin-top:16px}
+.banner svg{color:var(--warning);flex:0 0 auto}
+.inv{display:flex;align-items:center;gap:14px;padding:16px 20px;border-radius:14px;background:var(--raised);border:1px solid var(--border-strong);margin-top:16px}
+.pnl{padding:18px 20px;border-radius:14px;background:var(--surface);border:1px solid var(--border);display:flex;flex-direction:column;gap:12px;min-width:0}
+.pnl h2{margin:0;font-size:14px;font-weight:600}
+.stp{display:inline-flex;align-items:center;gap:2px}
+.stp button{width:28px;height:28px;padding:0;border:0;border-radius:7px;background:var(--raised-2);color:var(--text);display:flex;align-items:center;justify-content:center}
+.stp button:hover{background:var(--control-border)}
+.stp button[aria-disabled="true"]{opacity:.35;cursor:default}
+.stp .v{min-width:40px;text-align:center;font-family:'Geist Mono',ui-monospace,monospace;font-size:13px}
+.tbl{display:grid;grid-template-columns:110px repeat(7,minmax(0,1fr)) 64px;align-items:center;row-gap:2px}
+.tbl .h{font-family:'Geist Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.08em;color:var(--muted);text-align:center;padding-bottom:6px}
+.tbl .h.td{color:var(--text)}
+.tbl .who{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;height:34px;min-width:0}
+.tbl .who span.t{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.tbl .cell{display:flex;align-items:center;justify-content:center;height:34px}
+.dotc{width:22px;height:22px;border-radius:7px;display:flex;align-items:center;justify-content:center;color:var(--accent-text)}
+.dotc.ok{background:var(--accent)}
+.dotc.miss{box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--muted)}
+.dotc.now{box-shadow:inset 0 0 0 1.5px var(--text)}
+.dotc.fut{box-shadow:inset 0 0 0 1px var(--border)}
+.dotc.rest{width:6px;height:6px;border-radius:3px;background:var(--border-strong)}
+.tbl .tot{font-family:'Geist Mono',ui-monospace,monospace;font-size:12px;text-align:right}
+.hist{display:grid;grid-template-columns:44px minmax(0,1fr) 40px;gap:8px 10px;align-items:center;font-size:12.5px}
+.hist .wl{font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;color:var(--muted)}
+.hist .wn{grid-column:2 / 4;color:var(--text-2);font-size:11.5px;margin-top:-4px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label,.flab{font-size:12px;font-weight:500;color:var(--text-2)}
+.inp{height:42px;padding:0 12px;background:var(--bg);border:1px solid var(--control-border);border-radius:9px;color:var(--text);font:inherit;font-size:14px;width:100%}
+.inp:focus{outline:2px solid var(--text);outline-offset:1px}
+.tpl{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:16px;border-radius:12px;border:0;background:transparent;box-shadow:inset 0 0 0 1px var(--control-border);text-align:left;color:var(--text);width:100%}
+.tpl:hover{box-shadow:inset 0 0 0 1px var(--text-2)}
+.tpl[aria-checked="true"]{background:var(--text);color:var(--bg);box-shadow:none}
+.tpl[aria-checked="true"] .sub{color:var(--bg);opacity:.75}
+.tpl .sub{font-size:12.5px;color:var(--text-2);font-weight:400}
+.steps{display:flex;gap:6px;align-items:center}
+.steps span{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+.steps span b{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:11px;font-weight:600;font-size:11.5px;box-shadow:inset 0 0 0 1px var(--border-strong)}
+.steps span.on{color:var(--text)}
+.steps span.on b{background:var(--text);color:var(--bg);box-shadow:none}
+.steps span.dn b{background:var(--accent);color:var(--accent-text);box-shadow:none}
+.steps i{width:22px;height:1px;background:var(--border-strong)}
+.iconpick{display:flex;gap:8px;flex-wrap:wrap}
+.iconpick button{width:40px;height:40px;padding:0;border:0;border-radius:10px;background:transparent;box-shadow:inset 0 0 0 1px var(--control-border);color:var(--text);display:flex;align-items:center;justify-content:center}
+.iconpick button:hover{box-shadow:inset 0 0 0 1px var(--text-2)}
+.iconpick button[aria-checked="true"]{background:var(--text);color:var(--bg);box-shadow:none}
+.prow{display:flex;align-items:center;gap:12px;min-height:50px;padding:0 4px;border-bottom:1px solid var(--border);font-size:14px}
+.prow .nm{flex:1;min-width:0;font-weight:500}
+.prow .st{font-size:12px;color:var(--muted)}
+@container app (max-width:1200px){.gwrap{padding:0 20px 40px}.ov{grid-template-columns:repeat(3,minmax(0,1fr))}.ov > div:first-child{grid-column:1 / -1;border-bottom:1px solid var(--border)}.ov > div:nth-child(2){border-left:0}.scards{grid-template-columns:minmax(0,1fr)}}
+
+</style>
+</helmet>
+<div class="fx {{ rootCls }}" data-theme="{{ themeKey }}">
+  <aside class="sb" aria-label="Sidebar">
+    <div class="sbtop" style="display:flex;align-items:center;gap:10px;padding:0 6px">
+      <svg width="30" height="30" viewBox="0 0 120 120" role="img" aria-label="Facta logo"><rect width="120" height="120" rx="27" style="fill: var(--logo-tile)"></rect><polygon style="fill: var(--logo-mark); stroke: var(--logo-mark)" stroke-width="7" stroke-linejoin="round" points="46,31 93,31 90.4,41 55.4,41 51.3,57 73,57 70.9,65 49.2,65 42.5,91 30.5,91"></polygon></svg>
+      <span class="wordmark" style="font-size:19px;font-weight:700;letter-spacing:-.03em">Facta</span>
+      <button type="button" class="b b-icon sbtog" aria-label="Collapse or expand sidebar" title="Collapse or expand sidebar" onClick="{{ sbToggle }}"><span class="i-l"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></span><span class="i-r"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></span></button>
+    </div>
+    <div class="sbsearch" style="position:relative">
+      <label for="sb-search" class="sr-only">Search</label>
+      <span style="position:absolute;left:12px;top:12px;color:var(--muted);display:flex"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg></span>
+      <input id="sb-search" type="search" placeholder="Search" style="width:100%;height:40px;padding:0 70px 0 36px;background:var(--bg);border:1px solid var(--control-border);border-radius:10px;color:var(--text);font:inherit;font-size:14px">
+      <span class="kbd" style="position:absolute;right:8px;top:11px">Ctrl K</span>
+    </div>
+    <nav aria-label="Main" style="display:flex;flex-direction:column;gap:2px">
+<button type="button" class="nv" title="Today"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg><span class="lbl">Today</span></button>
+<button type="button" class="nv" title="Calendar"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg><span class="lbl">Calendar</span></button>
+<button type="button" class="nv" title="Goals" aria-current="page"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg><span class="lbl">Goals</span><span class="mk"></span></button>
+<button type="button" class="nv" title="Notes"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6M8 13h8M8 17h5"></path></svg><span class="lbl">Notes</span></button>
+<button type="button" class="nv" title="Diary"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14Z"></path><path d="M9 8h7"></path></svg><span class="lbl">Diary</span></button>
+<button type="button" class="nv" title="Settings"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9M14 17H5"></path><circle cx="17" cy="17" r="3"></circle><circle cx="7" cy="7" r="3"></circle></svg><span class="lbl">Settings</span></button>
+    </nav>
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:12px">
+      <div role="group" aria-label="Theme" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 2px 0 8px">
+        <span class="theme-l" style="font-size:12px;font-weight:500;color:var(--muted)">Theme</span>
+        <div class="themes" style="display:flex;align-items:center;gap:4px">
+          <sc-for list="{{ themes }}" as="t" hint-placeholder-count="4">
+            <button type="button" class="tdot" title="{{ t.name }}" aria-label="{{ t.name }} theme" aria-pressed="{{ t.pressed }}" onClick="{{ t.pick }}" style="border-color: {{ t.ring }}">
+              <span aria-hidden="true" style="width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-strong);background:{{ t.sw1 }}"><span style="width:7px;height:7px;border-radius:4px;background:{{ t.sw2 }}"></span></span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 8px 0;border-top:1px solid var(--border);font-size:12px;color:var(--muted)">
+        <span style="width:7px;height:7px;border-radius:4px;background:var(--success)"></span><span class="sync-t">Synced · just now</span>
+      </div>
+    </div>
+  </aside>
+  <main class="gmain">
+    <header class="hd">
+      <div style="display:flex;flex-direction:column;gap:2px;min-width:150px">
+        <span class="mono" style="font-size:11px;color:var(--muted);letter-spacing:.06em">{{ subtitle }}</span>
+        <h1>Goals</h1>
+      </div>
+      <div class="seg" role="radiogroup" aria-label="Goals">
+        <sc-for list="{{ halves }}" as="h" hint-placeholder-count="2"><button type="button" role="radio" aria-checked="{{ h.checked }}" onClick="{{ h.pick }}"><span>{{ h.name }}</span><span class="mono">{{ h.n }}</span></button></sc-for>
+      </div>
+      <div style="flex:1"></div>
+      <button type="button" class="b b-commit b-primary" onClick="{{ newGoal }}"><span class="lab"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"></path></svg>New goal</span><span class="key hide-s">N</span></button>
+    </header>
+    <div class="gscroll">
+      <div class="gwrap">
+        <section class="ov" aria-label="Overview">
+          <div>
+            <svg width="76" height="76" viewBox="0 0 76 76" role="img" aria-label="{{ ov.ringLabel }}"><circle cx="38" cy="38" r="31" fill="none" stroke="var(--raised-2)" stroke-width="7"></circle><circle cx="38" cy="38" r="31" fill="none" stroke="var(--accent)" stroke-width="7" stroke-linecap="round" stroke-dasharray="{{ ov.dash }}" transform="rotate(-90 38 38)"></circle><text x="38" y="43" text-anchor="middle" font-size="17" font-weight="600" style="fill: var(--text); font-family: Geist, sans-serif">{{ ov.pct }}%</text></svg>
+            <div style="display:flex;flex-direction:column;gap:4px;min-width:0"><span class="k">THIS WEEK</span><span style="font-size:15px;font-weight:600">{{ ov.weekText }}</span>
+              <div class="wkd" aria-hidden="true"><sc-for list="{{ ov.days }}" as="d" hint-placeholder-count="7"><i class="{{ d.cls }}">{{ d.l }}</i></sc-for></div></div>
+          </div>
+          <div><span class="k">STREAK</span><span class="big" style="display:flex;align-items:center;gap:8px"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.3 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>{{ ov.streak }}<span class="small" style="font-weight:400">days</span></span><span class="small">{{ ov.streakNote }}</span></div>
+          <div><span class="k">DONE TODAY</span><span class="big">{{ ov.today }}</span><div class="mbar" aria-hidden="true"><i style="width: {{ ov.todayPct }}%"></i></div></div>
+          <div><span class="k">NEXT UP</span><span style="font-size:15px;font-weight:600;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">{{ ov.nextTitle }}</span><div style="display:flex;align-items:center;gap:8px"><span class="mono small">{{ ov.nextTime }}</span><span style="flex:1"></span><button type="button" class="ctl" style="height:30px" onClick="{{ ov.nextDone }}"><svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg> Mark done</button></div></div>
+        </section>
+        <div class="gbar" role="toolbar" aria-label="Filter, sort and view">
+          <div class="seg" role="radiogroup" aria-label="Priority filter"><sc-for list="{{ filters }}" as="f" hint-placeholder-count="4"><button type="button" role="radio" aria-checked="{{ f.checked }}" onClick="{{ f.pick }}">{{ f.name }}</button></sc-for></div>
+          <div style="display:flex;align-items:center;gap:8px"><span class="mono sec">SORT</span><div class="seg" role="radiogroup" aria-label="Sort by"><sc-for list="{{ sorts }}" as="f" hint-placeholder-count="3"><button type="button" role="radio" aria-checked="{{ f.checked }}" onClick="{{ f.pick }}">{{ f.name }}</button></sc-for></div></div>
+          <span style="flex:1"></span>
+          <div class="seg" role="radiogroup" aria-label="View"><sc-for list="{{ viewsSeg }}" as="f" hint-placeholder-count="2"><button type="button" role="radio" aria-checked="{{ f.checked }}" aria-label="{{ f.name }} view" onClick="{{ f.pick }}">{{ f.name }}</button></sc-for></div>
+        </div>
+        <div class="addr"><span style="display:flex"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"></path></svg></span><label for="g-add" class="sr-only">New goal</label><input id="g-add" type="text" autocomplete="off" ref="{{ addRef }}" placeholder="New goal. Try: Gym daily 18:00 !must" value="{{ addText }}" onChange="{{ onAdd }}" onKeyDown="{{ onAddKey }}"><span class="kbd">Enter</span></div>
+
+        <sc-if value="{{ showEmpty }}" hint-placeholder-val="{{ false }}">
+          <div class="gempty"><h2 style="margin:0;font-size:18px;font-weight:600">Nothing on your list yet</h2><span style="font-size:13.5px;color:var(--text-2)">Add your first goal above. Pick a priority with !must, !should or !nice, and a time like 18:00.</span>
+            <div style="display:flex;gap:8px"><button type="button" class="b b-commit b-primary" onClick="{{ newGoal }}"><span class="lab">New goal</span><span class="key">N</span></button><button type="button" class="ctl" onClick="{{ toShared }}"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Start a shared goal</button></div></div>
+        </sc-if>
+
+        <sc-if value="{{ isList }}" hint-placeholder-val="{{ true }}">
+          <div class="glist" role="listbox" tabindex="0" aria-label="{{ listLabel }}" onKeyDown="{{ onKey }}" style="outline:none">
+            <sc-for list="{{ sections }}" as="s" hint-placeholder-count="4">
+              <section aria-label="{{ s.title }}">
+                <div class="gsec">
+                  <sc-if value="{{ s.collapsible }}" hint-placeholder-val="{{ false }}"><button type="button" class="tg" aria-expanded="{{ s.expanded }}" onClick="{{ s.toggle }}"><span style="display:flex"><sc-if value="{{ s.isOpen }}" hint-placeholder-val="{{ true }}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></sc-if><sc-if value="{{ s.isClosed }}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></sc-if></span>{{ s.title }}</button></sc-if>
+                  <sc-if value="{{ s.plain }}" hint-placeholder-val="{{ true }}"><span>{{ s.title }}</span></sc-if>
+                  <span class="n">{{ s.count }}</span><span style="flex:1"></span><span class="mono sec" style="font-weight:400">{{ s.note }}</span>
+                </div>
+                <sc-for list="{{ s.rows }}" as="r" hint-placeholder-count="5">
+                  <div class="{{ r.cls }}" role="option" aria-selected="{{ r.sel }}" onClick="{{ r.focus }}">
+                    <sc-if value="{{ r.isGoal }}" hint-placeholder-val="{{ true }}"><button type="button" class="cb" role="checkbox" tabindex="-1" aria-checked="{{ r.checked }}" aria-label="{{ r.cbLabel }}" onClick="{{ r.toggle }}"><sc-if value="{{ r.done }}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></sc-if></button></sc-if>
+                    <sc-if value="{{ r.isRule }}" hint-placeholder-val="{{ false }}"><span style="display:flex;width:16px;justify-content:center;color:var(--muted)"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4"></path><path d="M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4"></path><path d="M21 13v1a4 4 0 0 1-4 4H3"></path></svg></span></sc-if>
+                    <span class="tt">{{ r.title }}</span>
+                    <span class="chp {{ r.pri }}" title="Priority: {{ r.priName }}"><span class="pb" aria-hidden="true"><sc-for list="{{ r.bars }}" as="b" hint-placeholder-count="3"><i class="{{ b.on }}"></i></sc-for></span>{{ r.priName }}</span>
+                    <sc-if value="{{ r.hasRep }}" hint-placeholder-val="{{ false }}"><span class="chp rep"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4"></path><path d="M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4"></path><path d="M21 13v1a4 4 0 0 1-4 4H3"></path></svg> {{ r.rep }}</span></sc-if>
+                    <sc-if value="{{ r.isShared }}" hint-placeholder-val="{{ false }}"><span class="chp shr" title="Shared goal: {{ r.sharedName }}"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path></svg> {{ r.sharedName }}</span></sc-if>
+                    <sc-if value="{{ r.hasStreak }}" hint-placeholder-val="{{ false }}"><span class="chp strk">{{ r.streak }}</span></sc-if>
+                    <span class="sp"></span>
+                    <sc-if value="{{ r.remind }}" hint-placeholder-val="{{ false }}"><span class="rm" title="Reminder not sent" role="img" aria-label="Reminder not sent"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg></span></sc-if>
+                    <button type="button" class="b b-icon edit" tabindex="-1" aria-label="Edit {{ r.title }}" onClick="{{ r.edit }}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg></button>
+                    <span class="mt">{{ r.when }}</span>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ s.none }}" hint-placeholder-val="{{ false }}"><div style="padding:12px 0;font-size:13px;color:var(--muted)">{{ s.noneText }}</div></sc-if>
+              </section>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isBoard }}" hint-placeholder-val="{{ false }}">
+          <div class="cols3 glist" role="listbox" tabindex="0" aria-label="Goals board by priority" onKeyDown="{{ onKey }}" style="outline:none">
+            <sc-for list="{{ bcols }}" as="c" hint-placeholder-count="3">
+              <section class="bcol" aria-label="{{ c.title }}">
+                <div class="gsec" style="margin-top:0;border-bottom:0"><span class="pb" aria-hidden="true" style="margin-right:2px"><sc-for list="{{ c.bars }}" as="b" hint-placeholder-count="3"><i class="{{ b.on }}"></i></sc-for></span><span>{{ c.title }}</span><span class="n">{{ c.count }}</span></div>
+                <sc-for list="{{ c.cards }}" as="r" hint-placeholder-count="3">
+                  <div class="{{ r.ccls }}" role="option" aria-selected="{{ r.sel }}" onClick="{{ r.focus }}" style="{{ r.cstyle }}">
+                    <div class="r1"><button type="button" class="cb" role="checkbox" tabindex="-1" aria-checked="{{ r.checked }}" aria-label="{{ r.cbLabel }}" onClick="{{ r.toggle }}" style="margin-top:2px"><sc-if value="{{ r.done }}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></sc-if></button><span class="tt" style="flex:1;min-width:0">{{ r.title }}</span><sc-if value="{{ r.remind }}" hint-placeholder-val="{{ false }}"><span class="rm" title="Reminder not sent" role="img" aria-label="Reminder not sent"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg></span></sc-if></div>
+                    <div class="r2"><sc-if value="{{ r.isShared }}" hint-placeholder-val="{{ false }}"><span class="chp shr"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path></svg> {{ r.sharedName }}</span></sc-if><sc-if value="{{ r.hasRep }}" hint-placeholder-val="{{ false }}"><span class="chp rep"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4"></path><path d="M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4"></path><path d="M21 13v1a4 4 0 0 1-4 4H3"></path></svg> {{ r.rep }}</span></sc-if><span class="mt mono" style="font-size:11.5px;color:var(--muted)">{{ r.when }}</span></div>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ c.none }}" hint-placeholder-val="{{ false }}"><div style="padding:10px 2px;font-size:13px;color:var(--muted)">Nothing here</div></sc-if>
+              </section>
+            </sc-for>
+          </div>
+        </sc-if>
+        <div style="padding-top:18px;font-size:12px;color:var(--muted)">Editing a goal opens the existing goal dialog. Shared goals show their group and open in Shared.</div>
+      </div>
+    </div>
+    <div class="foot" aria-label="Keyboard hints">
+      <span class="k"><span class="kbd">↑</span><span class="kbd">↓</span>or<span class="kbd">J</span><span class="kbd">K</span>move</span>
+      <span class="k"><span class="kbd">X</span>toggle done</span><span class="k"><span class="kbd">E</span>edit</span><span class="k"><span class="kbd">N</span>new goal</span>
+      <span style="flex:1"></span><span class="k"><span class="kbd">Tab</span>list, filters, add row</span>
+    </div>
+  </main>
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}"><div class="toast" role="status">{{ toast }}</div></sc-if>
+  <div class="sr-only" aria-live="polite">{{ liveText }}</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme": {"editor": "enum", "options": ["bg", "mid", "ember", "light"], "default": "bg"}, "state": {"editor": "enum", "options": ["default", "board", "empty", "long", "collapsed", "focus", "reminder"], "default": "default"}, "weekStart": {"editor": "enum", "options": ["sun", "mon", "sat"], "default": "sun"}, "timeFormat": {"editor": "enum", "options": ["24h", "12h"], "default": "24h"}, "$preview": {"width": 1440, "height": 920}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props); const st = props.state || 'default'; this.listenPrefs(); this._add = null;
+    this.state = { theme: props.theme || 'bg', toast: '', toggled: {}, extra: [], cur: st === 'focus' ? 1 : 0, doneOpen: st !== 'collapsed', fpri: 'all', sort: 'time', view: st === 'board' ? 'board' : 'list', addText: '' };
+  }
+
+  sbVals() {
+    const m = this.state.sbMode || '';
+    return { rootCls: m === 'c' ? 'sb-c' : (m === 'o' ? 'sb-o' : ''), sbToggle: (e) => {
+      const el = e && e.currentTarget && e.currentTarget.closest ? e.currentTarget.closest('.fx') : null;
+      const narrow = !!el && el.getBoundingClientRect().width <= 1200; const cur = this.state.sbMode || '';
+      const collapsed = narrow ? cur !== 'o' : cur === 'c';
+      this.setState({ sbMode: collapsed ? (narrow ? 'o' : '') : (narrow ? '' : 'c') }); } };
+  }
+  prefs() {
+    let o = {}; try { o = (typeof window !== 'undefined' && window.__factaPrefs) || JSON.parse(window.localStorage.getItem('facta.prefs') || '{}') || {}; } catch (e) { o = {}; }
+    const p = this.props || {};
+    const wsKey = ['sun', 'mon', 'sat'].indexOf(o.weekStart) >= 0 ? o.weekStart : (['sun', 'mon', 'sat'].indexOf(p.weekStart) >= 0 ? p.weekStart : 'sun');
+    const tf = (o.timeFormat === '12h' || o.timeFormat === '24h') ? o.timeFormat : (p.timeFormat === '12h' ? '12h' : '24h');
+    return { wsKey, ws: { sun: 0, mon: 1, sat: 6 }[wsKey], tf };
+  }
+  listenPrefs() {
+    this._onPrefs = () => { try { this.setState({ prefTick: Date.now() }); } catch (e) {} };
+    try { window.addEventListener('facta-prefs', this._onPrefs); window.addEventListener('storage', this._onPrefs); } catch (e) {}
+  }
+  unlistenPrefs() { try { window.removeEventListener('facta-prefs', this._onPrefs); window.removeEventListener('storage', this._onPrefs); } catch (e) {} }
+  componentWillUnmount() { this.unlistenPrefs(); }
+  say(text) {
+    this.setState({ toast: text });
+    if (this._t) clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ toast: '' }), 2400);
+  }
+  themeDots() {
+    const cur = this.state.theme;
+    return [{ id: 'bg', name: 'Black & green', sw1: '#060706', sw2: '#22C55E' }, { id: 'mid', name: 'Midnight', sw1: '#04070E', sw2: '#4C8DF6' },
+      { id: 'ember', name: 'Ember', sw1: '#060504', sw2: '#FF8000' }, { id: 'light', name: 'Light', sw1: '#F6F6F3', sw2: '#15803D' }]
+      .map((t) => ({ ...t, pressed: cur === t.id ? 'true' : 'false', ring: cur === t.id ? 'var(--text)' : 'transparent', pick: () => this.setState({ theme: t.id }) }));
+  }
+
+  renderVals() {
+    const s = this.state, p = this.props, st = p.state || 'default';
+
+    const PF = this.prefs();
+    const pad = (n) => (n < 10 ? '0' : '') + n;
+    const fmtT = (hhmm) => { if (!hhmm) return ''; const q = hhmm.split(':'), h = Number(q[0]), m = Number(q[1]); if (PF.tf === '24h') return pad(h) + ':' + pad(m); const h12 = h % 12 === 0 ? 12 : h % 12; return h12 + (m ? ':' + pad(m) : '') + (h < 12 ? ' AM' : ' PM'); };
+    const COLS = ['var(--event-blue)', 'var(--event-orange)', 'var(--event-purple)', 'var(--event-green)', 'var(--event-pink)', 'var(--event-red)', 'var(--event-blue)', 'var(--event-orange)'];
+    const PEOPLE = { you: { n: 'You', i: 'Y', c: 0 }, omar: { n: 'Omar', i: 'O', c: 1 }, sara: { n: 'Sara', i: 'S', c: 2 }, khalid: { n: 'Khalid', i: 'K', c: 3 }, lina: { n: 'Lina', i: 'L', c: 4 }, yousef: { n: 'Yousef', i: 'Y', c: 5 }, noor: { n: 'Noor', i: 'N', c: 6 }, hadi: { n: 'Hadi', i: 'H', c: 7 } };
+    const av = (id) => ({ i: PEOPLE[id].i, c: COLS[PEOPLE[id].c], n: PEOPLE[id].n, cls: 'av', id });
+    const pbars = (p) => ({ must: [1, 1, 1], should: [1, 1, 0], nice: [1, 0, 0] }[p]).map((x) => ({ on: x ? 'on' : '' }));
+    const PRI = { must: 'Must', should: 'Should', nice: 'Nice' };
+    const halves = (cur, nm, ns) => [{ name: 'Mine', n: String(nm), checked: cur === 'mine' ? 'true' : 'false', pick: () => this.say('Mine') }, { name: 'Shared', n: String(ns), checked: cur === 'shared' ? 'true' : 'false', pick: () => this.say('Shared') }];
+
+    const empty = st === 'empty';
+    const seed = [
+      { id: 't1', sec: 'today', title: 'Review SQL joins', pri: 'should', time: '09:00', done: true },
+      { id: 't2', sec: 'today', title: 'Finish lab report', pri: 'must', time: '14:00', done: false, remind: st === 'reminder' },
+      { id: 't3', sec: 'today', title: 'Call grandma', pri: 'nice', done: false },
+      { id: 't4', sec: 'today', title: 'Gym — push day', pri: 'must', rep: 'Daily', done: false, shared: 'Gym crew' },
+      { id: 't5', sec: 'today', title: 'Read 20 pages', pri: 'should', rep: 'Daily', done: false, shared: 'Read daily' },
+      { id: 't7', sec: 'today', title: 'Morning run', pri: 'should', time: '07:00', done: true, shared: 'Morning run' },
+      { id: 't6', sec: 'today', title: 'Water the plants', pri: 'nice', rep: 'Saturdays', done: true },
+      { id: 'u0', sec: 'up', title: 'Study sprint', pri: 'should', date: 'Mon 19 Oct', shared: 'Study sprint' },
+      { id: 'u1', sec: 'up', title: 'Submit assignment', pri: 'must', date: 'Fri 23 Oct' },
+      { id: 'u2', sec: 'up', title: 'Book dentist', pri: 'nice', date: 'Sat 24 Oct', remind: st === 'reminder' },
+      { id: 'u3', sec: 'up', title: 'Prep midterm notes', pri: 'must', date: 'Mon 26 Oct' },
+      { id: 'u4', sec: 'up', title: 'Plan group project', pri: 'should', date: 'Tue 27 Oct' },
+      { id: 'u5', sec: 'up', title: 'Renew library card', pri: 'nice', date: 'Wed 28 Oct' },
+      { id: 'u6', sec: 'up', title: 'Email advisor', pri: 'should', date: 'Thu 29 Oct' },
+      { id: 'r1', sec: 'rule', title: 'Gym — push day', pri: 'must', rep: 'Daily', streak: '12 day streak', shared: 'Gym crew' },
+      { id: 'r2', sec: 'rule', title: 'Read 20 pages', pri: 'should', rep: 'Daily', streak: '12 day streak', shared: 'Read daily' },
+      { id: 'r3', sec: 'rule', title: 'Water the plants', pri: 'nice', rep: 'Saturdays', streak: '6 week streak' },
+      { id: 'r4', sec: 'rule', title: 'Weekly review', pri: 'should', rep: 'Sundays', time: '18:00', streak: '9 week streak' },
+      { id: 'd1', sec: 'done', title: 'Gym — push day', pri: 'must', rep: 'Daily', date: 'Fri 16 Oct', done: true, shared: 'Gym crew' },
+      { id: 'd2', sec: 'done', title: 'Read 20 pages', pri: 'should', rep: 'Daily', date: 'Fri 16 Oct', done: true, shared: 'Read daily' },
+      { id: 'd3', sec: 'done', title: 'Submit lab proposal', pri: 'must', date: 'Thu 15 Oct', done: true },
+      { id: 'd5', sec: 'done', title: 'Read 20 pages', pri: 'should', rep: 'Daily', date: 'Thu 15 Oct', done: true, shared: 'Read daily' }];
+    if (st === 'long') { const nm = ['Draft essay outline', 'Return library books', 'Buy a notebook', 'Renew bus pass', 'Review algorithms notes', 'Reply to Omar', 'Clean desk', 'Pay phone bill', 'Back up laptop', 'Book study room', 'Print lecture slides', 'Update CV', 'Watch SQL lecture', 'Plan weekend trip']; nm.forEach((t, i) => seed.splice(12 + i, 0, { id: 'l' + i, sec: 'up', title: t, pri: ['must', 'should', 'nice'][i % 3], date: (i < 2 ? (30 + i) + ' Oct' : (i - 1) + ' Nov') })); }
+    let all = empty ? [] : seed;
+    all = all.concat(s.extra);
+    const isDone = (g) => (s.toggled[g.id] ? !g.done : !!g.done);
+    const fl = all.filter((g) => s.fpri === 'all' || g.pri === s.fpri);
+    const PR = { must: 0, should: 1, nice: 2 };
+    const tcmp = (a, b) => (a.time || '99:99') < (b.time || '99:99') ? -1 : (a.time || '99:99') > (b.time || '99:99') ? 1 : 0;
+    const cmp = s.sort === 'pri' ? (a, b) => PR[a.pri] - PR[b.pri] || tcmp(a, b) : s.sort === 'name' ? (a, b) => a.title.localeCompare(b.title) : (a, b) => tcmp(a, b);
+    let idx = 0; const flat = [];
+    const mk = (g) => { const i = idx++; const d = isDone(g), rule = g.sec === 'rule';
+      const act = () => { if (!rule) { this.setState({ toggled: { ...s.toggled, [g.id]: !s.toggled[g.id] } }); if (g.shared) this.say((d ? 'Check-in removed from ' : 'Checked in to ') + g.shared); } };
+      flat.push({ g, act, rule });
+      const when = g.time && g.sec !== 'up' ? fmtT(g.time) : (g.date || (g.time ? fmtT(g.time) : ''));
+      return { i, id: g.id, title: g.title, pri: g.pri, priName: PRI[g.pri], bars: pbars(g.pri), hasRep: !!g.rep && !rule || (rule && !!g.rep), rep: g.rep || '', isShared: !!g.shared, sharedName: g.shared || '', hasStreak: !!g.streak, streak: g.streak || '', remind: !!g.remind, isGoal: !rule, isRule: rule, done: d,
+        checked: d ? 'true' : 'false', cbLabel: (d ? 'Mark not done: ' : 'Mark done: ') + g.title, sel: s.cur === i ? 'true' : 'false', when: rule ? (g.time ? fmtT(g.time) : '') : when,
+        cls: 'gr' + (d ? ' is-done' : '') + (s.cur === i ? ' is-cur' : '') + (st === 'focus' ? ' force' : ''), ccls: 'bcard' + (d ? ' is-done' : ''), cstyle: s.cur === i ? 'box-shadow: 0 0 0 2px var(--text)' : '',
+        toggle: (e) => { if (e && e.stopPropagation) e.stopPropagation(); act(); }, focus: () => this.setState({ cur: i }), edit: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.say(g.shared ? 'Opens ' + g.shared + ' in Shared' : 'Edit goal · opens the existing goal dialog'); } }; };
+    const secDef = [['today', 'Today', 'Sat 17 Oct'], ['up', 'Upcoming', 'Next 2 weeks'], ['rule', 'Daily and recurring', 'Rules'], ['done', 'Done', 'This week']];
+    const isList = s.view === 'list', isBoard = s.view === 'board';
+    const sections = [], bcols = [];
+    if (isList) secDef.forEach((sd) => {
+      let rows = fl.filter((g) => g.sec === sd[0] || (sd[0] === 'today' && g.sec === 'new')).sort(cmp);
+      if (sd[0] === 'done') rows = rows.concat(all.filter((g) => g.sec === 'today' && isDone(g) && false));
+      if (!rows.length && empty) return;
+      const coll = sd[0] === 'done', open = !coll || s.doneOpen;
+      const view = open ? rows.map(mk) : [];
+      sections.push({ title: sd[1], count: String(rows.length), note: sd[2], rows: view, collapsible: coll, plain: !coll, expanded: open ? 'true' : 'false', isOpen: open, isClosed: !open, toggle: () => this.setState({ doneOpen: !s.doneOpen }),
+        none: open && !rows.length, noneText: s.fpri === 'all' ? 'Nothing here.' : 'No ' + PRI[s.fpri] + ' goals here.' });
+    });
+    if (isBoard && !empty) ['must', 'should', 'nice'].forEach((pk) => {
+      const rows = fl.filter((g) => g.pri === pk && g.sec !== 'rule' && g.sec !== 'done').sort(cmp);
+      const cards = rows.map(mk); bcols.push({ title: PRI[pk], bars: pbars(pk), count: String(rows.length), cards, none: !rows.length });
+    });
+    const total = flat.length;
+    // overview
+    const today = all.filter((g) => g.sec === 'today' || g.sec === 'new'); const tDone = today.filter(isDone).length;
+    const wDone = empty ? 0 : 7 + tDone, wTot = empty ? 0 : 8 + today.length, pct = wTot ? Math.round(wDone / wTot * 100) : 0;
+    const nextG = today.filter((g) => !isDone(g)).sort(tcmp)[0];
+    const dayCls = empty ? ['', '', '', '', '', 'td', ''] : ['on', 'on', 'on', 'part', 'on', 'td', ''];
+    const ov = { pct, dash: (pct * 1.9478).toFixed(1) + ' 194.78', ringLabel: 'Weekly completion ' + pct + ' percent', weekText: empty ? 'No goals yet' : wDone + ' of ' + wTot + ' goals', days: ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((l, i) => ({ l, cls: dayCls[i] })),
+      streak: empty ? '0' : '12', streakNote: empty ? 'Complete a goal to start one' : 'Best: 21 days', today: tDone + ' of ' + today.length, todayPct: today.length ? Math.round(tDone / today.length * 100) : 0,
+      nextTitle: nextG ? nextG.title : (empty ? 'Nothing yet' : 'All done for today'), nextTime: nextG ? (nextG.time ? fmtT(nextG.time) : 'Anytime today') : '', nextDone: () => { if (nextG) this.setState({ toggled: { ...s.toggled, [nextG.id]: true } }); } };
+    const mkF = (list, key, setk) => list.map((f) => ({ name: f[1], checked: s[key] === f[0] ? 'true' : 'false', pick: () => this.setState({ [key]: f[0], cur: 0 }) }));
+    const parseGoal = (text) => { let t = ' ' + text + ' ', pri = 'should', time = '', rep = '', m;
+      m = t.match(/\s!(must|should|nice)\b/i); if (m) { pri = m[1].toLowerCase(); t = t.replace(m[0], ' '); }
+      m = t.match(/\s(daily|every day|weekdays)\b/i); if (m) { rep = /weekdays/i.test(m[1]) ? 'Weekdays' : 'Daily'; t = t.replace(m[0], ' '); }
+      m = t.match(/\s(?:at\s+)?(\d{1,2}):(\d{2})\b/); if (m) { time = pad(Number(m[1])) + ':' + m[2]; t = t.replace(m[0], ' '); }
+      else { m = t.match(/\s(?:at\s+)?(\d{1,2})\s*(am|pm)\b/i); if (m) { let h = Number(m[1]) % 12; if (/pm/i.test(m[2])) h += 12; time = pad(h) + ':00'; t = t.replace(m[0], ' '); } }
+      return { title: t.replace(/\s+/g, ' ').trim(), pri, time, rep }; };
+    const addNow = () => { const g = parseGoal(s.addText); if (!g.title) return; this.setState({ extra: s.extra.concat([{ id: 'n' + Date.now(), sec: 'today', ...g, done: false }]), addText: '' }); this.say('Goal added · ' + g.title); };
+    const onKey = (e) => { const k = e.key, f = flat[s.cur];
+      if (k === 'ArrowDown' || k === 'j' || k === 'J') { e.preventDefault(); this.setState({ cur: Math.min(total - 1, s.cur + 1) }); }
+      else if (k === 'ArrowUp' || k === 'k' || k === 'K') { e.preventDefault(); this.setState({ cur: Math.max(0, s.cur - 1) }); }
+      else if (k === 'Home') { e.preventDefault(); this.setState({ cur: 0 }); } else if (k === 'End') { e.preventDefault(); this.setState({ cur: total - 1 }); }
+      else if ((k === 'x' || k === 'X' || k === ' ') && f) { e.preventDefault(); f.act(); }
+      else if ((k === 'e' || k === 'E' || k === 'Enter') && f) { e.preventDefault(); this.say('Edit goal · opens the existing goal dialog'); }
+      else if (k === 'n' || k === 'N') { e.preventDefault(); if (this._add) this._add.focus(); } };
+    const cn = (s.cur >= 0 && flat[s.cur]) ? flat[s.cur].g.title : '';
+    return { ...this.sbVals(), themeKey: s.theme, themes: this.themeDots(), subtitle: 'WEEK 42 · 12–18 OCT', halves: halves('mine', all.filter((g) => g.sec !== 'rule' && g.sec !== 'done' && !isDone(g)).length, empty ? 0 : 4),
+      filters: mkF([['all', 'All'], ['must', 'Must'], ['should', 'Should'], ['nice', 'Nice']], 'fpri'), sorts: mkF([['time', 'Time'], ['pri', 'Priority'], ['name', 'A–Z']], 'sort'),
+      viewsSeg: [{ name: 'List', checked: isList ? 'true' : 'false', pick: () => this.setState({ view: 'list', cur: 0 }) }, { name: 'Board', checked: isBoard ? 'true' : 'false', pick: () => this.setState({ view: 'board', cur: 0 }) }],
+      ov, addRef: (el) => { this._add = el; }, addText: s.addText, onAdd: (e) => this.setState({ addText: e.target.value }), onAddKey: (e) => { if (e.key === 'Enter') { e.preventDefault(); addNow(); } },
+      showEmpty: empty, isList, isBoard, sections, bcols, onKey, listLabel: 'Goals. Arrow keys or J and K move, X toggles done, E edits.', newGoal: () => { if (this._add) this._add.focus(); }, toShared: () => this.say('Shared goals'),
+      liveText: cn, hasToast: !!s.toast, toast: s.toast };
+  }
+}
+</script>
+</body>
+</html>

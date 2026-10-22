@@ -52,11 +52,14 @@ export default function SyncStatusBadge() {
       onClick={() => { void engine.syncNow(); }}
       disabled={status.state === "local-only"}
       title={title}
+      aria-label={detail ? `${label}, ${detail}` : label}
       className="flex w-full items-center gap-2 rounded-md px-2 pt-2.5 text-left text-xs text-subtle hover:text-text-2 disabled:cursor-default"
     >
       <span aria-hidden="true" className={`h-[7px] w-[7px] shrink-0 rounded-full ${dot}`} />
-      <span className="text-text-2">{label}</span>
-      {detail && <span className="truncate">· {detail}</span>}
+      <span className="sync-t min-w-0 items-center gap-1">
+        <span className="text-text-2">{label}</span>
+        {detail && <span className="truncate">· {detail}</span>}
+      </span>
     </button>
   );
 }

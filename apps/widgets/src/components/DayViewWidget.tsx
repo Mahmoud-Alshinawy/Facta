@@ -14,10 +14,10 @@ const THEMES = new Set(["default", "midnight", "ember", "light"]);
 const EVENT_COLORS: Record<string, string> = {
   blue: "var(--event-blue)",
   purple: "var(--event-purple)",
-  red: "var(--color-red-500)",
-  green: "var(--color-green-500)",
-  orange: "var(--color-orange-500)",
-  pink: "var(--color-pink-500)",
+  red: "var(--event-red)",
+  green: "var(--event-green)",
+  orange: "var(--event-orange)",
+  pink: "var(--event-pink)",
 };
 
 function toggledToday(g: WidgetGoal): WidgetGoal {
@@ -147,9 +147,6 @@ export default function DayViewWidget({ theme, translucent }: { theme: string; t
               </div>
             ))}
 
-            {/* The now line sits behind the cards, so it never reads as a strikethrough. */}
-            <div aria-hidden="true" className="wg-now-line" style={{ top: tl.nowTop }} />
-
             <div className="wg-items">
               {tl.items.map((it) => {
                 const pos: React.CSSProperties = {
@@ -207,9 +204,8 @@ export default function DayViewWidget({ theme, translucent }: { theme: string; t
               })}
             </div>
 
-            <div className="wg-now" style={{ top: tl.nowTop }} aria-label={`Now ${formatClock(nowMin, tf)}`}>
+            <div className="wg-now" style={{ top: tl.nowTop }} role="img" aria-label={`Now ${formatClock(nowMin, tf)}`}>
               <span className="wg-now-pill">{formatClock(nowMin, tf, "short")}</span>
-              <span aria-hidden="true" className="wg-now-dot" />
             </div>
 
             {tl.items.length === 0 && (

@@ -46,4 +46,17 @@ export function chooseTheme(theme: ThemeId, root: HTMLElement = document.documen
   } catch {
     // Storage blocked: the theme still applies for this session.
   }
+  try {
+    window.dispatchEvent(new Event(THEME_EVENT));
+  } catch {
+    // No window (tests): nothing is listening.
+  }
+}
+
+/** Fired on window after chooseTheme, so every theme picker shows the pick. */
+export const THEME_EVENT = "facta-theme";
+
+export function subscribeTheme(cb: () => void): () => void {
+  window.addEventListener(THEME_EVENT, cb);
+  return () => window.removeEventListener(THEME_EVENT, cb);
 }

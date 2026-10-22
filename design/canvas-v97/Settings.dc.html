@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Facta — Settings</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+.fx,.fx[data-theme="bg"]{color-scheme:dark;--bg:#060706;--surface:#0C0D0C;--raised:#121412;--raised-2:#191C18;--border:#1A1D1A;--border-strong:#262A25;--control-border:#5F685E;--text:#F1F4F1;--text-2:#A6AEA6;--muted:#868F86;--accent:#22C55E;--accent-hover:#2DD46A;--accent-text:#03210F;--accent-soft:rgba(34,197,94,.10);--success:#22C55E;--danger:#EF5A5A;--danger-soft:rgba(239,90,90,.12);--danger-text:#1A0505;--logo-tile:#0A0B0A;--logo-mark:#22C55E}
+.fx[data-theme="mid"]{color-scheme:dark;--bg:#04070E;--surface:#090E1A;--raised:#0E1524;--raised-2:#141C30;--border:#161F33;--border-strong:#212C45;--control-border:#55668F;--text:#EEF2FA;--text-2:#A3AECB;--muted:#7D89A8;--accent:#4C8DF6;--accent-hover:#6AA1F8;--accent-text:#04122B;--accent-soft:rgba(76,141,246,.12);--success:#4C8DF6;--danger:#F06A6A;--danger-soft:rgba(240,106,106,.12);--danger-text:#1F0606;--logo-tile:#04070E;--logo-mark:#4C8DF6}
+.fx[data-theme="ember"]{color-scheme:dark;--bg:#060504;--surface:#0C0A08;--raised:#120F0D;--raised-2:#191512;--border:#1A1613;--border-strong:#27201C;--control-border:#6E6053;--text:#F6F1EC;--text-2:#B8ADA3;--muted:#938778;--accent:#FF8000;--accent-hover:#FF9426;--accent-text:#1F0E00;--accent-soft:rgba(255,128,0,.12);--success:#FF8000;--danger:#F25F5C;--danger-soft:rgba(242,95,92,.12);--danger-text:#1F0606;--logo-tile:#060504;--logo-mark:#FF8000}
+.fx[data-theme="light"]{color-scheme:light;--bg:#F6F6F3;--surface:#FFFFFF;--raised:#F0F1EC;--raised-2:#E7E9E3;--border:#E3E5DF;--border-strong:#CDD1C8;--control-border:#7E857B;--text:#141713;--text-2:#4E554D;--muted:#626A60;--accent:#15803D;--accent-hover:#166534;--accent-text:#FFFFFF;--accent-soft:rgba(21,128,61,.10);--success:#16A34A;--danger:#DC2626;--danger-soft:rgba(220,38,38,.08);--danger-text:#FFFFFF;--logo-tile:#15803D;--logo-mark:#FFFFFF}
+.fx{--slant:-10deg;font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased}
+.fx *{box-sizing:border-box}
+.fx button{font-family:inherit;color:inherit;cursor:pointer}
+.fx button:focus-visible,.fx input:focus-visible{outline:2px solid var(--text);outline-offset:3px}
+.mono{font-family:'Geist Mono',ui-monospace,monospace;font-feature-settings:"tnum"}
+.kbd{font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;line-height:1;color:var(--muted);border:1px solid var(--border-strong);border-bottom-width:2px;border-radius:5px;padding:3px 5px;background:var(--raised)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.nav-btn:hover{background:var(--raised)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px}
+.sec-h{font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;font-weight:500;letter-spacing:.08em;color:var(--muted)}
+/* tabs */
+.tab{position:relative;height:44px;padding:0 2px;border:0;background:transparent;color:var(--text-2);font-size:14px;font-weight:500}
+.tab:hover{color:var(--text)}
+.tab[aria-selected="true"]{color:var(--text)}
+.tab[aria-selected="true"]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:3px;border-radius:2px;background:var(--text);transform:skewX(var(--slant))}
+/* buttons v2 */
+.b{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;font-size:14px;font-weight:600;line-height:1;white-space:nowrap;transition:background .14s ease,color .14s ease,box-shadow .14s ease,transform .08s ease}
+.b:active{transform:scale(.97)}
+.b-commit{height:42px;padding:0;border-radius:9px;transform:skewX(var(--slant))}
+.b-commit:active{transform:skewX(var(--slant)) scale(.97)}
+.b-commit > span{display:inline-flex;align-items:center;gap:8px;padding:0 18px;transform:skewX(calc(var(--slant) * -1))}
+.b-primary{background:var(--accent);color:var(--accent-text)}
+.b-primary:hover{background:var(--accent-hover)}
+.b-danger{background:var(--danger);color:var(--danger-text)}
+.b-danger:hover{filter:brightness(1.08)}
+.b-sec{height:38px;padding:0 14px;border-radius:9px;background:transparent;box-shadow:inset 0 0 0 1px var(--control-border);font-weight:500}
+.b-sec:hover{box-shadow:inset 0 0 0 1px var(--text-2);background:var(--raised)}
+.b-quiet{height:38px;padding:0 12px;border-radius:9px;background:transparent;color:var(--text-2);font-weight:500}
+.b-quiet:hover{background:var(--raised-2);color:var(--text)}
+.b-del{height:38px;padding:0 12px 0 10px;border-radius:9px;background:transparent;color:var(--danger);font-weight:500}
+.b-del:hover{background:var(--danger-soft)}
+.b-icon{width:36px;height:36px;padding:0;border-radius:9px;background:transparent;color:var(--muted)}
+.b-icon:hover{background:var(--raised-2);color:var(--text)}
+.b-icon.danger:hover{background:var(--danger-soft);color:var(--danger)}
+.opt{height:36px;padding:0;border-radius:8px;transform:skewX(var(--slant));background:transparent;box-shadow:inset 0 0 0 1px var(--control-border);color:var(--text-2);font-size:13px;font-weight:500}
+.opt > span{display:inline-flex;align-items:center;gap:8px;padding:0 13px;transform:skewX(calc(var(--slant) * -1))}
+.opt:hover{box-shadow:inset 0 0 0 1px var(--text-2);color:var(--text)}
+.opt[aria-checked="true"]{background:var(--text);color:var(--bg);box-shadow:none}
+.sw{position:relative;width:40px;height:24px;padding:0;border-radius:12px;background:transparent;box-shadow:inset 0 0 0 1px var(--control-border);flex:0 0 auto}
+.sw .knob{position:absolute;top:4px;left:4px;width:16px;height:16px;border-radius:8px;background:var(--text-2);transition:left .16s cubic-bezier(.3,1.4,.5,1),background .16s ease}
+.sw[aria-checked="true"]{background:var(--text);box-shadow:none}
+.sw[aria-checked="true"] .knob{left:20px;background:var(--bg)}
+.dot:hover{border-color:var(--text-2)}
+.wrow{transition:background .15s ease}
+.wrow:hover{background:var(--raised)}
+.tcard{transition:box-shadow .14s ease}
+.tcard:hover{box-shadow:inset 0 0 0 1px var(--text-2)}
+.tcard[aria-checked="true"]{box-shadow:inset 0 0 0 2px var(--text)}
+.tip{position:relative}
+.tip::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(2px);white-space:nowrap;padding:5px 8px;border-radius:6px;background:var(--raised-2);border:1px solid var(--border-strong);color:var(--text);font-size:12px;font-weight:500;line-height:1;opacity:0;pointer-events:none;transition:opacity .12s ease,transform .12s ease;z-index:5}
+.tip:hover::after,.tip:focus-visible::after{opacity:1;transform:translateX(-50%) translateY(0)}
+.fade{animation:fade .2s ease}
+@keyframes fade{0%{opacity:0;transform:translateY(4px)}100%{opacity:1;transform:none}}
+</style>
+</helmet>
+
+<div class="fx" data-theme="{{ themeKey }}" style="min-height: 920px; display: flex; flex-wrap: wrap; align-items: stretch">
+
+  <!-- SIDEBAR -->
+  <aside style="flex: 1 1 248px; display: flex; flex-direction: column; gap: 24px; padding: 24px 16px 20px; background: var(--surface); border-right: 1px solid var(--border)">
+    <div style="display: flex; align-items: center; gap: 10px; padding: 0 8px">
+      <svg width="30" height="30" viewBox="0 0 120 120" role="img" aria-label="Facta logo"><rect width="120" height="120" rx="27" style="fill: var(--logo-tile)"></rect><polygon style="fill: var(--logo-mark); stroke: var(--logo-mark)" stroke-width="7" stroke-linejoin="round" points="46,31 93,31 90.4,41 55.4,41 51.3,57 73,57 70.9,65 49.2,65 42.5,91 30.5,91"></polygon></svg>
+      <span style="font-size: 19px; font-weight: 700; letter-spacing: -0.03em">Facta</span>
+    </div>
+    <div style="position: relative">
+      <label for="st-search" class="sr-only">Search goals and events</label>
+      <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position: absolute; left: 12px; top: 12px; color: var(--muted)"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+      <input id="st-search" type="search" placeholder="Search" style="width: 100%; height: 40px; padding: 0 92px 0 36px; background: var(--bg); border: 1px solid var(--control-border); border-radius: 10px; color: var(--text); font: inherit; font-size: 14px">
+      <div style="position: absolute; right: 8px; top: 9px; display: flex; gap: 4px"><span class="kbd">/</span><span class="kbd">Ctrl K</span></div>
+    </div>
+    <nav aria-label="Main" style="display: flex; flex-direction: column; gap: 2px">
+      <button class="nav-btn" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border: 0; border-radius: 9px; background: transparent; font-size: 14px; color: var(--text-2); text-align: left">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>Calendar
+      </button>
+      <button class="nav-btn" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border: 0; border-radius: 9px; background: transparent; font-size: 14px; color: var(--text-2); text-align: left">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>Goals
+      </button>
+      <button class="nav-btn" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border: 0; border-radius: 9px; background: transparent; font-size: 14px; color: var(--text-2); text-align: left">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path></svg>Shared goals
+      </button>
+      <button class="nav-btn" aria-current="page" style="display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border: 0; border-radius: 9px; background: var(--raised); font-size: 14px; font-weight: 500; text-align: left">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9M14 17H5"></path><circle cx="17" cy="17" r="3"></circle><circle cx="7" cy="7" r="3"></circle></svg>
+        <span style="flex: 1">Settings</span>
+        <span style="width: 6px; height: 6px; border-radius: 3px; background: var(--accent)"></span>
+      </button>
+    </nav>
+    <div style="margin-top: auto; display: flex; flex-direction: column; gap: 14px">
+      <div role="group" aria-label="Theme" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 4px 0 8px">
+        <span style="font-size: 12px; font-weight: 500; color: var(--muted)">Theme</span>
+        <div style="display: flex; gap: 4px">
+          <sc-for list="{{ themes }}" as="t" hint-placeholder-count="4">
+            <button class="tip dot" data-tip="{{ t.name }}" aria-label="{{ t.name }} theme" aria-pressed="{{ t.pressed }}" onClick="{{ t.pick }}" style="width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 14px; background: transparent; border: 1.5px solid {{ t.ring }}">
+              <span aria-hidden="true" style="width: 18px; height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-strong); background: {{ t.sw1 }}"><span style="width: 7px; height: 7px; border-radius: 4px; background: {{ t.sw2 }}"></span></span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; padding: 10px 8px 0; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted)">
+        <span style="width: 7px; height: 7px; border-radius: 4px; background: var(--success)"></span><span style="color: var(--text-2)">Synced</span><span>· just now</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <header style="padding: 28px 40px 0; border-bottom: 1px solid var(--border)">
+      <h1 style="margin: 0 0 14px; font-size: 28px; font-weight: 600; letter-spacing: -0.03em">Settings</h1>
+      <div role="tablist" aria-label="Settings sections" style="display: flex; gap: 28px">
+        <sc-for list="{{ tabs }}" as="tb" hint-placeholder-count="3">
+          <button class="tab" role="tab" id="{{ tb.tabId }}" aria-selected="{{ tb.selected }}" aria-controls="st-panel" onClick="{{ tb.pick }}">{{ tb.label }}</button>
+        </sc-for>
+      </div>
+    </header>
+
+    <div id="st-panel" role="tabpanel" aria-labelledby="{{ panelLabel }}" style="flex: 1; padding: 28px 40px 48px">
+      <div style="max-width: 1040px; display: flex; flex-direction: column; gap: 20px">
+
+        <!-- ================= WIDGETS ================= -->
+        <sc-if value="{{ isWidgets }}" hint-placeholder-val="{{ true }}">
+
+          <!-- companion app -->
+          <section class="card fade" aria-label="Widget app" style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 18px 20px">
+            <span aria-hidden="true" style="width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: var(--raised-2); color: var(--text)">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"></rect><path d="M8 21h8M12 17v4"></path></svg>
+            </span>
+            <div style="flex: 1 1 260px; display: flex; flex-direction: column; gap: 3px">
+              <span style="font-size: 15px; font-weight: 600">Facta Widgets</span>
+              <span style="font-size: 13px; color: var(--text-2)">Floating widgets need the companion app running.</span>
+            </div>
+            <span role="status" style="display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px; border-radius: 15px; background: var(--raised); font-size: 12px; font-weight: 500; color: {{ appColor }}">
+              <span style="width: 7px; height: 7px; border-radius: 4px; background: {{ appDot }}"></span>{{ appLabel }}
+            </span>
+            <button type="button" class="b b-sec" onClick="{{ toggleApp }}">{{ appAction }}</button>
+          </section>
+
+          <!-- your widgets -->
+          <section class="card fade" aria-labelledby="st-yw" style="display: flex; flex-direction: column">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 18px 20px 14px">
+              <h2 id="st-yw" style="margin: 0; font-size: 16px; font-weight: 600">Your widgets</h2>
+              <span class="mono" style="font-size: 12px; color: var(--muted)">{{ activeLabel }}</span>
+              <span style="flex: 1"></span>
+              <sc-if value="{{ addClosed }}" hint-placeholder-val="{{ false }}">
+                <button type="button" class="b b-sec" onClick="{{ openAdd }}">
+                  <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"></path></svg>Add widget
+                </button>
+              </sc-if>
+            </div>
+
+            <sc-if value="{{ hasWidgets }}" hint-placeholder-val="{{ true }}">
+              <ul style="list-style: none; margin: 0; padding: 0 8px 8px; display: flex; flex-direction: column; gap: 2px">
+                <sc-for list="{{ widgets }}" as="w" hint-placeholder-count="2">
+                  <li class="wrow" style="display: flex; align-items: center; gap: 14px; min-height: 60px; padding: 8px 12px; border-radius: 12px; opacity: {{ w.opacity }}">
+                    <span aria-hidden="true" style="width: 38px; height: 38px; flex: 0 0 auto; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: {{ w.sw1 }}; border: 1px solid var(--border-strong); color: {{ w.sw2 }}">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ w.icon }}"></path></svg>
+                    </span>
+                    <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+                      <span style="font-size: 14px; font-weight: 600">{{ w.name }}</span>
+                      <span style="font-size: 12px; color: var(--text-2)">{{ w.meta }}</span>
+                    </div>
+                    <span id="{{ w.swId }}" style="font-size: 12px; color: var(--muted)">{{ w.stateLabel }}</span>
+                    <button type="button" class="sw" role="switch" aria-checked="{{ w.activeAttr }}" aria-label="{{ w.swLabel }}" onClick="{{ w.toggle }}"><span class="knob" aria-hidden="true"></span></button>
+                    <button type="button" class="b b-icon danger" aria-label="{{ w.removeLabel }}" onClick="{{ w.remove }}">
+                      <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"></path></svg>
+                    </button>
+                  </li>
+                </sc-for>
+              </ul>
+            </sc-if>
+            <sc-if value="{{ noWidgets }}" hint-placeholder-val="{{ false }}">
+              <p style="margin: 0; padding: 4px 20px 18px; font-size: 14px; color: var(--text-2)">No widgets yet. Add one to keep your day on the desktop.</p>
+            </sc-if>
+
+            <!-- add widget -->
+            <sc-if value="{{ addOpen }}" hint-placeholder-val="{{ true }}">
+              <form class="fade" onSubmit="{{ submitAdd }}" aria-labelledby="st-new" style="display: flex; flex-wrap: wrap; gap: 24px; margin: 0 12px 12px; padding: 20px; border-radius: 14px; background: var(--bg); border: 1px solid var(--border-strong)">
+                <div style="flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+                  <h3 id="st-new" style="margin: 0; font-size: 15px; font-weight: 600">New widget</h3>
+
+                  <div style="display: flex; flex-direction: column; gap: 10px">
+                    <span id="st-type" class="sec-h">TYPE</span>
+                    <div role="radiogroup" aria-labelledby="st-type" style="display: flex; flex-wrap: wrap; gap: 8px; padding-left: 4px">
+                      <sc-for list="{{ kinds }}" as="k" hint-placeholder-count="5">
+                        <button type="button" class="b opt" role="radio" aria-checked="{{ k.checked }}" onClick="{{ k.pick }}">
+                          <span><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ k.icon }}"></path></svg>{{ k.name }}</span>
+                        </button>
+                      </sc-for>
+                    </div>
+                  </div>
+
+                  <sc-if value="{{ isNotesKind }}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; flex-direction: column; gap: 10px">
+                      <span id="st-nstyle" class="sec-h">NOTES STYLE</span>
+                      <div role="radiogroup" aria-labelledby="st-nstyle" style="display: flex; flex-wrap: wrap; gap: 8px; padding-left: 4px">
+                        <sc-for list="{{ noteStyles }}" as="ns" hint-placeholder-count="2">
+                          <button type="button" class="b opt" role="radio" aria-checked="{{ ns.checked }}" onClick="{{ ns.pick }}"><span>{{ ns.name }}</span></button>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-if>
+
+                  <div style="display: flex; flex-direction: column; gap: 10px">
+                    <span id="st-wtheme" class="sec-h">THEME</span>
+                    <div role="radiogroup" aria-labelledby="st-wtheme" style="display: flex; flex-wrap: wrap; gap: 8px; padding-left: 4px">
+                      <sc-for list="{{ newThemes }}" as="t" hint-placeholder-count="4">
+                        <button type="button" class="b opt" role="radio" aria-checked="{{ t.checked }}" onClick="{{ t.pick }}">
+                          <span><span aria-hidden="true" style="width: 14px; height: 14px; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border-strong); background: {{ t.sw1 }}"><span style="width: 6px; height: 6px; border-radius: 3px; background: {{ t.sw2 }}"></span></span>{{ t.name }}</span>
+                        </button>
+                      </sc-for>
+                    </div>
+                  </div>
+
+                  <div style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border-strong)">
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+                      <span id="st-trans" style="font-size: 14px; font-weight: 500">Transparent background</span>
+                      <span style="font-size: 12px; color: var(--text-2)">See-through plate, no blur. Your wallpaper shows behind it.</span>
+                    </div>
+                    <button type="button" class="sw" role="switch" aria-checked="{{ newTransAttr }}" aria-labelledby="st-trans" onClick="{{ toggleNewTrans }}"><span class="knob" aria-hidden="true"></span></button>
+                  </div>
+
+                  <div style="display: flex; align-items: center; gap: 8px; padding-top: 4px">
+                    <button type="submit" class="b b-commit b-primary"><span>
+                      <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"></path></svg>Add widget</span></button>
+                    <button type="button" class="b b-quiet" onClick="{{ closeAdd }}">Cancel</button>
+                  </div>
+                </div>
+
+                <!-- live preview -->
+                <div style="flex: 0 1 380px; min-width: 300px; display: flex; flex-direction: column; gap: 10px">
+                  <span class="sec-h">PREVIEW</span>
+                  <div style="position: relative; height: 440px; border-radius: 14px; overflow: hidden; display: flex; align-items: center; justify-content: center">
+                    <div aria-hidden="true" style="position: absolute; inset: 0; pointer-events: none">
+                      <dc-import name="Wallpaper" kind="shapes" hint-size="100%,100%"></dc-import>
+                    </div>
+                    <div style="position: relative">
+                      <sc-if value="{{ isCoreKind }}" hint-placeholder-val="{{ true }}">
+                        <dc-import name="Widget" kind="{{ newKind }}" theme="{{ newTheme }}" transparent="{{ newTrans }}" hint-size="300px,340px"></dc-import>
+                      </sc-if>
+                      <sc-if value="{{ isNotesKind }}" hint-placeholder-val="{{ false }}">
+                        <dc-import name="NotesWidget" variant="{{ newNoteStyle }}" theme="{{ newTheme }}" transparent="{{ newTrans }}" hint-size="300px,340px"></dc-import>
+                      </sc-if>
+                      <sc-if value="{{ isDiaryKind }}" hint-placeholder-val="{{ false }}">
+                        <dc-import name="DiaryWidget" theme="{{ newTheme }}" transparent="{{ newTrans }}" hint-size="300px,340px"></dc-import>
+                      </sc-if>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </sc-if>
+
+            <!-- reset -->
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 16px 14px 20px; border-top: 1px solid var(--border)">
+              <span style="flex: 1"></span>
+              <sc-if value="{{ notConfirmReset }}" hint-placeholder-val="{{ true }}">
+                <button type="button" class="b b-del" onClick="{{ askReset }}">
+                  <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"></path></svg>Reset all
+                </button>
+              </sc-if>
+              <sc-if value="{{ confirmReset }}" hint-placeholder-val="{{ false }}">
+                <span role="alert" style="font-size: 13px; color: var(--text-2)">Remove every widget?</span>
+                <button type="button" class="b b-quiet" onClick="{{ keepReset }}">Keep them</button>
+                <button type="button" class="b b-commit b-danger" onClick="{{ doReset }}"><span>Reset all</span></button>
+              </sc-if>
+            </div>
+          </section>
+        </sc-if>
+
+        <!-- ================= APPEARANCE ================= -->
+        <sc-if value="{{ isAppearance }}" hint-placeholder-val="{{ false }}">
+          <section class="card fade" aria-labelledby="st-app" style="display: flex; flex-direction: column; gap: 18px; padding: 20px">
+            <div style="display: flex; flex-direction: column; gap: 4px">
+              <h2 id="st-app" style="margin: 0; font-size: 16px; font-weight: 600">Theme</h2>
+              <span style="font-size: 13px; color: var(--text-2)">Changes the whole app. Widgets keep their own theme.</span>
+            </div>
+            <div role="radiogroup" aria-labelledby="st-app" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px">
+              <sc-for list="{{ themeCards }}" as="t" hint-placeholder-count="4">
+                <button type="button" class="tcard" role="radio" aria-checked="{{ t.checked }}" onClick="{{ t.pick }}" style="display: flex; flex-direction: column; gap: 12px; padding: 10px 10px 14px; border: 0; border-radius: 14px; background: var(--raised); text-align: left; box-shadow: inset 0 0 0 1px var(--border-strong)">
+                  <span aria-hidden="true" style="display: flex; height: 112px; border-radius: 9px; overflow: hidden; background: {{ t.bg }}; border: 1px solid rgba(128,128,128,.25)">
+                    <span style="width: 34%; background: {{ t.surface }}; padding: 10px 8px; display: flex; flex-direction: column; gap: 6px">
+                      <span style="width: 14px; height: 14px; border-radius: 4px; background: {{ t.accent }}"></span>
+                      <span style="height: 5px; width: 80%; border-radius: 3px; background: {{ t.line }}"></span>
+                      <span style="height: 5px; width: 60%; border-radius: 3px; background: {{ t.line }}"></span>
+                      <span style="height: 5px; width: 70%; border-radius: 3px; background: {{ t.line }}"></span>
+                    </span>
+                    <span style="flex: 1; padding: 12px 10px; display: flex; flex-direction: column; gap: 7px">
+                      <span style="height: 7px; width: 55%; border-radius: 3px; background: {{ t.text }}"></span>
+                      <span style="display: flex; gap: 3px"><span style="flex: 1; height: 5px; border-radius: 2px; transform: skewX(-18deg); background: {{ t.accent }}"></span><span style="flex: 1; height: 5px; border-radius: 2px; transform: skewX(-18deg); background: {{ t.accent }}"></span><span style="flex: 1; height: 5px; border-radius: 2px; transform: skewX(-18deg); background: {{ t.line }}"></span></span>
+                      <span style="height: 22px; border-radius: 5px; background: {{ t.surface }}"></span>
+                      <span style="height: 22px; border-radius: 5px; background: {{ t.surface }}"></span>
+                    </span>
+                  </span>
+                  <span style="display: flex; align-items: center; gap: 8px; padding: 0 4px">
+                    <span style="flex: 1; font-size: 14px; font-weight: 600">{{ t.name }}</span>
+                    <sc-if value="{{ t.on }}" hint-placeholder-val="{{ false }}"><span class="mono" style="font-size: 11px; color: var(--text-2)">IN USE</span></sc-if>
+                  </span>
+                </button>
+              </sc-for>
+            </div>
+          </section>
+
+          <section class="card fade" aria-labelledby="st-cal" style="display: flex; flex-direction: column; gap: 18px; padding: 20px">
+            <div style="display: flex; flex-direction: column; gap: 4px">
+              <h2 id="st-cal" style="margin: 0; font-size: 16px; font-weight: 600">Calendar</h2>
+              <span style="font-size: 13px; color: var(--text-2)">Used by Month, Week, the Day widget and the dialogs.</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px">
+              <span id="st-ws" class="sec-h">WEEK STARTS ON</span>
+              <div role="radiogroup" aria-labelledby="st-ws" style="display: flex; flex-wrap: wrap; gap: 8px">
+                <sc-for list="{{ weekStarts }}" as="o" hint-placeholder-count="3">
+                  <button type="button" class="b opt" role="radio" aria-checked="{{ o.checked }}" onClick="{{ o.pick }}"><span>{{ o.name }}</span></button>
+                </sc-for>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px">
+              <span id="st-tf" class="sec-h">TIME FORMAT</span>
+              <div role="radiogroup" aria-labelledby="st-tf" style="display: flex; flex-wrap: wrap; gap: 8px">
+                <sc-for list="{{ timeFormats }}" as="o" hint-placeholder-count="2">
+                  <button type="button" class="b opt" role="radio" aria-checked="{{ o.checked }}" onClick="{{ o.pick }}"><span>{{ o.name }}</span></button>
+                </sc-for>
+              </div>
+            </div>
+          </section>
+        </sc-if>
+
+        <!-- ================= ACCOUNT ================= -->
+        <sc-if value="{{ isAccount }}" hint-placeholder-val="{{ false }}">
+          <section class="card fade" aria-labelledby="st-acc" style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 20px">
+            <span aria-hidden="true" style="width: 52px; height: 52px; border-radius: 26px; display: flex; align-items: center; justify-content: center; background: var(--raised-2); color: var(--text-2)">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>
+            </span>
+            <div style="flex: 1 1 240px; display: flex; flex-direction: column; gap: 3px">
+              <h2 id="st-acc" style="margin: 0; font-size: 16px; font-weight: 600">Account</h2>
+              <span class="mono" style="font-size: 13px; color: var(--text-2)">{{ email }}</span>
+            </div>
+            <sc-if value="{{ signedIn }}" hint-placeholder-val="{{ true }}">
+              <sc-if value="{{ notConfirmOut }}" hint-placeholder-val="{{ true }}">
+                <button type="button" class="b b-del" onClick="{{ askOut }}">
+                  <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"></path></svg>Sign out
+                </button>
+              </sc-if>
+              <sc-if value="{{ confirmOut }}" hint-placeholder-val="{{ false }}">
+                <span role="alert" style="font-size: 13px; color: var(--text-2)">Sign out of Facta?</span>
+                <button type="button" class="b b-quiet" onClick="{{ keepIn }}">Stay</button>
+                <button type="button" class="b b-commit b-danger" onClick="{{ doOut }}"><span>Sign out</span></button>
+              </sc-if>
+            </sc-if>
+            <sc-if value="{{ signedOut }}" hint-placeholder-val="{{ false }}">
+              <span role="status" style="font-size: 13px; color: var(--text-2)">Signed out.</span>
+              <button type="button" class="b b-sec" onClick="{{ signIn }}">Sign in again</button>
+            </sc-if>
+          </section>
+        </sc-if>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["bg","mid","ember","light"],"default":"bg","section":"States"},"tab":{"editor":"enum","options":["widgets","appearance","account"],"default":"widgets","section":"States"},"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      theme: props.theme || 'bg', tab: props.tab || 'widgets', appRunning: false,
+      widgets: [
+        { id: 1, kind: 'tasks', theme: 'bg', trans: false, active: true },
+        { id: 2, kind: 'day', theme: 'mid', trans: true, active: true }
+      ],
+      nextId: 3, addOpen: true, newKind: 'notes', newNoteStyle: 'sticky', newTheme: props.theme || 'bg', newTrans: true,
+      confirmReset: false, confirmOut: false, signedIn: true, pr: this.readPrefs()
+    };
+  }
+  // shared prefs (week start, time format): written here, read by Month, Week, the Day widget and the dialogs
+  readPrefs() {
+    let o = {}; try { o = (typeof window !== 'undefined' && window.__factaPrefs) || JSON.parse(window.localStorage.getItem('facta.prefs') || '{}') || {}; } catch (e) { o = {}; }
+    return { weekStart: ['sun', 'mon', 'sat'].indexOf(o.weekStart) >= 0 ? o.weekStart : 'sun', timeFormat: o.timeFormat === '12h' ? '12h' : '24h' };
+  }
+  setPref(patch) {
+    const next = { ...this.state.pr, ...patch };
+    try { window.localStorage.setItem('facta.prefs', JSON.stringify(next)); } catch (e) {}
+    try { window.__factaPrefs = next; window.dispatchEvent(new Event('facta-prefs')); } catch (e) {}
+    this.setState({ pr: next });
+  }
+  renderVals() {
+    const s = this.state;
+    const TH = {
+      bg: { name: 'Black & green', sw1: '#060706', sw2: '#22C55E', bg: '#060706', surface: '#0C0D0C', accent: '#22C55E', text: '#F1F4F1', line: '#262A25' },
+      mid: { name: 'Midnight', sw1: '#04070E', sw2: '#4C8DF6', bg: '#04070E', surface: '#090E1A', accent: '#4C8DF6', text: '#EEF2FA', line: '#212C45' },
+      ember: { name: 'Ember', sw1: '#060504', sw2: '#FF8000', bg: '#060504', surface: '#0C0A08', accent: '#FF8000', text: '#F6F1EC', line: '#27201C' },
+      light: { name: 'Light', sw1: '#F6F6F3', sw2: '#15803D', bg: '#F6F6F3', surface: '#FFFFFF', accent: '#15803D', text: '#141713', line: '#CDD1C8' }
+    };
+    const KIND = {
+      tasks: { name: 'Tasks', icon: 'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z' },
+      progress: { name: 'Progress', icon: 'M12 2a10 10 0 1 0 0 20a10 10 0 1 0 0-20M12 6a6 6 0 1 0 0 12a6 6 0 1 0 0-12M12 10a2 2 0 1 0 0 4a2 2 0 1 0 0-4' },
+      events: { name: 'Events', icon: 'M12 2a10 10 0 1 0 0 20a10 10 0 1 0 0-20M12 6v6l4 2' },
+      calendar: { name: 'Calendar', icon: 'M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM16 2v4M8 2v4M3 10h18' },
+      day: { name: 'Day view', icon: 'M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4' },
+      notes: { name: 'Notes', icon: 'M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3ZM15 3v6h6' },
+      diary: { name: 'Diary', icon: 'M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14ZM8 8h8M8 12h6' }
+    };
+    const STYLES = { sticky: 'Sticky', stack: 'Stack' };
+    const order = ['bg', 'mid', 'ember', 'light'];
+    const themes = order.map((id) => ({ ...TH[id], pressed: s.theme === id ? 'true' : 'false', ring: s.theme === id ? 'var(--text)' : 'transparent', pick: () => this.setState({ theme: id }) }));
+    const themeCards = order.map((id) => ({ ...TH[id], on: s.theme === id, checked: s.theme === id ? 'true' : 'false', pick: () => this.setState({ theme: id }) }));
+    const tabs = [['widgets', 'Widgets'], ['appearance', 'Appearance'], ['account', 'Account']].map(([id, label]) => ({
+      label, tabId: 'tab-' + id, selected: s.tab === id ? 'true' : 'false', pick: () => this.setState({ tab: id }) }));
+    const widgets = s.widgets.map((w) => ({
+      name: KIND[w.kind].name, icon: KIND[w.kind].icon, sw1: TH[w.theme].sw1, sw2: TH[w.theme].sw2,
+      meta: (w.kind === 'notes' ? STYLES[w.style || 'sticky'] + ' · ' : '') + TH[w.theme].name + ' · ' + (w.trans ? 'Transparent' : 'Solid'),
+      swId: 'sw-' + w.id, swLabel: (w.active ? 'Hide ' : 'Show ') + KIND[w.kind].name + ' widget',
+      stateLabel: w.active ? (s.appRunning ? 'On desktop' : 'On') : 'Off',
+      activeAttr: w.active ? 'true' : 'false', opacity: w.active ? 1 : 0.6,
+      removeLabel: 'Remove ' + KIND[w.kind].name + ' widget',
+      toggle: () => this.setState({ widgets: s.widgets.map((x) => (x.id === w.id ? { ...x, active: !x.active } : x)) }),
+      remove: () => this.setState({ widgets: s.widgets.filter((x) => x.id !== w.id) })
+    }));
+    const activeN = s.widgets.filter((w) => w.active).length;
+    const kinds = Object.keys(KIND).map((id) => ({ ...KIND[id], checked: s.newKind === id ? 'true' : 'false', pick: () => this.setState({ newKind: id }) }));
+    const newThemes = order.map((id) => ({ ...TH[id], checked: s.newTheme === id ? 'true' : 'false', pick: () => this.setState({ newTheme: id }) }));
+    return {
+      weekStarts: [['sun', 'Sunday'], ['mon', 'Monday'], ['sat', 'Saturday']].map(([id, name]) => ({ name, checked: s.pr.weekStart === id ? 'true' : 'false', pick: () => this.setPref({ weekStart: id }) })),
+      timeFormats: [['24h', '24-hour · 13:00'], ['12h', '12-hour · 1:00 PM']].map(([id, name]) => ({ name, checked: s.pr.timeFormat === id ? 'true' : 'false', pick: () => this.setPref({ timeFormat: id }) })),
+      themeKey: s.theme, themes, themeCards, tabs,
+      panelLabel: 'tab-' + s.tab,
+      isWidgets: s.tab === 'widgets', isAppearance: s.tab === 'appearance', isAccount: s.tab === 'account',
+      appLabel: s.appRunning ? 'Running' : 'Not running',
+      appDot: s.appRunning ? 'var(--success)' : 'var(--muted)', appColor: s.appRunning ? 'var(--text)' : 'var(--text-2)',
+      appAction: s.appRunning ? 'Quit widget app' : 'Launch widget app',
+      toggleApp: () => this.setState({ appRunning: !s.appRunning }),
+      widgets, hasWidgets: s.widgets.length > 0, noWidgets: s.widgets.length === 0,
+      activeLabel: activeN + ' of ' + s.widgets.length + ' active',
+      addOpen: s.addOpen, addClosed: !s.addOpen,
+      openAdd: () => this.setState({ addOpen: true }), closeAdd: () => this.setState({ addOpen: false }),
+      kinds, newThemes, newKind: s.newKind, newTheme: s.newTheme, newTrans: s.newTrans,
+      isCoreKind: ['tasks', 'progress', 'events', 'calendar', 'day'].indexOf(s.newKind) !== -1,
+      isNotesKind: s.newKind === 'notes', isDiaryKind: s.newKind === 'diary',
+      newNoteStyle: s.newNoteStyle,
+      noteStyles: Object.keys(STYLES).map((id) => ({ name: STYLES[id], checked: s.newNoteStyle === id ? 'true' : 'false', pick: () => this.setState({ newNoteStyle: id }) })),
+      newTransAttr: s.newTrans ? 'true' : 'false', toggleNewTrans: () => this.setState({ newTrans: !s.newTrans }),
+      submitAdd: (e) => { e.preventDefault(); this.setState({ widgets: s.widgets.concat([{ id: s.nextId, kind: s.newKind, style: s.newNoteStyle, theme: s.newTheme, trans: s.newTrans, active: true }]), nextId: s.nextId + 1, addOpen: false }); },
+      confirmReset: s.confirmReset, notConfirmReset: !s.confirmReset,
+      askReset: () => this.setState({ confirmReset: true }), keepReset: () => this.setState({ confirmReset: false }),
+      doReset: () => this.setState({ widgets: [], confirmReset: false }),
+      email: 'you@example.com',
+      signedIn: s.signedIn, signedOut: !s.signedIn, confirmOut: s.confirmOut, notConfirmOut: !s.confirmOut,
+      askOut: () => this.setState({ confirmOut: true }), keepIn: () => this.setState({ confirmOut: false }),
+      doOut: () => this.setState({ signedIn: false, confirmOut: false }), signIn: () => this.setState({ signedIn: true })
+    };
+  }
+}
+</script>
+</body>
+</html>

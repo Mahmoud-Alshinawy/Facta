@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Facta — Notes and diary widgets</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="position: relative; min-height: 900px; overflow: hidden; background: #2B302C; font-family: 'Geist', ui-sans-serif, system-ui, sans-serif">
+  <div aria-hidden="true" style="position: absolute; inset: 0; pointer-events: none">
+    <dc-import name="Wallpaper" kind="shapes" hint-size="100%,100%"></dc-import>
+  </div>
+
+  <div style="position: relative; display: grid; grid-template-columns: 120px repeat(3, 300px); justify-content: center; align-items: start; gap: 20px 56px; padding: 44px 40px">
+    <span></span>
+    <span style="justify-self: start; display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px; border-radius: 15px; background: rgba(6,7,6,.78); color: #F1F4F1; font-size: 13px; font-weight: 600">Notes · Sticky</span>
+    <span style="justify-self: start; display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px; border-radius: 15px; background: rgba(6,7,6,.78); color: #F1F4F1; font-size: 13px; font-weight: 600">Notes · Stack</span>
+    <span style="justify-self: start; display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px; border-radius: 15px; background: rgba(6,7,6,.78); color: #F1F4F1; font-size: 13px; font-weight: 600">Diary · One line a day</span>
+
+    <span style="justify-self: start; margin-top: 8px; font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: .08em; color: #F1F4F1; background: rgba(6,7,6,.78); padding: 6px 10px; border-radius: 8px">SOLID</span>
+    <dc-import name="NotesWidget" variant="sticky" theme="{{ theme }}" hint-size="300px,340px"></dc-import>
+    <dc-import name="NotesWidget" variant="stack" theme="{{ theme }}" hint-size="300px,340px"></dc-import>
+    <dc-import name="DiaryWidget" theme="{{ theme }}" hint-size="300px,340px"></dc-import>
+
+    <span style="justify-self: start; margin-top: 8px; font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: .08em; color: #F1F4F1; background: rgba(6,7,6,.78); padding: 6px 10px; border-radius: 8px">TRANSPARENT</span>
+    <dc-import name="NotesWidget" variant="sticky" theme="{{ theme }}" transparent="{{ true }}" hint-size="300px,340px"></dc-import>
+    <dc-import name="NotesWidget" variant="stack" theme="{{ theme }}" transparent="{{ true }}" hint-size="300px,340px"></dc-import>
+    <dc-import name="DiaryWidget" theme="{{ theme }}" transparent="{{ true }}" hint-size="300px,340px"></dc-import>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["bg","mid","ember","light"],"default":"bg"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return { theme: this.props.theme || 'bg' }; }
+}
+</script>
+</body>
+</html>

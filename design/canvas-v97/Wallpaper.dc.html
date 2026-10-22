@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Preview wallpaper</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+.wp{position:absolute;inset:0;overflow:hidden}
+.wp > i{position:absolute;display:block}
+</style>
+</helmet>
+<div class="wp" aria-hidden="true" style="background: #2B302C">
+  <!-- Shapes -->
+  
+    <i style="width: 95%; height: 82%; left: -32%; top: 40%; border-radius: 50%; background: #4C6B5A"></i>
+    <i style="width: 58%; height: 118%; left: 44%; top: -32%; transform: rotate(24deg); background: #C9A27A"></i>
+    <i style="width: 52%; height: 45%; left: 66%; top: 68%; border-radius: 50%; background: #E3DED3"></i>
+    <i style="width: 36%; height: 31%; left: 80%; top: -8%; border-radius: 50%; background: #3F5A86"></i>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":380,"height":440}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

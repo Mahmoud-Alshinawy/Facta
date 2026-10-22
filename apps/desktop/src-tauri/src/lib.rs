@@ -5,6 +5,51 @@ use tauri::Manager;
 use tauri::RunEvent;
 use std::env;
 
+fn tray_icon(theme: tauri::Theme) -> tauri::image::Image<'static> {
+    match theme {
+        tauri::Theme::Light => tauri::include_image!("../public/tray-black.png"),
+        _ => tauri::include_image!("../public/tray-white.png"),
+    }
+}
+
+// Windows can use a different theme for apps and the taskbar.
+fn tray_theme(_fallback: impl FnOnce() -> tauri::Theme) -> tauri::Theme {
+    #[cfg(target_os = "windows")]
+    {
+        use std::ffi::c_void;
+        #[link(name = "advapi32")]
+        extern "system" {
+            fn RegGetValueW(
+                key: *mut c_void,
+                subkey: *const u16,
+                value: *const u16,
+                flags: u32,
+                value_type: *mut u32,
+                data: *mut c_void,
+                size: *mut u32,
+            ) -> i32;
+        }
+        let key: Vec<u16> = r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"
+            .encode_utf16().chain(Some(0)).collect();
+        let name: Vec<u16> = "SystemUsesLightTheme".encode_utf16().chain(Some(0)).collect();
+        let mut light: u32 = 0;
+        let mut size = std::mem::size_of_val(&light) as u32;
+        // HKCU is a predefined pseudo-handle; both strings are NUL-terminated,
+        // and RRF_RT_REG_DWORD restricts the write to the four-byte buffer.
+        let status = unsafe {
+            RegGetValueW(
+                -2147483647isize as *mut c_void,
+                key.as_ptr(), name.as_ptr(), 0x00000010,
+                std::ptr::null_mut(), &mut light as *mut u32 as *mut c_void,
+                &mut size,
+            )
+        };
+        if status == 0 && light == 1 { tauri::Theme::Light } else { tauri::Theme::Dark }
+    }
+    #[cfg(not(target_os = "windows"))]
+    { _fallback() }
+}
+
 // ─── Commands ─────────────────────────────────────────────────────────────
 
 #[tauri::command]
@@ -50,7 +95,7 @@ fn export_data_for_widgets(
 }
 
 #[tauri::command]
-async fn launch_widget_app() -> Result<(), String> {
+async fn widget_app_running() -> Result<bool, String> {
     // Check if already running (platform-specific)
     #[cfg(target_os = "windows")]
     {
@@ -63,9 +108,8 @@ async fn launch_widget_app() -> Result<(), String> {
             .await
             .map_err(|e| format!("Failed to check running processes: {}", e))?;
         let stdout = String::from_utf8_lossy(&output.stdout);
-        if stdout.contains("facta-widgets.exe") {
-            return Ok(()); // Already running
-        }
+        if !output.status.success() { return Err("Failed to check running processes".to_string()); }
+        return Ok(stdout.to_ascii_lowercase().contains("facta-widgets.exe"));
     }
     
     #[cfg(target_os = "macos")]
@@ -76,9 +120,7 @@ async fn launch_widget_app() -> Result<(), String> {
             .output()
             .await
             .map_err(|e| format!("Failed to check running processes: {}", e))?;
-        if output.status.success() {
-            return Ok(()); // Already running
-        }
+        return Ok(output.status.success());
     }
     
     #[cfg(target_os = "linux")]
@@ -89,10 +131,16 @@ async fn launch_widget_app() -> Result<(), String> {
             .output()
             .await
             .map_err(|e| format!("Failed to check running processes: {}", e))?;
-        if output.status.success() {
-            return Ok(()); // Already running
-        }
+        return Ok(output.status.success());
     }
+
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+    Ok(false)
+}
+
+#[tauri::command]
+async fn launch_widget_app() -> Result<(), String> {
+    if widget_app_running().await? { return Ok(()); }
 
     // Platform-specific installation paths
     #[cfg(target_os = "windows")]
@@ -246,7 +294,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             export_data_for_widgets,
             read_pending_actions,
-            launch_widget_app
+            launch_widget_app,
+            widget_app_running
         ]);
 
     builder = builder.setup(|app| {
@@ -266,8 +315,11 @@ pub fn run() {
         let menu = Menu::with_items(app, &[&show, &PredefinedMenuItem::separator(app)?, &quit])?;
 
         let _app_handle = app.handle().clone();
-        let _tray = TrayIconBuilder::new()
-            .icon(app.default_window_icon().unwrap().clone())
+        let system_theme = tray_theme(|| app.get_webview_window("main")
+            .and_then(|window| window.theme().ok()).unwrap_or(tauri::Theme::Dark));
+        let _tray = TrayIconBuilder::with_id("facta-tray")
+            .icon(tray_icon(system_theme))
+            .tooltip("Facta")
             .menu(&menu)
             .on_menu_event(move |app, event| match event.id().as_ref() {
                 "quit" => {
@@ -338,6 +390,11 @@ pub fn run() {
         match event {
             RunEvent::WindowEvent { label, event: win_event, .. } => {
                 if label == "main" {
+                    if let tauri::WindowEvent::ThemeChanged(theme) = &win_event {
+                        if let Some(tray) = app_handle.tray_by_id("facta-tray") {
+                            let _ = tray.set_icon(Some(tray_icon(tray_theme(|| *theme))));
+                        }
+                    }
                     if let tauri::WindowEvent::CloseRequested { api, .. } = win_event {
                         if let Some(window) = app_handle.get_webview_window("main") {
                             let _ = window.hide();

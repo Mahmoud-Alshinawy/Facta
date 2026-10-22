@@ -146,7 +146,6 @@ body {
 .wg-hour-line { flex: 1; height: 1px; background: var(--border-strong); opacity: 0.6; }
 .wg.is-trans .wg-hour-line { background: color-mix(in srgb, var(--text) 14%, transparent); opacity: 1; }
 
-.wg-now-line { position: absolute; left: 0; right: 0; height: 1.5px; margin-top: -1px; background: var(--text); z-index: 0; pointer-events: none; }
 .wg-items { position: absolute; inset: 0; overflow: hidden; border-radius: 6px; z-index: 1; }
 .wg-item { position: absolute; overflow: hidden; border-radius: 8px; background: var(--raised); }
 .wg.is-trans .wg-item { background: var(--item-plate); text-shadow: none; }
@@ -179,5 +178,4 @@ body {
   position: absolute; left: 0; top: -7px; width: 38px; height: 14px; border-radius: 7px; text-align: center; text-shadow: none;
   background: var(--text); color: var(--surface); font-family: "Geist Mono", ui-monospace, monospace; font-size: 10px; font-weight: 500; line-height: 14px;
 }
-.wg-now-dot { position: absolute; left: 40px; top: -3px; width: 6px; height: 6px; border-radius: 3px; background: var(--text); }
 .wg-empty { position: absolute; left: 0; right: 0; bottom: 4px; margin: 0; text-align: center; font-size: 11px; color: var(--text-2); }

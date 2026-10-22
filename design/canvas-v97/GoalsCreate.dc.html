@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Facta — New shared goal</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+
+<style>
+
+body{margin:0}
+.fx,.fx[data-theme="bg"]{color-scheme:dark;--bg:#060706;--surface:#0C0D0C;--raised:#121412;--raised-2:#191C18;--border:#1A1D1A;--border-strong:#262A25;--control-border:#5F685E;--text:#F1F4F1;--text-2:#A6AEA6;--muted:#868F86;--accent:#22C55E;--accent-hover:#2DD46A;--accent-text:#03210F;--accent-soft:rgba(34,197,94,.10);--accent-border:#1C7E40;--success:#22C55E;--warning:#E0A33B;--danger:#EF5A5A;--danger-soft:rgba(239,90,90,.12);--danger-text:#1A0505;--event-blue:#5B8DEF;--event-purple:#A47CF0;--event-red:#EF6B6B;--event-green:#4CC38A;--event-orange:#F0904A;--event-pink:#EC6FB0;--note-a:#E8C547;--note-b:#5B8DEF;--note-c:#EC6FB0;--note-d:#4CC38A;--text-rgb:241,244,241;--surface-rgb:12,13,12;--logo-tile:#0A0B0A;--logo-mark:#22C55E;--slant:-10deg}
+.fx[data-theme="mid"]{color-scheme:dark;--bg:#04070E;--surface:#090E1A;--raised:#0E1524;--raised-2:#141C30;--border:#161F33;--border-strong:#212C45;--control-border:#55668F;--text:#EEF2FA;--text-2:#A3AECB;--muted:#7D89A8;--accent:#4C8DF6;--accent-hover:#6AA1F8;--accent-text:#04122B;--accent-soft:rgba(76,141,246,.12);--accent-border:#3B6BBB;--success:#4C8DF6;--warning:#E8B04B;--danger:#F06A6A;--danger-soft:rgba(240,106,106,.12);--danger-text:#1F0606;--event-blue:#67C1F5;--event-purple:#A88BF5;--event-red:#F07A7A;--event-green:#52C98F;--event-orange:#F2A05C;--event-pink:#EE7DB8;--note-a:#E8B04B;--note-b:#67C1F5;--note-c:#EE7DB8;--note-d:#52C98F;--text-rgb:238,242,250;--surface-rgb:9,14,26;--logo-tile:#04070E;--logo-mark:#4C8DF6}
+.fx[data-theme="ember"]{color-scheme:dark;--bg:#060504;--surface:#0C0A08;--raised:#120F0D;--raised-2:#191512;--border:#1A1613;--border-strong:#27201C;--control-border:#6E6053;--text:#F6F1EC;--text-2:#B8ADA3;--muted:#938778;--accent:#FF8000;--accent-hover:#FF9426;--accent-text:#1F0E00;--accent-soft:rgba(255,128,0,.12);--accent-border:#A55505;--success:#FF8000;--warning:#E8C547;--danger:#F25F5C;--danger-soft:rgba(242,95,92,.12);--danger-text:#1F0606;--event-blue:#6E9CF0;--event-purple:#B08AF0;--event-red:#F07070;--event-green:#55C08A;--event-orange:#F0A040;--event-pink:#EE78B4;--note-a:#E8C547;--note-b:#6E9CF0;--note-c:#EE78B4;--note-d:#55C08A;--text-rgb:246,241,236;--surface-rgb:12,10,8;--logo-tile:#060504;--logo-mark:#FF8000}
+.fx[data-theme="light"]{color-scheme:light;--bg:#F6F6F3;--surface:#FFFFFF;--raised:#F0F1EC;--raised-2:#E7E9E3;--border:#E3E5DF;--border-strong:#CDD1C8;--control-border:#7E857B;--text:#141713;--text-2:#4E554D;--muted:#626A60;--accent:#15803D;--accent-hover:#166534;--accent-text:#FFFFFF;--accent-soft:rgba(21,128,61,.10);--accent-border:#15803D;--success:#16A34A;--warning:#B45309;--danger:#DC2626;--danger-soft:rgba(220,38,38,.08);--danger-text:#FFFFFF;--event-blue:#2563EB;--event-purple:#7C3AED;--event-red:#DC2626;--event-green:#059669;--event-orange:#EA580C;--event-pink:#DB2777;--note-a:#B45309;--note-b:#2563EB;--note-c:#DB2777;--note-d:#059669;--text-rgb:20,23,19;--surface-rgb:255,255,255;--logo-tile:#15803D;--logo-mark:#FFFFFF}
+
+
+.fx{position:relative;container-type:inline-size;container-name:app;display:flex;height:920px;overflow:hidden;font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased}
+.fx *{box-sizing:border-box}
+:where(.fx) button{color:inherit}
+.fx button{font-family:inherit;cursor:pointer}
+.fx button:focus-visible,.fx input:focus-visible,.fx textarea:focus-visible,.fx [tabindex]:focus-visible{outline:2px solid var(--text);outline-offset:2px}
+.mono{font-family:'Geist Mono',ui-monospace,monospace;font-feature-settings:"tnum"}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.kbd{font-family:'Geist Mono',ui-monospace,monospace;font-size:10.5px;line-height:1;color:var(--muted);border:1px solid var(--border-strong);border-bottom-width:2px;border-radius:5px;padding:3px 5px;background:var(--raised);white-space:nowrap}
+.sec{font-family:'Geist Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.08em;color:var(--muted)}
+/* sidebar */
+.sb{flex:0 0 240px;display:flex;flex-direction:column;gap:22px;padding:22px 14px 18px;background:var(--surface);border-right:1px solid var(--border)}
+.sb .nv{display:flex;align-items:center;gap:12px;height:40px;padding:0 12px;border:0;border-radius:9px;background:transparent;font-size:14px;color:var(--text-2);text-align:left;width:100%}
+.sb .nv:hover{background:var(--raised)}
+.sb .nv[aria-current="page"]{background:var(--raised);color:var(--text);font-weight:500}
+.sb .nv .lbl{flex:1}
+.sb .nv .mk{width:6px;height:6px;border-radius:3px;background:var(--accent)}
+.sb .tdot{width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:14px;background:transparent;border:1.5px solid transparent}
+.sb .tdot:hover{border-color:var(--text-2)}
+.fx.sb-c .sb{flex-basis:64px;align-items:center;padding:20px 8px 16px}
+.fx.sb-c .sb .lbl,.fx.sb-c .sb .mk,.fx.sb-c .sb .sbsearch,.fx.sb-c .sb .wordmark,.fx.sb-c .sb .sync-t,.fx.sb-c .sb .theme-l{display:none}
+.fx.sb-c .sb .nv{width:44px;justify-content:center;padding:0}
+.fx.sb-c .sb .themes{flex-direction:column}
+.fx.sb-c .sb .sbtop{flex-direction:column;padding:0}
+.fx.sb-c .sbtog .i-l{display:none}.fx.sb-c .sbtog .i-r{display:flex}
+.sbtog .i-l{display:flex}.sbtog .i-r{display:none}
+.sbtog{margin-left:auto}
+@container app (max-width:1200px){
+  .fx:not(.sb-o) .sb{flex-basis:64px;align-items:center;padding:20px 8px 16px}
+  .fx:not(.sb-o) .sb .lbl,.fx:not(.sb-o) .sb .mk,.fx:not(.sb-o) .sb .sbsearch,.fx:not(.sb-o) .sb .wordmark,.fx:not(.sb-o) .sb .sync-t,.fx:not(.sb-o) .sb .theme-l{display:none}
+  .fx:not(.sb-o) .sb .nv{width:44px;justify-content:center;padding:0}
+  .fx:not(.sb-o) .sb .themes{flex-direction:column}
+  .fx:not(.sb-o) .sb .sbtop{flex-direction:column;padding:0}
+  .fx:not(.sb-o) .sbtog .i-l{display:none}.fx:not(.sb-o) .sbtog .i-r{display:flex}
+  .side-panel{display:none !important}
+  .hd .hide-s{display:none !important}
+}
+/* controls */
+.ctl{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:36px;padding:0 12px;border-radius:9px;border:1px solid var(--control-border);background:transparent;font-size:13px;font-weight:500;color:var(--text);white-space:nowrap}
+.ctl:hover{background:var(--raised-2);border-color:var(--text-2)}
+.ctl-icon{width:36px;padding:0}
+.ctl[aria-pressed="true"],.ctl[aria-checked="true"]{background:var(--text);color:var(--bg);border-color:var(--text)}
+.b{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;font-size:14px;font-weight:600;line-height:1;white-space:nowrap;transition:background .14s ease,color .14s ease,box-shadow .14s ease,transform .08s ease}
+.b-commit{height:40px;padding:0;border-radius:9px;transform:skewX(var(--slant));overflow:hidden}
+.b-commit > span{transform:skewX(calc(var(--slant) * -1))}
+.b-commit .lab{display:inline-flex;align-items:center;gap:8px;padding:0 16px 0 18px}
+.b-commit .key{height:100%;display:inline-flex;align-items:center;padding:0 12px;font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;font-weight:500;background:rgba(0,0,0,.16);border-left:1px solid rgba(0,0,0,.18);transform:none}
+.b-commit:active{transform:skewX(var(--slant)) scale(.97)}
+.b-primary{background:var(--accent);color:var(--accent-text)}
+.b-primary:hover{background:var(--accent-hover)}
+.b-quiet{height:36px;padding:0 12px;border-radius:9px;background:transparent;color:var(--text-2);font-weight:500;font-size:13px}
+.b-quiet:hover{background:var(--raised-2);color:var(--text)}
+.b-del{height:36px;padding:0 12px;border-radius:9px;background:transparent;color:var(--danger);font-weight:500;font-size:13px}
+.b-del:hover{background:var(--danger-soft)}
+.b-icon{width:32px;height:32px;padding:0;border-radius:8px;background:transparent;color:var(--muted)}
+.b-icon:hover{background:var(--raised-2);color:var(--text)}
+.opt{height:32px;padding:0;border-radius:8px;transform:skewX(var(--slant));background:transparent;box-shadow:inset 0 0 0 1px var(--control-border);color:var(--text-2);font-size:13px;font-weight:500;border:0}
+.opt > span{display:inline-flex;align-items:center;gap:8px;padding:0 14px;transform:skewX(calc(var(--slant) * -1))}
+.opt:hover{box-shadow:inset 0 0 0 1px var(--text-2);color:var(--text)}
+.opt[aria-checked="true"],.opt[aria-pressed="true"]{background:var(--text);color:var(--bg);box-shadow:none}
+.seg{display:flex;gap:2px;padding:3px;background:var(--surface);border:1px solid var(--border);border-radius:11px}
+.seg button{display:flex;align-items:center;gap:8px;height:30px;padding:0 11px;border:0;border-radius:8px;font-size:13px;font-weight:500;background:transparent;color:var(--text-2)}
+.seg button:hover{color:var(--text);background:var(--raised)}
+.seg button[aria-pressed="true"],.seg button[aria-checked="true"]{background:var(--text);color:var(--bg)}
+.seg button .mono{font-size:10.5px;color:var(--muted)}
+.seg button[aria-pressed="true"] .mono,.seg button[aria-checked="true"] .mono{color:var(--bg);opacity:.7}
+.cb{width:16px;height:16px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:5px;border:0;background:transparent;box-shadow:inset 0 0 0 1.5px var(--control-border);flex:0 0 auto;color:var(--accent-text)}
+.cb[aria-checked="true"]{background:var(--accent);box-shadow:none}
+.cb:hover{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.cb[aria-checked="true"]:hover{box-shadow:none}
+.evdot{width:7px;height:7px;border-radius:4px;background:var(--c);flex:0 0 auto}
+.pop{position:absolute;z-index:20;display:flex;flex-direction:column;background:var(--raised);border:1px solid var(--border-strong);border-radius:14px;box-shadow:0 18px 40px rgba(0,0,0,.45);overflow:hidden}
+.scrim{position:absolute;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55)}
+.modal{display:flex;flex-direction:column;background:var(--raised);border:1px solid var(--border-strong);border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.55);overflow:hidden}
+.toast{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:10px;height:38px;padding:0 14px;border-radius:10px;background:var(--text);color:var(--surface);font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.hd{display:flex;flex-wrap:wrap;align-items:center;gap:14px 18px;padding:16px 28px;border-bottom:1px solid var(--border);min-height:72px}
+.hd h1{margin:0;font-size:24px;font-weight:600;letter-spacing:-.03em;line-height:1.15}
+.qa{position:relative;flex:1 1 220px;max-width:380px}
+.qa input{width:100%;height:36px;padding:0 44px 0 34px;background:var(--surface);border:1px solid var(--control-border);border-radius:9px;color:var(--text);font:inherit;font-size:13px}
+.qa input::placeholder{color:var(--muted)}
+.foot{display:flex;align-items:center;gap:16px;height:32px;padding:0 28px;border-top:1px solid var(--border);background:var(--surface);font-size:12px;color:var(--muted);overflow:hidden;white-space:nowrap}
+.foot span.k{display:inline-flex;align-items:center;gap:6px}
+.side-panel{flex:0 0 272px;display:flex;flex-direction:column;gap:18px;padding:18px 16px;border-right:1px solid var(--border);overflow:hidden;background:var(--bg)}
+.mm{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;text-align:center}
+.mm .d{height:28px;padding:0;border:0;border-radius:14px;background:transparent;font-size:12px;color:var(--text);position:relative}
+.mm .d:hover{background:var(--raised)}
+.mm .d.out{color:var(--muted);opacity:.55}
+.mm .d.in-week{background:var(--raised)}
+.mm .d.today{background:var(--text);color:var(--bg);font-weight:600}
+.mm .d .dt{position:absolute;left:50%;bottom:2px;width:3px;height:3px;border-radius:2px;margin-left:-1.5px;background:var(--text-2)}
+.mm .d.today .dt{background:var(--bg)}
+
+
+.gmain{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;position:relative}
+.gscroll{flex:1;min-height:0;overflow-y:auto;outline:none}
+.gwrap{max-width:1120px;margin:0 auto;padding:0 28px 40px}
+.ov{display:grid;grid-template-columns:minmax(0,1.5fr) repeat(3,minmax(0,1fr));gap:0;margin:20px 0 0;border:1px solid var(--border);border-radius:14px;background:var(--surface)}
+.ov > div{padding:16px 20px;display:flex;flex-direction:column;gap:6px;min-width:0;border-left:1px solid var(--border)}
+.ov > div:first-child{border-left:0;flex-direction:row;align-items:center;gap:18px}
+.ov .k{font-family:'Geist Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.08em;color:var(--muted)}
+.ov .big{font-size:26px;font-weight:600;letter-spacing:-.03em;line-height:1.1}
+.ov .small{font-size:12.5px;color:var(--text-2)}
+.wkd{display:flex;gap:5px;margin-top:6px}
+.wkd i{display:flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:6px;font-style:normal;font-family:'Geist Mono',ui-monospace,monospace;font-size:10px;color:var(--muted);box-shadow:inset 0 0 0 1px var(--border-strong)}
+.wkd i.on{background:var(--accent);color:var(--accent-text);box-shadow:none}
+.wkd i.part{background:var(--accent-soft);color:var(--text);box-shadow:inset 0 0 0 1px var(--accent-border)}
+.wkd i.td{box-shadow:inset 0 0 0 1.5px var(--text);color:var(--text)}
+.mbar{height:4px;border-radius:2px;background:var(--raised-2);overflow:hidden}
+.mbar i{display:block;height:100%;background:var(--accent);border-radius:2px}
+.gbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:16px 0 10px}
+.gsec{display:flex;align-items:center;gap:10px;height:34px;margin-top:14px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600}
+.gsec .n{font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;font-weight:400;color:var(--muted)}
+.gsec button.tg{display:flex;align-items:center;gap:8px;border:0;background:transparent;font:inherit;font-weight:600;color:var(--text);padding:0;height:34px}
+.gr{display:flex;align-items:center;gap:12px;min-height:44px;padding:0 10px;margin:0 -10px;border-radius:9px;font-size:14px;position:relative}
+.gr:hover{background:var(--raised)}
+.gr.is-cur.force,.glist:focus .gr.is-cur{background:var(--raised);box-shadow:inset 0 0 0 2px var(--text)}
+.gr .tt{flex:0 1 auto;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-weight:500}
+.gr.is-done .tt{text-decoration:line-through;text-decoration-color:rgba(var(--text-rgb),.5);color:var(--text-2)}
+.gr .sp{flex:1}
+.gr .mt{font-family:'Geist Mono',ui-monospace,monospace;font-size:11.5px;color:var(--muted);white-space:nowrap}
+.gr .rm{display:flex;color:var(--warning)}
+.gr .edit{display:none}
+.gr:hover .edit{display:flex}
+.chp{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:6px;font-size:11.5px;font-weight:500;white-space:nowrap}
+.chp.rep{background:transparent;box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--text-2)}
+.chp.must{background:var(--raised-2);color:var(--text);font-weight:600}
+.chp.should{background:transparent;box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--text-2)}
+.chp.nice{background:transparent;color:var(--muted)}
+.chp.strk{background:var(--accent-soft);color:var(--text)}
+.chp.shr{background:var(--raised-2);color:var(--text)}
+.pb{display:inline-flex;gap:2px;align-items:flex-end}
+.pb i{display:block;width:2.5px;height:9px;border-radius:1px;background:currentColor;opacity:.28}
+.pb i.on{opacity:1}
+.addr{display:flex;align-items:center;gap:10px;height:46px;padding:0 12px;margin:10px 0 2px;border-radius:10px;border:1px dashed var(--control-border);color:var(--muted)}
+.addr:focus-within{border-style:solid;border-color:var(--text);color:var(--text)}
+.addr input{flex:1;min-width:0;height:100%;border:0;background:transparent;color:var(--text);font:inherit;font-size:14px;outline:none}
+.addr input::placeholder{color:var(--muted)}
+.cols3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:6px}
+.bcol{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:12px;background:var(--surface);border:1px solid var(--border);min-height:300px}
+.bcard{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:10px;background:var(--raised);border:1px solid var(--border)}
+.bcard.is-done .tt{text-decoration:line-through;color:var(--text-2)}
+.bcard .r1{display:flex;align-items:flex-start;gap:10px;font-size:14px;font-weight:500}
+.bcard .r2{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.gempty{display:flex;flex-direction:column;align-items:flex-start;gap:12px;margin:48px auto 0;max-width:460px;padding:22px 24px;border-radius:14px;background:var(--surface);border:1px solid var(--border-strong)}
+.av{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:13px;background:color-mix(in srgb,var(--c) 30%,var(--surface));box-shadow:inset 0 0 0 1.5px var(--c);font-size:11.5px;font-weight:600;color:var(--text);flex:0 0 auto}
+.av.pend{background:transparent;box-shadow:none;border:1.5px dashed var(--control-border);color:var(--muted)}
+.avs{display:flex}
+.avs .av{margin-left:-7px;border:2px solid var(--surface);width:30px;height:30px}
+.avs .av:first-child{margin-left:0}
+.avs .more{display:inline-flex;align-items:center;justify-content:center;margin-left:-7px;width:30px;height:30px;border-radius:15px;background:var(--raised-2);border:2px solid var(--surface);font-size:11px;font-weight:600;color:var(--text-2)}
+.scards{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:16px;margin-top:6px}
+.sc{display:flex;flex-direction:column;gap:14px;padding:18px 20px;border-radius:14px;background:var(--surface);border:1px solid var(--border)}
+.tile{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;background:var(--raised-2);color:var(--text);flex:0 0 auto}
+.rk{display:grid;grid-template-columns:20px 26px 72px minmax(0,1fr) 44px;align-items:center;gap:10px;min-height:32px;padding:0 8px;margin:0 -8px;border-radius:8px;font-size:13px}
+.rk.is-you{background:var(--raised)}
+.rk .n{font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;color:var(--muted);text-align:right}
+.rk .nm{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-weight:500}
+.rk .pc{font-family:'Geist Mono',ui-monospace,monospace;font-size:12px;text-align:right}
+.rk .bar{height:6px;border-radius:3px;background:var(--raised-2);overflow:hidden}
+.rk .bar i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.rk .bar i.low{background:var(--text-2)}
+.rk.pend .nm,.rk.pend .pc{color:var(--muted);font-weight:400}
+.ci{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;background:var(--raised);font-size:13px}
+.banner{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:10px;background:var(--raised);border:1px solid var(--border-strong);font-size:13px;color:var(--text);margin-top:16px}
+.banner svg{color:var(--warning);flex:0 0 auto}
+.inv{display:flex;align-items:center;gap:14px;padding:16px 20px;border-radius:14px;background:var(--raised);border:1px solid var(--border-strong);margin-top:16px}
+.pnl{padding:18px 20px;border-radius:14px;background:var(--surface);border:1px solid var(--border);display:flex;flex-direction:column;gap:12px;min-width:0}
+.pnl h2{margin:0;font-size:14px;font-weight:600}
+.stp{display:inline-flex;align-items:center;gap:2px}
+.stp button{width:28px;height:28px;padding:0;border:0;border-radius:7px;background:var(--raised-2);color:var(--text);display:flex;align-items:center;justify-content:center}
+.stp button:hover{background:var(--control-border)}
+.stp button[aria-disabled="true"]{opacity:.35;cursor:default}
+.stp .v{min-width:40px;text-align:center;font-family:'Geist Mono',ui-monospace,monospace;font-size:13px}
+.tbl{display:grid;grid-template-columns:110px repeat(7,minmax(0,1fr)) 64px;align-items:center;row-gap:2px}
+.tbl .h{font-family:'Geist Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.08em;color:var(--muted);text-align:center;padding-bottom:6px}
+.tbl .h.td{color:var(--text)}
+.tbl .who{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;height:34px;min-width:0}
+.tbl .who span.t{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.tbl .cell{display:flex;align-items:center;justify-content:center;height:34px}
+.dotc{width:22px;height:22px;border-radius:7px;display:flex;align-items:center;justify-content:center;color:var(--accent-text)}
+.dotc.ok{background:var(--accent)}
+.dotc.miss{box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--muted)}
+.dotc.now{box-shadow:inset 0 0 0 1.5px var(--text)}
+.dotc.fut{box-shadow:inset 0 0 0 1px var(--border)}
+.dotc.rest{width:6px;height:6px;border-radius:3px;background:var(--border-strong)}
+.tbl .tot{font-family:'Geist Mono',ui-monospace,monospace;font-size:12px;text-align:right}
+.hist{display:grid;grid-template-columns:44px minmax(0,1fr) 40px;gap:8px 10px;align-items:center;font-size:12.5px}
+.hist .wl{font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;color:var(--muted)}
+.hist .wn{grid-column:2 / 4;color:var(--text-2);font-size:11.5px;margin-top:-4px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label,.flab{font-size:12px;font-weight:500;color:var(--text-2)}
+.inp{height:42px;padding:0 12px;background:var(--bg);border:1px solid var(--control-border);border-radius:9px;color:var(--text);font:inherit;font-size:14px;width:100%}
+.inp:focus{outline:2px solid var(--text);outline-offset:1px}
+.tpl{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:16px;border-radius:12px;border:0;background:transparent;box-shadow:inset 0 0 0 1px var(--control-border);text-align:left;color:var(--text);width:100%}
+.tpl:hover{box-shadow:inset 0 0 0 1px var(--text-2)}
+.tpl[aria-checked="true"]{background:var(--text);color:var(--bg);box-shadow:none}
+.tpl[aria-checked="true"] .sub{color:var(--bg);opacity:.75}
+.tpl .sub{font-size:12.5px;color:var(--text-2);font-weight:400}
+.steps{display:flex;gap:6px;align-items:center}
+.steps span{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+.steps span b{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:11px;font-weight:600;font-size:11.5px;box-shadow:inset 0 0 0 1px var(--border-strong)}
+.steps span.on{color:var(--text)}
+.steps span.on b{background:var(--text);color:var(--bg);box-shadow:none}
+.steps span.dn b{background:var(--accent);color:var(--accent-text);box-shadow:none}
+.steps i{width:22px;height:1px;background:var(--border-strong)}
+.iconpick{display:flex;gap:8px;flex-wrap:wrap}
+.iconpick button{width:40px;height:40px;padding:0;border:0;border-radius:10px;background:transparent;box-shadow:inset 0 0 0 1px var(--control-border);color:var(--text);display:flex;align-items:center;justify-content:center}
+.iconpick button:hover{box-shadow:inset 0 0 0 1px var(--text-2)}
+.iconpick button[aria-checked="true"]{background:var(--text);color:var(--bg);box-shadow:none}
+.prow{display:flex;align-items:center;gap:12px;min-height:50px;padding:0 4px;border-bottom:1px solid var(--border);font-size:14px}
+.prow .nm{flex:1;min-width:0;font-weight:500}
+.prow .st{font-size:12px;color:var(--muted)}
+@container app (max-width:1200px){.gwrap{padding:0 20px 40px}.ov{grid-template-columns:repeat(3,minmax(0,1fr))}.ov > div:first-child{grid-column:1 / -1;border-bottom:1px solid var(--border)}.ov > div:nth-child(2){border-left:0}.scards{grid-template-columns:minmax(0,1fr)}}
+
+.cw{max-width:760px;margin:0 auto;padding:28px 28px 40px;display:flex;flex-direction:column;gap:22px}
+.card{padding:24px;border-radius:16px;background:var(--surface);border:1px solid var(--border);display:flex;flex-direction:column;gap:20px}
+.card h2{margin:0;font-size:20px;font-weight:600;letter-spacing:-.02em}
+.callout{display:flex;gap:12px;padding:12px 14px;border-radius:10px;background:var(--raised);font-size:13px;color:var(--text-2);line-height:1.5}
+.callout svg{flex:0 0 auto;color:var(--text)}
+.dpick{display:flex;gap:6px}
+.dpick button{width:44px;height:38px;padding:0;border:0;border-radius:8px;transform:skewX(var(--slant));background:transparent;box-shadow:inset 0 0 0 1px var(--control-border);color:var(--text-2);font-size:12px;font-weight:600}
+.dpick button > span{display:inline-block;transform:skewX(calc(var(--slant) * -1))}
+.dpick button[aria-checked="true"]{background:var(--text);color:var(--bg);box-shadow:none}
+.cwfoot{display:flex;align-items:center;gap:10px}
+.lnk{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--control-border);font-family:'Geist Mono',ui-monospace,monospace;font-size:12.5px}
+.lnk span.u{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+</style>
+</helmet>
+<div class="fx {{ rootCls }}" data-theme="{{ themeKey }}">
+  <aside class="sb" aria-label="Sidebar">
+    <div class="sbtop" style="display:flex;align-items:center;gap:10px;padding:0 6px">
+      <svg width="30" height="30" viewBox="0 0 120 120" role="img" aria-label="Facta logo"><rect width="120" height="120" rx="27" style="fill: var(--logo-tile)"></rect><polygon style="fill: var(--logo-mark); stroke: var(--logo-mark)" stroke-width="7" stroke-linejoin="round" points="46,31 93,31 90.4,41 55.4,41 51.3,57 73,57 70.9,65 49.2,65 42.5,91 30.5,91"></polygon></svg>
+      <span class="wordmark" style="font-size:19px;font-weight:700;letter-spacing:-.03em">Facta</span>
+      <button type="button" class="b b-icon sbtog" aria-label="Collapse or expand sidebar" title="Collapse or expand sidebar" onClick="{{ sbToggle }}"><span class="i-l"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></span><span class="i-r"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></span></button>
+    </div>
+    <div class="sbsearch" style="position:relative">
+      <label for="sb-search" class="sr-only">Search</label>
+      <span style="position:absolute;left:12px;top:12px;color:var(--muted);display:flex"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg></span>
+      <input id="sb-search" type="search" placeholder="Search" style="width:100%;height:40px;padding:0 70px 0 36px;background:var(--bg);border:1px solid var(--control-border);border-radius:10px;color:var(--text);font:inherit;font-size:14px">
+      <span class="kbd" style="position:absolute;right:8px;top:11px">Ctrl K</span>
+    </div>
+    <nav aria-label="Main" style="display:flex;flex-direction:column;gap:2px">
+<button type="button" class="nv" title="Today"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg><span class="lbl">Today</span></button>
+<button type="button" class="nv" title="Calendar"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg><span class="lbl">Calendar</span></button>
+<button type="button" class="nv" title="Goals" aria-current="page"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg><span class="lbl">Goals</span><span class="mk"></span></button>
+<button type="button" class="nv" title="Notes"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6M8 13h8M8 17h5"></path></svg><span class="lbl">Notes</span></button>
+<button type="button" class="nv" title="Diary"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14Z"></path><path d="M9 8h7"></path></svg><span class="lbl">Diary</span></button>
+<button type="button" class="nv" title="Settings"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9M14 17H5"></path><circle cx="17" cy="17" r="3"></circle><circle cx="7" cy="7" r="3"></circle></svg><span class="lbl">Settings</span></button>
+    </nav>
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:12px">
+      <div role="group" aria-label="Theme" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 2px 0 8px">
+        <span class="theme-l" style="font-size:12px;font-weight:500;color:var(--muted)">Theme</span>
+        <div class="themes" style="display:flex;align-items:center;gap:4px">
+          <sc-for list="{{ themes }}" as="t" hint-placeholder-count="4">
+            <button type="button" class="tdot" title="{{ t.name }}" aria-label="{{ t.name }} theme" aria-pressed="{{ t.pressed }}" onClick="{{ t.pick }}" style="border-color: {{ t.ring }}">
+              <span aria-hidden="true" style="width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-strong);background:{{ t.sw1 }}"><span style="width:7px;height:7px;border-radius:4px;background:{{ t.sw2 }}"></span></span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 8px 0;border-top:1px solid var(--border);font-size:12px;color:var(--muted)">
+        <span style="width:7px;height:7px;border-radius:4px;background:var(--success)"></span><span class="sync-t">Synced · just now</span>
+      </div>
+    </div>
+  </aside>
+  <main class="gmain">
+    <header class="hd">
+      <button type="button" class="ctl" onClick="{{ cancel }}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg> Shared goals</button>
+      <div style="display:flex;flex-direction:column;gap:2px"><span class="mono" style="font-size:11px;color:var(--muted);letter-spacing:.06em">{{ kicker }}</span><h1>{{ pageTitle }}</h1></div>
+      <div style="flex:1"></div>
+      <sc-if value="{{ showSteps }}" hint-placeholder-val="{{ true }}"><ol class="steps" aria-label="Steps" style="list-style:none;margin:0;padding:0"><sc-for list="{{ steps }}" as="t" hint-placeholder-count="4"><li style="display:flex;align-items:center;gap:6px"><span class="{{ t.cls }}"><b>{{ t.n }}</b><span class="hide-s">{{ t.name }}</span></span><sc-if value="{{ t.sep }}" hint-placeholder-val="{{ true }}"><i></i></sc-if></li></sc-for></ol></sc-if>
+    </header>
+    <div class="gscroll">
+      <div class="cw">
+        <sc-if value="{{ s0 }}" hint-placeholder-val="{{ false }}">
+          <section class="card" aria-label="Choose a template">
+            <h2>Start from a template</h2>
+            <div role="radiogroup" aria-label="Template" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <button type="button" class="tpl" role="radio" aria-checked="{{ tplGym }}" onClick="{{ pickGym }}"><span style="display:flex;align-items:center;gap:10px;font-size:16px;font-weight:600"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11"></path></svg> Gym</span><span class="sub">Everyone sets their own days a week when they join, at least 2. Ranked by adherence.</span></button>
+              <button type="button" class="tpl" role="radio" aria-checked="{{ tplCustom }}" onClick="{{ pickCustom }}"><span style="display:flex;align-items:center;gap:10px;font-size:16px;font-weight:600"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg> Custom</span><span class="sub">Every day, specific days or a number of days a week. Same rule for everyone.</span></button>
+            </div>
+          </section>
+        </sc-if>
+        <sc-if value="{{ s1 }}" hint-placeholder-val="{{ false }}">
+          <section class="card" aria-label="Details">
+            <h2>{{ detailsTitle }}</h2>
+            <div class="field"><label for="g-name">Name</label><input id="g-name" class="inp" type="text" autocomplete="off" value="{{ name }}" onChange="{{ onName }}"></div>
+            <div class="field"><span class="flab" id="ic-l">Icon</span><div class="iconpick" role="radiogroup" aria-labelledby="ic-l"><button type="button" role="radio" aria-checked="{{ icons.dumbbell.checked }}" aria-label="Dumbbell" onClick="{{ icons.dumbbell.pick }}"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11"></path></svg></button><button type="button" role="radio" aria-checked="{{ icons.book.checked }}" aria-label="Book" onClick="{{ icons.book.pick }}"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14Z"></path></svg></button><button type="button" role="radio" aria-checked="{{ icons.run.checked }}" aria-label="Run" onClick="{{ icons.run.pick }}"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="4" r="2"></circle><path d="m11 21 2-5-3-3 3-4 3 2h3M8 12l-3 3"></path></svg></button><button type="button" role="radio" aria-checked="{{ icons.bulb.checked }}" aria-label="Idea" onClick="{{ icons.bulb.pick }}"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V17h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"></path></svg></button><button type="button" role="radio" aria-checked="{{ icons.drop.checked }}" aria-label="Water" onClick="{{ icons.drop.pick }}"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a7 7 0 0 0 7-7c0-4-7-13-7-13S5 11 5 15a7 7 0 0 0 7 7z"></path></svg></button><button type="button" role="radio" aria-checked="{{ icons.moon.checked }}" aria-label="Sleep" onClick="{{ icons.moon.pick }}"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg></button><button type="button" role="radio" aria-checked="{{ icons.goals.checked }}" aria-label="Target" onClick="{{ icons.goals.pick }}"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg></button><button type="button" role="radio" aria-checked="{{ icons.flame.checked }}" aria-label="Streak" onClick="{{ icons.flame.pick }}"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.3 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg></button></div></div>
+            <sc-if value="{{ isGym }}" hint-placeholder-val="{{ false }}">
+              <div class="callout"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path></svg><span>Each person sets their own days per week when they join, at least 2. Everyone in the goal can see everyone's days. Changes take effect next week.</span></div>
+              <div class="field"><span class="flab">Your days per week</span><div class="stp"><button type="button" aria-label="One fewer day" aria-disabled="{{ myAtMin }}" onClick="{{ myMinus }}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path></svg></button><span class="v" aria-live="polite">{{ myVal }}</span><button type="button" aria-label="One more day" aria-disabled="{{ myAtMax }}" onClick="{{ myPlus }}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"></path></svg></button></div></div>
+            </sc-if>
+            <sc-if value="{{ isCustom }}" hint-placeholder-val="{{ true }}">
+              <div class="field"><span class="flab" id="sc-l">How often</span>
+                <div role="radiogroup" aria-labelledby="sc-l" style="display:flex;gap:8px;flex-wrap:wrap"><sc-for list="{{ scheds }}" as="o" hint-placeholder-count="3"><button type="button" class="opt" role="radio" aria-checked="{{ o.checked }}" onClick="{{ o.pick }}"><span>{{ o.name }}</span></button></sc-for></div></div>
+              <sc-if value="{{ schedDays }}" hint-placeholder-val="{{ false }}"><div class="field"><span class="flab" id="dy-l">Which days</span><div class="dpick" role="group" aria-labelledby="dy-l"><sc-for list="{{ dayBtns }}" as="d" hint-placeholder-count="7"><button type="button" role="checkbox" aria-checked="{{ d.checked }}" aria-label="{{ d.full }}" onClick="{{ d.pick }}"><span>{{ d.l }}</span></button></sc-for></div></div></sc-if>
+              <sc-if value="{{ schedN }}" hint-placeholder-val="{{ false }}"><div class="field"><span class="flab">Days per week</span><div class="stp"><button type="button" aria-label="One fewer day" onClick="{{ nMinus }}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path></svg></button><span class="v" aria-live="polite">{{ nVal }}</span><button type="button" aria-label="One more day" onClick="{{ nPlus }}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"></path></svg></button></div></div></sc-if>
+            </sc-if>
+            <div class="field"><span class="flab" id="rs-l">Rounds start on</span><div class="dpick" role="radiogroup" aria-labelledby="rs-l" style="gap:6px;flex-wrap:wrap"><sc-for list="{{ roundBtns }}" as="d" hint-placeholder-count="7"><button type="button" role="radio" aria-checked="{{ d.checked }}" aria-label="{{ d.full }}" style="width:52px" onClick="{{ d.pick }}"><span>{{ d.l }}</span></button></sc-for></div><span style="font-size:12px;color:var(--muted)">{{ roundNote }}</span></div>
+            <div class="callout"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path></svg><span>Everyone in the goal sees the same board: days, check-ins and the leaderboard.</span></div>
+          </section>
+        </sc-if>
+        <sc-if value="{{ s2 }}" hint-placeholder-val="{{ false }}">
+          <section class="card" aria-label="People">
+            <div style="display:flex;align-items:baseline;gap:10px"><h2 style="flex:1">Add people</h2><span class="mono" style="font-size:12px;color:var(--muted)">{{ countText }}</span></div>
+            <div class="field"><span class="flab">Invite link</span><div class="lnk"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg><span class="u">facta.app/join/gym-crew-7Kq2</span><button type="button" class="ctl" style="height:30px" onClick="{{ copyLink }}">Copy</button></div></div>
+            <div class="field"><label for="g-user">Or add by username</label><div style="display:flex;gap:8px"><input id="g-user" class="inp" type="text" autocomplete="off" placeholder="@username" value="{{ userText }}" onChange="{{ onUser }}" onKeyDown="{{ onUserKey }}"><button type="button" class="ctl" style="height:42px" aria-disabled="{{ full }}" onClick="{{ addUser }}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"></path></svg> Add</button></div></div>
+            <div role="list" aria-label="People in this goal">
+              <sc-for list="{{ people }}" as="p" hint-placeholder-count="4">
+                <div class="prow" role="listitem"><span class="{{ p.avCls }}" style="--c: {{ p.c }}">{{ p.i }}</span><span class="nm">{{ p.name }}<span class="st" style="margin-left:8px">{{ p.status }}</span></span>
+                  <span class="mono" style="font-size:12px;color:var(--text-2)">{{ p.rowNote }}</span>
+                  <sc-if value="{{ p.canRemove }}" hint-placeholder-val="{{ false }}"><button type="button" class="b b-icon" aria-label="Remove {{ p.name }}" onClick="{{ p.remove }}"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button></sc-if>
+                </div>
+              </sc-for>
+            </div>
+            <sc-if value="{{ needMore }}" hint-placeholder-val="{{ false }}"><div class="callout"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg><span>Just you so far. Add at least 1 more person, up to 8 in total.</span></div></sc-if>
+            <sc-if value="{{ hasPending }}" hint-placeholder-val="{{ false }}"><div class="callout"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg><span>Invites are pending. {{ firstRoundNote }}</span></div></sc-if>
+          </section>
+        </sc-if>
+        <sc-if value="{{ s3 }}" hint-placeholder-val="{{ false }}">
+          <section class="card" aria-label="Review">
+            <h2>Review</h2>
+            <div style="display:flex;align-items:center;gap:14px"><span class="tile" style="width:44px;height:44px"><sc-if value="{{ icons.dumbbell.on }}" hint-placeholder-val="{{ true }}"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11"></path></svg></sc-if><sc-if value="{{ icons.book.on }}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14Z"></path></svg></sc-if><sc-if value="{{ icons.run.on }}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="4" r="2"></circle><path d="m11 21 2-5-3-3 3-4 3 2h3M8 12l-3 3"></path></svg></sc-if><sc-if value="{{ icons.bulb.on }}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V17h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"></path></svg></sc-if><sc-if value="{{ icons.drop.on }}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a7 7 0 0 0 7-7c0-4-7-13-7-13S5 11 5 15a7 7 0 0 0 7 7z"></path></svg></sc-if><sc-if value="{{ icons.moon.on }}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg></sc-if><sc-if value="{{ icons.goals.on }}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg></sc-if><sc-if value="{{ icons.flame.on }}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.3 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg></sc-if></span><div style="flex:1"><div style="font-size:17px;font-weight:600">{{ name }}</div><div style="font-size:13px;color:var(--text-2)">{{ ruleText }}</div></div></div>
+            <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px">
+              <div class="pnl" style="padding:14px"><span class="mono sec">FIRST ROUND</span><span style="font-size:15px;font-weight:600">{{ firstRound }}</span></div>
+              <div class="pnl" style="padding:14px"><span class="mono sec">ROUNDS START</span><span style="font-size:15px;font-weight:600">{{ roundEvery }}</span></div>
+              <div class="pnl" style="padding:14px"><span class="mono sec">PEOPLE</span><span style="font-size:15px;font-weight:600">{{ peopleCount }}</span></div>
+              <div class="pnl" style="padding:14px"><span class="mono sec">VISIBLE TO</span><span style="font-size:15px;font-weight:600">Everyone in it</span></div>
+            </div>
+            <div role="list"><sc-for list="{{ people }}" as="p" hint-placeholder-count="4"><div class="prow" role="listitem"><span class="{{ p.avCls }}" style="--c: {{ p.c }}">{{ p.i }}</span><span class="nm">{{ p.name }}<span class="st" style="margin-left:8px">{{ p.status }}</span></span><span class="mono" style="font-size:12.5px;color:var(--text-2)">{{ p.targetText }}</span></div></sc-for></div>
+            <div class="callout"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg><span>Each person picks their own days when they join, at least 2, and everyone can see them. Changes take effect next week.</span></div>
+          </section>
+        </sc-if>
+        <sc-if value="{{ s4 }}" hint-placeholder-val="{{ false }}">
+          <section class="card" aria-label="Join shared goal">
+            <div style="display:flex;align-items:center;gap:14px"><span class="av" style="--c: var(--event-purple);width:40px;height:40px;font-size:15px">S</span><div style="flex:1"><div style="font-size:17px;font-weight:600">Sara invited you to Weekend gym</div><div style="font-size:13px;color:var(--text-2)">Gym template · min 2 days a week · everyone picks their own</div></div></div>
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px">
+              <div class="pnl" style="padding:14px"><span class="mono sec">FIRST ROUND</span><span style="font-size:15px;font-weight:600">Mon 19 Oct</span></div>
+              <div class="pnl" style="padding:14px"><span class="mono sec">ROUNDS START</span><span style="font-size:15px;font-weight:600">Every Monday</span></div>
+              <div class="pnl" style="padding:14px"><span class="mono sec">PEOPLE</span><span style="font-size:15px;font-weight:600">4 including you</span></div>
+            </div>
+            <div class="field"><span class="flab">Your days per week</span><div class="stp"><button type="button" aria-label="One fewer day" aria-disabled="{{ jAtMin }}" onClick="{{ jMinus }}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path></svg></button><span class="v" aria-live="polite">{{ jVal }}</span><button type="button" aria-label="One more day" aria-disabled="{{ jAtMax }}" onClick="{{ jPlus }}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"></path></svg></button></div><span style="font-size:12px;color:var(--muted)">At least 2 days. Pick what you can keep up.</span></div>
+            <div style="display:flex;flex-direction:column;gap:2px"><span class="mono sec" style="padding-bottom:6px">EVERYONE'S DAYS, VISIBLE TO THE WHOLE GOAL</span>
+              <div role="list"><sc-for list="{{ jPeople }}" as="p" hint-placeholder-count="4"><div class="prow" role="listitem"><span class="av" style="--c: {{ p.c }}">{{ p.i }}</span><span class="nm">{{ p.name }}</span><span class="mono" style="font-size:13px">{{ p.days }}</span></div></sc-for></div></div>
+            <div class="callout"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg><span>You can change your days later. Changes take effect next week, never mid-round.</span></div>
+            <div class="cwfoot"><button type="button" class="ctl" onClick="{{ decline }}">Decline</button><span style="flex:1"></span><button type="button" class="b b-commit b-primary" onClick="{{ joinNow }}"><span class="lab">Join Weekend gym</span></button></div>
+          </section>
+        </sc-if>
+        <div class="cwfoot" style="{{ wizFootStyle }}">
+          <button type="button" class="ctl" onClick="{{ back }}">{{ backText }}</button>
+          <span style="flex:1"></span>
+          <sc-if value="{{ blocked }}" hint-placeholder-val="{{ false }}"><span style="font-size:12.5px;color:var(--muted)">{{ blockText }}</span></sc-if>
+          <sc-if value="{{ notLast }}" hint-placeholder-val="{{ true }}"><button type="button" class="b b-commit b-primary" aria-disabled="{{ blocked }}" onClick="{{ next }}" style="{{ nextStyle }}"><span class="lab">Next</span><span class="key hide-s">Enter</span></button></sc-if>
+          <sc-if value="{{ isLast }}" hint-placeholder-val="{{ false }}"><button type="button" class="b b-commit b-primary" onClick="{{ create }}"><span class="lab"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"></path><path d="M22 2 11 13"></path></svg> Create goal</span></button></sc-if>
+        </div>
+      </div>
+    </div>
+    <div class="foot" aria-label="Keyboard hints"><span class="k"><span class="kbd">Tab</span>move</span><span class="k"><span class="kbd">←</span><span class="kbd">→</span>choose option</span><span class="k"><span class="kbd">Esc</span>cancel</span><span style="flex:1"></span><span class="k"><span class="kbd">Enter</span>next step</span></div>
+  </main>
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}"><div class="toast" role="status">{{ toast }}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme": {"editor": "enum", "options": ["bg", "mid", "ember", "light"], "default": "bg"}, "state": {"editor": "enum", "options": ["template", "gym", "custom", "empty", "pending", "review", "join"], "default": "template"}, "weekStart": {"editor": "enum", "options": ["sun", "mon", "sat"], "default": "sun"}, "timeFormat": {"editor": "enum", "options": ["24h", "12h"], "default": "24h"}, "$preview": {"width": 1440, "height": 920}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props); const st = props.state || 'template'; this.listenPrefs();
+    const you = { id: 'you', name: 'You', i: 'Y', c: 0, target: 4, status: 'Owner' };
+    const mk = (id, t, status) => ({ id, name: { omar: 'Omar', sara: 'Sara', khalid: 'Khalid', lina: 'Lina' }[id], i: { omar: 'O', sara: 'S', khalid: 'K', lina: 'L' }[id], c: { omar: 1, sara: 2, khalid: 3, lina: 4 }[id], target: t, status });
+    const four = [you, mk('omar', 3, 'Invite sent'), mk('sara', 3, 'Invite sent'), mk('khalid', 2, 'Invite sent')];
+    this.state = { theme: props.theme || 'bg', toast: '', step: { template: 0, gym: 1, custom: 1, empty: 2, pending: 2, review: 3, join: 4 }[st] || 0, tpl: st === 'custom' ? 'custom' : 'gym', name: st === 'custom' ? 'Read daily' : (st === 'template' ? '' : 'Gym crew'),
+      icon: st === 'custom' ? 'book' : 'dumbbell', sched: 'every', days: [1, 0, 1, 0, 1, 0, 0], n: 3, people: (st === 'pending' || st === 'review') ? four : [you], userText: '', myDays: 4, jDays: 3, rs: undefined };
+  }
+
+  sbVals() {
+    const m = this.state.sbMode || '';
+    return { rootCls: m === 'c' ? 'sb-c' : (m === 'o' ? 'sb-o' : ''), sbToggle: (e) => {
+      const el = e && e.currentTarget && e.currentTarget.closest ? e.currentTarget.closest('.fx') : null;
+      const narrow = !!el && el.getBoundingClientRect().width <= 1200; const cur = this.state.sbMode || '';
+      const collapsed = narrow ? cur !== 'o' : cur === 'c';
+      this.setState({ sbMode: collapsed ? (narrow ? 'o' : '') : (narrow ? '' : 'c') }); } };
+  }
+  prefs() {
+    let o = {}; try { o = (typeof window !== 'undefined' && window.__factaPrefs) || JSON.parse(window.localStorage.getItem('facta.prefs') || '{}') || {}; } catch (e) { o = {}; }
+    const p = this.props || {};
+    const wsKey = ['sun', 'mon', 'sat'].indexOf(o.weekStart) >= 0 ? o.weekStart : (['sun', 'mon', 'sat'].indexOf(p.weekStart) >= 0 ? p.weekStart : 'sun');
+    const tf = (o.timeFormat === '12h' || o.timeFormat === '24h') ? o.timeFormat : (p.timeFormat === '12h' ? '12h' : '24h');
+    return { wsKey, ws: { sun: 0, mon: 1, sat: 6 }[wsKey], tf };
+  }
+  listenPrefs() {
+    this._onPrefs = () => { try { this.setState({ prefTick: Date.now() }); } catch (e) {} };
+    try { window.addEventListener('facta-prefs', this._onPrefs); window.addEventListener('storage', this._onPrefs); } catch (e) {}
+  }
+  unlistenPrefs() { try { window.removeEventListener('facta-prefs', this._onPrefs); window.removeEventListener('storage', this._onPrefs); } catch (e) {} }
+  componentWillUnmount() { this.unlistenPrefs(); }
+  say(text) {
+    this.setState({ toast: text });
+    if (this._t) clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ toast: '' }), 2400);
+  }
+  themeDots() {
+    const cur = this.state.theme;
+    return [{ id: 'bg', name: 'Black & green', sw1: '#060706', sw2: '#22C55E' }, { id: 'mid', name: 'Midnight', sw1: '#04070E', sw2: '#4C8DF6' },
+      { id: 'ember', name: 'Ember', sw1: '#060504', sw2: '#FF8000' }, { id: 'light', name: 'Light', sw1: '#F6F6F3', sw2: '#15803D' }]
+      .map((t) => ({ ...t, pressed: cur === t.id ? 'true' : 'false', ring: cur === t.id ? 'var(--text)' : 'transparent', pick: () => this.setState({ theme: t.id }) }));
+  }
+
+  renderVals() {
+    const s = this.state, p = this.props, st = p.state || 'template';
+
+    const PF = this.prefs();
+    const pad = (n) => (n < 10 ? '0' : '') + n;
+    const fmtT = (hhmm) => { if (!hhmm) return ''; const q = hhmm.split(':'), h = Number(q[0]), m = Number(q[1]); if (PF.tf === '24h') return pad(h) + ':' + pad(m); const h12 = h % 12 === 0 ? 12 : h % 12; return h12 + (m ? ':' + pad(m) : '') + (h < 12 ? ' AM' : ' PM'); };
+    const COLS = ['var(--event-blue)', 'var(--event-orange)', 'var(--event-purple)', 'var(--event-green)', 'var(--event-pink)', 'var(--event-red)', 'var(--event-blue)', 'var(--event-orange)'];
+    const PEOPLE = { you: { n: 'You', i: 'Y', c: 0 }, omar: { n: 'Omar', i: 'O', c: 1 }, sara: { n: 'Sara', i: 'S', c: 2 }, khalid: { n: 'Khalid', i: 'K', c: 3 }, lina: { n: 'Lina', i: 'L', c: 4 }, yousef: { n: 'Yousef', i: 'Y', c: 5 }, noor: { n: 'Noor', i: 'N', c: 6 }, hadi: { n: 'Hadi', i: 'H', c: 7 } };
+    const av = (id) => ({ i: PEOPLE[id].i, c: COLS[PEOPLE[id].c], n: PEOPLE[id].n, cls: 'av', id });
+    const pbars = (p) => ({ must: [1, 1, 1], should: [1, 1, 0], nice: [1, 0, 0] }[p]).map((x) => ({ on: x ? 'on' : '' }));
+    const PRI = { must: 'Must', should: 'Should', nice: 'Nice' };
+    const halves = (cur, nm, ns) => [{ name: 'Mine', n: String(nm), checked: cur === 'mine' ? 'true' : 'false', pick: () => this.say('Mine') }, { name: 'Shared', n: String(ns), checked: cur === 'shared' ? 'true' : 'false', pick: () => this.say('Shared') }];
+
+    const isGym = s.tpl === 'gym', isCustom = !isGym, step = s.step;
+    const PFw = this.prefs(); const RS = [['M', 'Mon', 'Monday', 19], ['T', 'Tue', 'Tuesday', 20], ['W', 'Wed', 'Wednesday', 21], ['T', 'Thu', 'Thursday', 22], ['F', 'Fri', 'Friday', 23], ['S', 'Sat', 'Saturday', 24], ['S', 'Sun', 'Sunday', 18]];
+    const rsIdx = s.rs !== undefined ? s.rs : { sun: 6, mon: 0, sat: 5 }[PFw.wsKey];
+    const RSd = RS[rsIdx], firstRound = RSd[1] + ' ' + RSd[3] + ' Oct', roundEvery = 'Every ' + RSd[2];
+    const nm = s.name.trim() || (isGym ? 'Gym crew' : 'Untitled goal');
+    const others = s.people.length - 1, full = s.people.length >= 8, needMore = s.people.length < 2, hasPending = s.people.some((x) => x.status !== 'Owner');
+    const DL = ['M', 'T', 'W', 'T', 'F', 'S', 'S'], DF = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], DS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const ruleText = isGym ? 'Gym template · min 2 days a week, everyone picks their own days' : 'Custom · ' + (s.sched === 'every' ? 'Every day' : s.sched === 'days' ? s.days.map((d, i) => d ? DS[i] : '').filter(Boolean).join(', ') || 'No days chosen' : s.n + ' days a week');
+    const ICON_IDS = ['dumbbell', 'book', 'run', 'bulb', 'drop', 'moon', 'goals', 'flame'];
+    const icons = {}; ICON_IDS.forEach((k) => { icons[k] = { checked: s.icon === k ? 'true' : 'false', on: s.icon === k, pick: () => this.setState({ icon: k }) }; });
+    
+    const people = s.people.map((x) => ({ avCls: 'av', c: COLS[x.c % 8], i: x.i, name: x.name, status: x.status, rowNote: x.status === 'Owner' ? (isGym ? s.myDays + ' days a week' : '') : (isGym ? 'Picks own days on joining' : 'Same rule for all'),
+      targetText: x.status === 'Owner' ? (isGym ? s.myDays + ' days a week' : (s.sched === 'every' ? 'Every day' : s.sched === 'days' ? 'Chosen days' : s.n + ' days a week')) : (isGym ? 'Picks own days on joining' : (s.sched === 'every' ? 'Every day' : s.sched === 'days' ? 'Chosen days' : s.n + ' days a week')), canRemove: x.status !== 'Owner', remove: () => this.setState({ people: s.people.filter((y) => y.id !== x.id) }) }));
+    const blocked = (step === 1 && !s.name.trim()) || (step === 1 && isCustom && s.sched === 'days' && !s.days.some((d) => d)) || (step === 2 && needMore);
+    const blockText = step === 1 && !s.name.trim() ? 'Give it a name to continue' : step === 1 && isCustom && s.sched === 'days' && !s.days.some((d) => d) ? 'Pick at least one day' : step === 2 && needMore ? 'Add at least 1 more person' : '';
+    const go = (d) => this.setState({ step: Math.max(0, Math.min(3, step + d)) });
+    const addUser = () => { const t = s.userText.trim().replace(/^@/, ''); if (!t || full) return; const id = 'u' + Date.now(); this.setState({ people: s.people.concat([{ id, name: '@' + t, i: t.charAt(0).toUpperCase(), c: s.people.length, target: 3, status: 'Invite sent' }]), userText: '' }); };
+    const jp = [['Sara', 'S', 2, 5], ['Omar', 'O', 1, 3], ['Khalid', 'K', 3, 2]].map((x) => ({ name: x[0], i: x[1], c: COLS[x[2]], days: x[3] + ' days a week' })).concat([{ name: 'You', i: 'Y', c: COLS[0], days: s.jDays + ' days a week' }]);
+    const isJoin = step === 4;
+    const labels = ['Template', 'Details', 'People', 'Review'];
+    return { ...this.sbVals(), themeKey: s.theme, themes: this.themeDots(), kicker: isJoin ? 'INVITE' : 'STEP ' + (step + 1) + ' OF 4', pageTitle: isJoin ? 'Join shared goal' : 'New shared goal', showSteps: !isJoin, s4: isJoin, wizFootStyle: isJoin ? 'display:none' : '',
+      myVal: s.myDays + ' days', myAtMin: s.myDays <= 2 ? 'true' : 'false', myAtMax: s.myDays >= 7 ? 'true' : 'false', myMinus: () => this.setState({ myDays: Math.max(2, s.myDays - 1) }), myPlus: () => this.setState({ myDays: Math.min(7, s.myDays + 1) }),
+      jVal: s.jDays + ' days', jAtMin: s.jDays <= 2 ? 'true' : 'false', jAtMax: s.jDays >= 7 ? 'true' : 'false', jMinus: () => this.setState({ jDays: Math.max(2, s.jDays - 1) }), jPlus: () => this.setState({ jDays: Math.min(7, s.jDays + 1) }), jPeople: jp,
+      decline: () => this.say('Invite declined'), joinNow: () => this.say('Joined Weekend gym. You are on ' + s.jDays + ' days a week, first round Mon 19 Oct'),
+      roundBtns: RS.map((d, i) => ({ l: d[1], full: d[2], checked: rsIdx === i ? 'true' : 'false', pick: () => this.setState({ rs: i }) })), roundNote: 'Default is your week start setting. Each goal keeps its own.', firstRound, roundEvery,
+      firstRoundNote: 'The first round starts ' + firstRound + ' for whoever has joined by then. People who join later start the next round.', cancel: () => this.say('Back to shared goals'),
+      steps: labels.map((l, i) => ({ n: i < step ? '✓' : String(i + 1), name: l, cls: i === step ? 'on' : (i < step ? 'dn' : ''), sep: i < 3 })),
+      s0: step === 0, s1: step === 1, s2: step === 2, s3: step === 3, tplGym: isGym ? 'true' : 'false', tplCustom: isCustom ? 'true' : 'false', pickGym: () => this.setState({ tpl: 'gym' }), pickCustom: () => this.setState({ tpl: 'custom' }),
+      detailsTitle: isGym ? 'Gym crew details' : 'Custom goal details', name: s.name, onName: (e) => this.setState({ name: e.target.value }), icons, isGym, isCustom,
+      scheds: [['every', 'Every day'], ['days', 'Specific days'], ['n', 'N per week']].map((o) => ({ name: o[1], checked: s.sched === o[0] ? 'true' : 'false', pick: () => this.setState({ sched: o[0] }) })),
+      schedDays: isCustom && s.sched === 'days', schedN: isCustom && s.sched === 'n', dayBtns: DL.map((l, i) => ({ l, full: DF[i], checked: s.days[i] ? 'true' : 'false', pick: () => this.setState({ days: s.days.map((d, j) => j === i ? (d ? 0 : 1) : d) }) })),
+      nVal: String(s.n) + ' days', nMinus: () => this.setState({ n: Math.max(1, s.n - 1) }), nPlus: () => this.setState({ n: Math.min(7, s.n + 1) }),
+      countText: s.people.length + ' of 8 · 2 to 8 including you', copyLink: () => this.say('Invite link copied'), userText: s.userText, onUser: (e) => this.setState({ userText: e.target.value }), onUserKey: (e) => { if (e.key === 'Enter') { e.preventDefault(); addUser(); } }, addUser, full: full ? 'true' : 'false',
+      people, needMore, hasPending, ruleText, peopleCount: s.people.length + ' (' + others + ' invited)', icons, backText: step === 0 ? 'Cancel' : 'Back', back: () => (step === 0 ? this.say('Back to shared goals') : go(-1)),
+      blocked, blockText, notLast: step < 3, isLast: step === 3, next: () => { if (!blocked) go(1); }, nextStyle: blocked ? 'opacity:.45' : '', create: () => this.say('Goal created. Invites sent, first round ' + firstRound), hasToast: !!s.toast, toast: s.toast };
+  }
+}
+</script>
+</body>
+</html>

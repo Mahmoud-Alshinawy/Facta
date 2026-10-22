@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Facta widget</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+/* ---- Theme tokens (same as the app) + widget-only tokens ---- */
+.wg,.wg[data-theme="bg"]{
+  --surface:#0C0D0C;--raised:#121412;--raised-2:#191C18;--border:#1A1D1A;--border-strong:#262A25;--control-border:#5F685E;
+  --text:#F1F4F1;--text-2:#A6AEA6;--muted:#868F86;--accent:#22C55E;--accent-text:#03210F;
+  --warning:#E0A33B;--bar-other:#C9D0C9;--event-blue:#5B8DEF;--event-purple:#A47CF0;
+  --surface-rgb:12,13,12;--text-rgb:241,244,241;--t-alpha:.46;--item-a:.88;--t-shadow:0 1px 2px rgba(0,0,0,.55);
+}
+.wg[data-theme="mid"]{
+  --surface:#090E1A;--raised:#0E1524;--raised-2:#141C30;--border:#161F33;--border-strong:#212C45;--control-border:#55668F;
+  --text:#EEF2FA;--text-2:#A3AECB;--muted:#7D89A8;--accent:#4C8DF6;--accent-text:#04122B;
+  --warning:#E8B04B;--bar-other:#C3CCE0;--event-blue:#67C1F5;--event-purple:#A88BF5;
+  --surface-rgb:9,14,26;--text-rgb:238,242,250;--t-alpha:.48;--item-a:.88;--t-shadow:0 1px 2px rgba(0,0,0,.55);
+}
+.wg[data-theme="ember"]{
+  --surface:#0C0A08;--raised:#120F0D;--raised-2:#191512;--border:#1A1613;--border-strong:#27201C;--control-border:#6E6053;
+  --text:#F6F1EC;--text-2:#B8ADA3;--muted:#938778;--accent:#FF8000;--accent-text:#1F0E00;
+  --warning:#E8C547;--bar-other:#D6CCC2;--event-blue:#6E9CF0;--event-purple:#B08AF0;
+  --surface-rgb:12,10,8;--text-rgb:246,241,236;--t-alpha:.48;--item-a:.88;--t-shadow:0 1px 2px rgba(0,0,0,.55);
+}
+.wg[data-theme="light"]{
+  --surface:#FFFFFF;--raised:#F0F1EC;--raised-2:#E7E9E3;--border:#E3E5DF;--border-strong:#CDD1C8;--control-border:#7E857B;
+  --text:#141713;--text-2:#4E554D;--muted:#626A60;--accent:#15803D;--accent-text:#FFFFFF;
+  --warning:#B45309;--bar-other:#9AA197;--event-blue:#2563EB;--event-purple:#7C3AED;
+  --surface-rgb:255,255,255;--text-rgb:20,23,19;--t-alpha:.74;--item-a:.92;--t-shadow:none;
+}
+.wg{width:300px;box-sizing:border-box;display:flex;flex-direction:column;gap:14px;padding:16px 16px 18px;border-radius:18px;background:var(--surface);border:1px solid var(--border-strong);color:var(--text);font-family:'Geist',ui-sans-serif,system-ui,sans-serif;-webkit-font-smoothing:antialiased;box-shadow:0 18px 40px rgba(0,0,0,.35)}
+.wg *{box-sizing:border-box}
+.wg button{font-family:inherit;color:inherit;cursor:pointer}
+.wg button:focus-visible{outline:2px solid var(--text);outline-offset:2px}
+/* transparent: no blur (no glass), just a see-through plate, a hairline and a text shadow for legibility */
+.wg.is-trans{background:rgba(var(--surface-rgb),var(--t-alpha));border-color:rgba(var(--text-rgb),.14);box-shadow:none;text-shadow:var(--t-shadow)}
+.wg.is-trans .tint{background:rgba(var(--text-rgb),.07)}
+.wg.is-trans .line{background:rgba(var(--text-rgb),.14)}
+.mono{font-family:'Geist Mono',ui-monospace,monospace;font-feature-settings:"tnum"}
+.whead{display:flex;align-items:center;gap:8px;font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;font-weight:500;letter-spacing:.08em;color:var(--muted)}
+.tint{background:var(--raised)}
+.line{background:var(--border-strong)}
+.cb{width:18px;height:18px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:6px;border:0;background:transparent;box-shadow:inset 0 0 0 1.5px var(--control-border);flex:0 0 auto}
+.cb[aria-checked="true"]{background:var(--accent);box-shadow:none;color:var(--accent-text)}
+.cb:hover{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.cb[aria-checked="true"]:hover{box-shadow:none}
+.trow:hover{background:rgba(var(--text-rgb),.05)}
+.nav{width:26px;height:26px;padding:0;border:0;border-radius:7px;background:transparent;color:var(--muted);display:flex;align-items:center;justify-content:center}
+.nav:hover{background:rgba(var(--text-rgb),.08);color:var(--text)}
+.cal{height:32px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:8px;font-family:'Geist Mono',ui-monospace,monospace;font-size:12px}
+.seg{transition:background .3s ease}
+/* day timeline items: own plate so text stays legible over any wallpaper */
+.wg.is-trans .dy-hl{color:var(--text-2);background:rgba(var(--surface-rgb),.72);border-radius:4px}
+.wg.is-trans.is-day{background:rgba(var(--surface-rgb),calc(var(--t-alpha) + .14))}
+.dy-item{position:absolute;z-index:1;background:var(--raised);overflow:hidden}
+.wg.is-trans .dy-item{background:rgba(var(--surface-rgb),var(--item-a))}
+</style>
+</helmet>
+
+<div class="{{ rootCls }}" data-theme="{{ themeKey }}">
+
+  <!-- TASKS -->
+  <sc-if value="{{ isTasks }}" hint-placeholder-val="{{ true }}">
+    <div class="whead">
+      <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg>
+      <span style="flex: 1">TODAY</span>
+      <span style="color: var(--text)">{{ done }}/{{ total }}</span>
+    </div>
+    <div aria-hidden="true" style="display: flex; gap: 4px; padding-left: 2px">
+      <sc-for list="{{ segs }}" as="sg" hint-placeholder-count="6"><span class="seg" style="flex: 1; height: 5px; border-radius: 2px; transform: skewX(-18deg); background: {{ sg.bg }}"></span></sc-for>
+    </div>
+    <ul style="list-style: none; margin: 0 -6px; padding: 0; display: flex; flex-direction: column">
+      <sc-for list="{{ items }}" as="it" hint-placeholder-count="6">
+        <li class="trow" style="display: flex; align-items: center; gap: 10px; min-height: 34px; padding: 0 6px; border-radius: 8px">
+          <button type="button" class="cb" role="checkbox" aria-checked="{{ it.checked }}" aria-label="{{ it.cbLabel }}" onClick="{{ it.toggle }}">
+            <sc-if value="{{ it.done }}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></sc-if>
+          </button>
+          <span style="flex: 1; min-width: 0; font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: {{ it.color }}; text-decoration: {{ it.deco }}">{{ it.title }}</span>
+          <span class="mono" style="font-size: 11px; color: var(--muted)">{{ it.meta }}</span>
+        </li>
+      </sc-for>
+    </ul>
+  </sc-if>
+
+  <!-- PROGRESS -->
+  <sc-if value="{{ isProgress }}" hint-placeholder-val="{{ false }}">
+    <div class="whead">
+      <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
+      <span style="flex: 1">PROGRESS</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 16px">
+      <div style="position: relative; width: 76px; height: 76px; flex: 0 0 auto">
+        <svg aria-hidden="true" width="76" height="76" viewBox="0 0 76 76" style="transform: rotate(-90deg)">
+          <circle class="line-ring" cx="38" cy="38" r="32" fill="none" stroke-width="8" style="stroke: rgba(var(--text-rgb),.12)"></circle>
+          <circle cx="38" cy="38" r="32" fill="none" stroke-width="8" stroke-linecap="round" stroke-dasharray="{{ arc }}" style="stroke: var(--accent)"></circle>
+        </svg>
+        <span class="mono" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 500">{{ done }}/{{ total }}</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
+        <span style="font-size: 15px; font-weight: 600">{{ done }} of {{ total }} done today</span>
+        <span style="font-size: 12px; color: var(--text-2)">{{ subline }}</span>
+      </div>
+    </div>
+    <div class="line" style="height: 1px"></div>
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <span style="font-size: 12px; color: var(--text-2)">Gym with Omar and Sara · this week</span>
+      <sc-for list="{{ board }}" as="m" hint-placeholder-count="3">
+        <div style="display: grid; grid-template-columns: 12px 46px 1fr 34px; align-items: center; gap: 8px">
+          <span class="mono" style="font-size: 11px; color: {{ m.rankColor }}">{{ m.rank }}</span>
+          <span style="font-size: 12px; font-weight: {{ m.weight }}">{{ m.name }}</span>
+          <span style="height: 5px; border-radius: 3px; overflow: hidden; background: rgba(var(--text-rgb),.10)"><span style="display: block; height: 100%; width: {{ m.pct }}%; border-radius: 3px; background: {{ m.bar }}"></span></span>
+          <span class="mono" style="font-size: 11px; text-align: right">{{ m.pct }}%</span>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <!-- EVENTS -->
+  <sc-if value="{{ isEvents }}" hint-placeholder-val="{{ false }}">
+    <div class="whead">
+      <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>
+      <span style="flex: 1">EVENTS · TODAY</span>
+      <span style="color: var(--text)">2</span>
+    </div>
+    <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px">
+      <li style="display: flex; gap: 12px; padding: 6px 0; opacity: .6">
+        <span class="mono" style="width: 40px; font-size: 12px; color: var(--text-2); line-height: 18px">10:00</span>
+        <span aria-hidden="true" style="width: 3px; border-radius: 2px; background: var(--event-blue)"></span>
+        <span style="display: flex; flex-direction: column; gap: 1px"><span style="font-size: 13px; font-weight: 500">Database lecture</span><span style="font-size: 11px; color: var(--muted)">until 11:30 · ended</span></span>
+      </li>
+      <li aria-label="Now 13:12" style="display: flex; align-items: center; gap: 8px">
+        <span class="mono" style="width: 40px; font-size: 11px">13:12</span>
+        <span style="width: 6px; height: 6px; border-radius: 3px; background: var(--text)"></span>
+        <span class="line" style="flex: 1; height: 1px"></span>
+      </li>
+      <li style="display: flex; gap: 12px; padding: 6px 0">
+        <span class="mono" style="width: 40px; font-size: 12px; color: var(--text-2); line-height: 18px">16:00</span>
+        <span aria-hidden="true" style="width: 3px; border-radius: 2px; background: var(--event-purple)"></span>
+        <span style="display: flex; flex-direction: column; gap: 1px"><span style="font-size: 13px; font-weight: 500">Team meeting</span><span style="font-size: 11px; color: var(--muted)">until 17:00 · in 2h 48m</span></span>
+      </li>
+    </ul>
+  </sc-if>
+
+  <!-- CALENDAR -->
+  <sc-if value="{{ isCalendar }}" hint-placeholder-val="{{ false }}">
+    <div class="whead">
+      <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>
+      <span style="flex: 1; color: var(--text)">{{ monthLabel }}</span>
+      <button type="button" class="nav" aria-label="Previous month" onClick="{{ prevMonth }}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></button>
+      <button type="button" class="nav" aria-label="Next month" onClick="{{ nextMonth }}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></button>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px">
+      <sc-for list="{{ weekdays }}" as="w" hint-placeholder-count="7"><span class="mono" aria-hidden="true" style="text-align: center; font-size: 10px; color: var(--muted); padding-bottom: 4px">{{ w }}</span></sc-for>
+      <sc-for list="{{ cells }}" as="c" hint-placeholder-count="35">
+        <span class="cal" aria-label="{{ c.aria }}" style="visibility: {{ c.vis }}; background: {{ c.bg }}; color: {{ c.color }}; font-weight: {{ c.weight }}">
+          {{ c.n }}
+          <span aria-hidden="true" style="display: flex; gap: 2px; height: 3px">
+            <sc-for list="{{ c.dots }}" as="d" hint-placeholder-count="0"><span style="width: 3px; height: 3px; border-radius: 2px; background: {{ d.c }}"></span></sc-for>
+          </span>
+        </span>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <!-- DAY VIEW (positions come from data: item times, `now`, and the visible window) -->
+  <sc-if value="{{ isDay }}" hint-placeholder-val="{{ false }}">
+    <div class="whead">
+      <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+      <span style="flex: 1; color: var(--text)">SAT 17 OCT</span>
+      <span>{{ done }}/{{ total }}</span>
+    </div>
+    <div style="position: relative; height: {{ dayH }}px; margin: 6px 0 8px 40px">
+      <sc-for list="{{ dayHours }}" as="h" hint-placeholder-count="11">
+        <div style="position: absolute; left: -40px; right: 0; top: {{ h.top }}px; height: 0; display: flex; align-items: center; gap: 8px">
+          <span class="mono dy-hl" style="width: 32px; font-size: 10px; line-height: 14px; text-align: center; color: var(--muted); visibility: {{ h.vis }}">{{ h.label }}</span>
+          <span class="line" style="flex: 1; height: 1px; opacity: .6"></span>
+        </div>
+      </sc-for>
+      <div style="position: absolute; inset: 0; overflow: hidden; border-radius: 6px">
+        <sc-for list="{{ dayItems }}" as="it" hint-placeholder-count="4">
+          <div class="dy-item" style="left: {{ it.left }}; width: {{ it.width }}; top: {{ it.top }}px; height: {{ it.height }}px; border-radius: 8px">
+            <sc-if value="{{ it.isEvent }}" hint-placeholder-val="{{ true }}">
+              <span aria-hidden="true" style="position: absolute; inset: 0; border-radius: 8px; background: {{ it.color }}; opacity: {{ it.fill }}"></span>
+              <span aria-hidden="true" style="position: absolute; left: -1px; top: 0; bottom: 0; width: 5px; transform: skewX(-10deg); background: {{ it.color }}; opacity: {{ it.edge }}"></span>
+              <span style="position: relative; display: flex; flex-direction: {{ it.dir }}; align-items: {{ it.align }}; justify-content: {{ it.justify }}; gap: {{ it.gap }}; height: 100%; padding: 0 8px 0 14px; min-width: 0">
+                <span style="font-size: 12px; font-weight: 500; line-height: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0">{{ it.title }}</span>
+                <span class="mono" style="font-size: 10px; line-height: 14px; color: var(--text-2); white-space: nowrap; display: {{ it.timeDisplay }}">{{ it.time }}</span>
+              </span>
+            </sc-if>
+            <sc-if value="{{ it.isTask }}" hint-placeholder-val="{{ false }}">
+              <span style="position: relative; display: flex; align-items: center; gap: 8px; height: 100%; padding: 0 8px; border-radius: 8px; box-shadow: inset 0 0 0 1px var(--control-border); min-width: 0">
+                <button type="button" class="cb" role="checkbox" aria-checked="{{ it.checked }}" aria-label="{{ it.cbLabel }}" onClick="{{ it.toggle }}" style="width: 16px; height: 16px; border-radius: 5px">
+                  <sc-if value="{{ it.done }}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></sc-if>
+                </button>
+                <span style="flex: 1; min-width: 0; font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-decoration: {{ it.deco }}; text-decoration-color: rgba(var(--text-rgb), .5)">{{ it.title }}</span>
+                <span class="mono" style="font-size: 10px; color: var(--text-2); display: {{ it.timeDisplay }}">{{ it.time }}</span>
+              </span>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+      <div aria-hidden="true" style="position: absolute; left: 0; right: 0; top: {{ nowTop }}px; height: 0; z-index: 0; pointer-events: none">
+        <span style="position: absolute; left: 0; right: 0; top: -1px; height: 1.5px; background: var(--text)"></span>
+      </div>
+      <div aria-label="{{ nowAria }}" style="position: absolute; left: -40px; width: 46px; top: {{ nowTop }}px; height: 0; z-index: 3; pointer-events: none">
+        <span class="mono" style="position: absolute; left: 0; top: -7px; width: 38px; height: 14px; border-radius: 7px; background: var(--text); color: var(--surface); text-shadow: none; font-size: 10px; font-weight: 500; line-height: 14px; text-align: center">{{ nowLabel }}</span>
+        <span style="position: absolute; left: 40px; top: -3px; width: 6px; height: 6px; border-radius: 3px; background: var(--text)"></span>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"kind":{"editor":"enum","options":["tasks","progress","events","calendar","day"],"default":"tasks"},"theme":{"editor":"enum","options":["bg","mid","ember","light"],"default":"bg"},"transparent":{"editor":"boolean","default":false},"timeFormat":{"editor":"enum","options":["24h","12h"],"default":"24h"},"now":{"editor":"enum","options":["13:12","13:00","13:30","08:05","21:45"],"default":"13:12"},"$preview":{"width":300,"height":360}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      goals: [
+        { id: 'lab', title: 'Finish lab report', time: '14:00', repeat: '', done: false },
+        { id: 'grandma', title: 'Call grandma', time: '', repeat: '', done: false },
+        { id: 'gym', title: 'Gym — push day', time: '', repeat: 'Daily', done: true },
+        { id: 'read', title: 'Read 20 pages', time: '', repeat: 'Weekdays', done: true },
+        { id: 'sql', title: 'Review SQL joins', time: '09:00', repeat: '', done: true },
+        { id: 'plants', title: 'Water the plants', time: '', repeat: 'Weekly', done: true }
+      ],
+      viewY: 2026, viewM: 9
+    };
+    this.listenPrefs();
+  }
+  // ---- shared prefs: Settings writes localStorage 'facta.prefs'; props are the fallback ----
+  prefs() {
+    let o = {}; try { o = (typeof window !== 'undefined' && window.__factaPrefs) || JSON.parse(window.localStorage.getItem('facta.prefs') || '{}') || {}; } catch (e) { o = {}; }
+    const p = this.props || {};
+    return { tf: (o.timeFormat === '12h' || o.timeFormat === '24h') ? o.timeFormat : (p.timeFormat === '12h' ? '12h' : '24h') };
+  }
+  listenPrefs() {
+    this._onPrefs = () => { try { this.setState({ prefTick: Date.now() }); } catch (e) {} };
+    try { window.addEventListener('facta-prefs', this._onPrefs); window.addEventListener('storage', this._onPrefs); } catch (e) {}
+  }
+  unlistenPrefs() { try { window.removeEventListener('facta-prefs', this._onPrefs); window.removeEventListener('storage', this._onPrefs); } catch (e) {} }
+  componentWillUnmount() { this.unlistenPrefs(); }
+  renderVals() {
+    const s = this.state, p = this.props;
+    const kind = p.kind || 'tasks';
+    const goals = s.goals;
+    const total = goals.length, done = goals.filter((g) => g.done).length, left = total - done;
+    const next = goals.find((g) => !g.done);
+    const toggleOf = (g) => () => this.setState({ goals: s.goals.map((x) => (x.id === g.id ? { ...x, done: !x.done } : x)) });
+    const mapG = (g) => ({ ...g, checked: g.done ? 'true' : 'false', cbLabel: (g.done ? 'Mark not done: ' : 'Mark done: ') + g.title,
+      color: g.done ? 'var(--muted)' : 'var(--text)', deco: g.done ? 'line-through' : 'none', meta: g.time || g.repeat, toggle: toggleOf(g) });
+    const items = goals.slice().sort((a, b) => Number(a.done) - Number(b.done)).map(mapG);
+    // ---- Day timeline: everything below is derived from data ----
+    const PF = this.prefs();
+    const pad2 = (n) => (n < 10 ? '0' : '') + n;
+    const fmtT = (min, mode) => { const h = Math.floor(min / 60), mm = min % 60;
+      if (PF.tf === '24h') return pad2(h) + ':' + pad2(mm);
+      const h12 = h % 12 === 0 ? 12 : h % 12, hh = h % 24, ap = hh < 12 ? 'AM' : 'PM';
+      if (mode === 'hour') return h12 + ' ' + ap;
+      if (mode === 'chip') return h12 + (mm ? ':' + pad2(mm) : '') + (hh < 12 ? 'a' : 'p');
+      return h12 + ':' + pad2(mm) + ' ' + ap; };
+    const H = 30, TASK_H = 28, MIN_EV_H = 28, FLAG = 14;
+    const toMin = (t) => { const x = t.split(':'); return Number(x[0]) * 60 + Number(x[1]); };
+    const fmt = (m) => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+    const nowStr = p.now || '13:12', nowMin = toMin(nowStr);
+    const winStartH = Math.max(0, Math.min(14, Math.floor(nowMin / 60) - 2)), winEndH = winStartH + 10;
+    const winStart = winStartH * 60, dayH = (winEndH - winStartH) * H;
+    const yOf = (m) => (m - winStart) * H / 60;
+    const nowTop = yOf(nowMin);
+    const dayHours = []; for (let h = winStartH; h <= winEndH; h++) { const top = (h - winStartH) * H; dayHours.push({ label: fmtT(h * 60, 'hour'), top, vis: Math.abs(top - nowTop) < FLAG ? 'hidden' : 'visible' }); }
+    const gById = (id) => goals.find((g) => g.id === id);
+    const raw = [
+      { kind: 'event', id: 'ev-lecture', title: 'Database lecture', start: '11:00', end: '12:30', c: 'var(--event-blue)' },
+      { kind: 'task', id: 'sql', title: 'Review SQL joins', start: '12:45' },
+      { kind: 'task', id: 'lab', title: 'Finish lab report', start: '14:00' },
+      { kind: 'event', id: 'ev-office', title: 'Office hours', start: '14:30', end: '15:30', c: 'var(--event-blue)' },
+      { kind: 'event', id: 'ev-team', title: 'Team meeting', start: '16:00', end: '17:00', c: 'var(--event-purple)' }
+    ].map((r) => { const st = toMin(r.start); const en = r.kind === 'task' ? st + Math.round(TASK_H * 60 / H) : toMin(r.end);
+      const top = yOf(st), h = r.kind === 'task' ? TASK_H : Math.max(MIN_EV_H, (en - st) * H / 60); return { ...r, st, en, top, h }; })
+      .filter((r) => r.top + r.h > 0 && r.top < dayH).sort((x, y) => x.top - y.top || y.h - x.h);
+    // side-by-side lanes for anything that overlaps in pixels
+    const lanes = []; let cluster = [], clusterEnd = -1;
+    const closeCluster = () => { const n = Math.max(1, ...cluster.map((r) => r.lane + 1)); cluster.forEach((r) => { r.cols = n; }); cluster = []; lanes.length = 0; };
+    raw.forEach((r) => { if (cluster.length && r.top >= clusterEnd) closeCluster();
+      let l = 0; while (lanes[l] !== undefined && lanes[l] > r.top) l++; lanes[l] = r.top + r.h; r.lane = l; cluster.push(r); clusterEnd = Math.max(clusterEnd, r.top + r.h); });
+    closeCluster();
+    const dayItems = raw.map((r) => {
+      const g = r.kind === 'task' ? gById(r.id) : null, narrow = r.cols > 1;
+      const base = { isEvent: r.kind === 'event', isTask: r.kind === 'task', title: r.title,
+        left: 'calc(4px + (100% - 4px) * ' + (r.lane / r.cols) + ')', width: 'calc((100% - 4px) / ' + r.cols + ' - ' + (r.cols > 1 ? 3 : 0) + 'px)', top: r.top, height: r.h };
+      if (r.kind === 'task') return { ...base, ...mapG(g), title: r.title, time: fmtT(r.st, 'chip'), timeDisplay: narrow ? 'none' : 'inline', deco: g.done ? 'line-through' : 'none' };
+      const past = r.en <= nowMin, tall = r.h >= 40;
+      return { ...base, color: r.c, fill: past ? '.12' : '.22', edge: past ? '.7' : '1', time: fmtT(r.st, 'chip') + '–' + fmtT(r.en, 'chip'),
+        dir: tall ? 'column' : 'row', align: tall ? 'flex-start' : 'center', justify: tall ? 'center' : 'flex-start', gap: tall ? '0px' : '8px', timeDisplay: !tall && narrow ? 'none' : 'inline' };
+    });
+    const gym = goals.find((g) => g.id === 'gym');
+    const mem = [{ name: 'You', d: 2 + (gym.done ? 1 : 0), t: 4, you: true }, { name: 'Omar', d: 3, t: 3 }, { name: 'Sara', d: 2, t: 4 }]
+      .map((m) => ({ ...m, pct: Math.round(m.d / m.t * 100) })).sort((a, b) => b.pct - a.pct || (a.you ? -1 : b.you ? 1 : 0));
+    const board = mem.map((m) => ({ ...m, rank: mem.findIndex((x) => x.pct === m.pct) + 1, weight: m.you ? '600' : '500',
+      rankColor: m.you ? 'var(--text)' : 'var(--muted)', bar: m.you ? 'var(--accent)' : 'var(--bar-other)' }));
+    const MONTHS = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
+    const first = new Date(s.viewY, s.viewM, 1).getDay(), len = new Date(s.viewY, s.viewM + 1, 0).getDate();
+    const cells = [];
+    for (let i = 0; i < first; i++) cells.push({ n: '', vis: 'hidden', aria: '', bg: 'transparent', color: 'inherit', weight: '400', dots: [] });
+    for (let n = 1; n <= len; n++) {
+      const today = s.viewY === 2026 && s.viewM === 9 && n === 17;
+      const past = s.viewY === 2026 && s.viewM === 9 && n < 17;
+      cells.push({ n: String(n), vis: 'visible', aria: n + (today ? ', today' : ''),
+        bg: today ? 'var(--text)' : 'transparent', color: today ? 'var(--surface)' : past ? 'var(--muted)' : 'var(--text)', weight: today ? '600' : '400',
+        dots: today ? [{ c: 'var(--event-blue)' }, { c: 'var(--event-purple)' }] : [] });
+    }
+    const shift = (d) => { let m = s.viewM + d, y = s.viewY; if (m < 0) { m = 11; y--; } if (m > 11) { m = 0; y++; } this.setState({ viewM: m, viewY: y }); };
+    const C = 201.1;
+    return {
+      themeKey: p.theme || 'bg',
+      rootCls: 'wg' + (p.transparent ? ' is-trans' : '') + (kind === 'day' ? ' is-day' : ''),
+      isTasks: kind === 'tasks', isProgress: kind === 'progress', isEvents: kind === 'events', isCalendar: kind === 'calendar', isDay: kind === 'day',
+      done, total, items, dayItems, dayHours, dayH, nowTop, nowLabel: fmtT(nowMin, 'chip'), nowAria: 'Now ' + fmtT(nowMin), board,
+      segs: goals.map((g, i) => ({ bg: i < done ? 'var(--accent)' : 'rgba(var(--text-rgb),.12)' })),
+      subline: left === 0 ? 'Day closed. Every box ticked.' : left === 1 ? 'One left: ' + next.title + '.' : left + ' left. Next up: ' + next.title + '.',
+      arc: (C * done / total).toFixed(1) + ' ' + C,
+      monthLabel: MONTHS[s.viewM] + ' ' + s.viewY, weekdays: ['S', 'M', 'T', 'W', 'T', 'F', 'S'], cells,
+      prevMonth: () => shift(-1), nextMonth: () => shift(1)
+    };
+  }
+}
+</script>
+</body>
+</html>
