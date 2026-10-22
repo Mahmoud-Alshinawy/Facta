@@ -9,15 +9,33 @@
 // delete was just confirmed. Status changes are published to subscribers;
 // the engine itself never touches the UI.
 
-import type { CalendarEvent, Goal } from "@/types/planner";
+import type { CalendarEvent, Goal, Note, DiaryEntry } from "@/types/planner";
 import {
-  eventFromRow, eventToRow, goalFromRow, goalToRow,
-  type EventRow, type EventWrite, type GoalRow, type GoalWrite,
+  eventFromRow,
+  eventToRow,
+  goalFromRow,
+  goalToRow,
+  type EventRow,
+  type EventWrite,
+  type GoalRow,
+  type GoalWrite,
+  type NoteRow,
+  type NoteWrite,
+  type DiaryRow,
+  type DiaryWrite,
 } from "@/lib/sync/mappers";
 import { CollectionSync, SyncFailure } from "@/lib/sync/collection";
-import { WriteQueue, queueStorageKey } from "@/lib/sync/queue";
+import {
+  WriteQueue,
+  queueStorageKey,
+  TABLES,
+  type TableName,
+} from "@/lib/sync/queue";
 import type { TableRemote } from "@/lib/sync/remote";
 import type { KeyValueStore } from "@/lib/sync/storage";
+
+import { noteSpec, diarySpec } from "./specs";
+import { storageErrorMessage } from "./indexedDbStore";
 
 export type SyncState = "local-only" | "idle" | "syncing" | "offline" | "error";
 
@@ -29,11 +47,14 @@ export interface SyncStatus {
   failed: number;
   lastError: string | null;
   lastSyncedAt: number | null;
+  storageError?: boolean;
 }
 
 export interface PlannerRemotes {
   goals: TableRemote<GoalWrite, GoalRow>;
   events: TableRemote<EventWrite, EventRow>;
+  notes: TableRemote<NoteWrite, NoteRow>;
+  diary_entries: TableRemote<DiaryWrite, DiaryRow>;
 }
 
 export interface PlannerSyncOptions {
@@ -46,7 +67,7 @@ export interface PlannerSyncOptions {
   now?: () => number;
   onCacheWrite?: () => void;
   /** A local edit was replaced by the server's version during a flush. */
-  onServerWon?: (table: "goals" | "events", outcome: "changed" | "deleted") => void;
+  onServerWon?: (table: TableName, outcome: "changed" | "deleted") => void;
   flushDelayMs?: number;
   pullIntervalMs?: number;
 }
@@ -58,6 +79,8 @@ const SYNCING_DELAY_MS = 300;
 export class PlannerSync {
   readonly goals: CollectionSync<"goals", Goal, GoalRow>;
   readonly events: CollectionSync<"events", CalendarEvent, EventRow>;
+  readonly notes: CollectionSync<"notes", Note, NoteRow>;
+  readonly diaryEntries: CollectionSync<"diary_entries", DiaryEntry, DiaryRow>;
   readonly userId: string;
 
   private readonly queue: WriteQueue;
@@ -70,6 +93,7 @@ export class PlannerSync {
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
   private pullTimer: ReturnType<typeof setInterval> | null = null;
   private failures = 0;
+  private storageFailure: string | null = null;
   private syncInFlight: Promise<void> | null = null;
   private teardown: (() => void)[] = [];
 
@@ -78,28 +102,52 @@ export class PlannerSync {
     this.userId = opts.userId;
     const now = opts.now ?? Date.now;
     const onStorageError = (e: unknown) => this.reportStorageError(e);
-    this.queue = new WriteQueue(opts.store, queueStorageKey(opts.userId), onStorageError);
+    this.queue = new WriteQueue(
+      opts.store,
+      queueStorageKey(opts.userId),
+      onStorageError,
+    );
 
     const ctx = {
       userId: opts.userId,
       store: opts.store,
       queue: this.queue,
       now,
-      isCurrent: (uid: string) => !this.disposed && opts.currentUserId() === uid,
+      isCurrent: (uid: string) =>
+        !this.disposed && opts.currentUserId() === uid,
       onCacheWrite: () => opts.onCacheWrite?.(),
       onChange: () => this.emit(),
       onQueued: () => this.scheduleFlush(),
-      onServerWon: (table: "goals" | "events", outcome: "changed" | "deleted") => opts.onServerWon?.(table, outcome),
+      onServerWon: (table: TableName, outcome: "changed" | "deleted") =>
+        opts.onServerWon?.(table, outcome),
       onStorageError,
     };
     this.goals = new CollectionSync(
-      { table: "goals", cacheKeyBase: "planner_goals", toWrite: goalToRow, fromRow: goalFromRow, localOnly: ["lastNotifiedDate"] },
+      {
+        table: "goals",
+        cacheKeyBase: "planner_goals",
+        toWrite: goalToRow,
+        fromRow: goalFromRow,
+        localOnly: ["lastNotifiedDate"],
+      },
       opts.remotes?.goals ?? null,
       ctx,
     );
     this.events = new CollectionSync(
-      { table: "events", cacheKeyBase: "planner_events", toWrite: eventToRow, fromRow: eventFromRow, localOnly: [] },
+      {
+        table: "events",
+        cacheKeyBase: "planner_events",
+        toWrite: eventToRow,
+        fromRow: eventFromRow,
+        localOnly: [],
+      },
       opts.remotes?.events ?? null,
+      ctx,
+    );
+    this.notes = new CollectionSync(noteSpec, opts.remotes?.notes ?? null, ctx);
+    this.diaryEntries = new CollectionSync(
+      diarySpec,
+      opts.remotes?.diary_entries ?? null,
       ctx,
     );
     this.status = {
@@ -108,13 +156,18 @@ export class PlannerSync {
       failed: 0,
       lastError: null,
       lastSyncedAt: null,
+      storageError: false,
     };
+    const unsubscribe = opts.store.subscribeErrors?.(onStorageError);
+    if (unsubscribe) this.teardown.push(unsubscribe);
   }
 
   /** Loads the caches. Call once, before reading any data. */
   load(): void {
     this.goals.load();
     this.events.load();
+    this.notes.load();
+    this.diaryEntries.load();
     this.refreshCounts();
   }
 
@@ -123,7 +176,9 @@ export class PlannerSync {
     if (!this.opts.remotes) return;
     void this.syncNow();
     if (typeof window !== "undefined") {
-      const onWake = () => { void this.syncNow(); };
+      const onWake = () => {
+        void this.syncNow();
+      };
       window.addEventListener("focus", onWake);
       window.addEventListener("online", onWake);
       this.teardown.push(() => {
@@ -131,7 +186,9 @@ export class PlannerSync {
         window.removeEventListener("online", onWake);
       });
     }
-    this.pullTimer = setInterval(() => { void this.syncNow(); }, this.opts.pullIntervalMs ?? 60_000);
+    this.pullTimer = setInterval(() => {
+      void this.syncNow();
+    }, this.opts.pullIntervalMs ?? 60_000);
   }
 
   dispose(): void {
@@ -146,7 +203,9 @@ export class PlannerSync {
 
   subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener);
-    return () => { this.listeners.delete(listener); };
+    return () => {
+      this.listeners.delete(listener);
+    };
   };
 
   getStatus = (): SyncStatus => this.status;
@@ -169,10 +228,15 @@ export class PlannerSync {
 
   /** quiet: the debounced flush after an edit never shows "syncing". */
   private runFlush(quiet: boolean): Promise<void> {
-    return this.exclusive(async () => {
-      if (!(await this.goals.flush())) return;
-      await this.events.flush();
-    }, { quiet });
+    return this.exclusive(
+      async () => {
+        if (!(await this.goals.flush())) return;
+        if (!(await this.events.flush())) return;
+        if (!(await this.notes.flush())) return;
+        await this.diaryEntries.flush();
+      },
+      { quiet },
+    );
   }
 
   /**
@@ -189,12 +253,19 @@ export class PlannerSync {
   }
 
   private fullSync(): Promise<void> {
-    return this.exclusive(async () => {
-      if (!(await this.goals.flush())) return;
-      if (!(await this.events.flush())) return;
-      if (!(await this.goals.pull())) return;
-      await this.events.pull();
-    }, { isPull: true });
+    return this.exclusive(
+      async () => {
+        if (!(await this.goals.flush())) return;
+        if (!(await this.events.flush())) return;
+        if (!(await this.notes.flush())) return;
+        if (!(await this.diaryEntries.flush())) return;
+        if (!(await this.goals.pull())) return;
+        if (!(await this.events.pull())) return;
+        if (!(await this.notes.pull())) return;
+        await this.diaryEntries.pull();
+      },
+      { isPull: true },
+    );
   }
 
   /** Puts rejected writes back in the queue and tries again. */
@@ -209,18 +280,33 @@ export class PlannerSync {
     const ids = this.queue.discardFailed();
     this.goals.forget(ids.goals);
     this.events.forget(ids.events);
+    this.notes.forget(ids.notes);
+    this.diaryEntries.forget(ids.diary_entries);
     this.setStatus({ lastError: null });
     return this.fullSync();
   }
 
-  private exclusive(work: () => Promise<void>, { isPull = false, quiet = false } = {}): Promise<void> {
+  private exclusive(
+    work: () => Promise<void>,
+    { isPull = false, quiet = false } = {},
+  ): Promise<void> {
     const run = async () => {
-      if (this.disposed || !this.opts.remotes) return;
-      const showSyncing = quiet ? null : setTimeout(() => {
-        if (!this.disposed) this.setStatus({ state: "syncing" });
-      }, SYNCING_DELAY_MS);
+      if (this.disposed) return;
+      const showSyncing = quiet
+        ? null
+        : setTimeout(() => {
+            if (!this.disposed) this.setStatus({ state: "syncing" });
+          }, SYNCING_DELAY_MS);
       try {
+        if (this.opts.store.flush) {
+          await this.opts.store.flush();
+          this.storageFailure = null;
+        }
         await work();
+        if (this.opts.store.flush) {
+          await this.opts.store.flush();
+          this.storageFailure = null;
+        }
         if (this.disposed) return;
         this.failures = 0;
         this.refreshCounts();
@@ -228,14 +314,23 @@ export class PlannerSync {
         this.setStatus({
           state: failed > 0 ? "error" : "idle",
           lastError: failed > 0 ? this.failedMessage(failed) : null,
-          lastSyncedAt: isPull ? (this.opts.now ?? Date.now)() : this.status.lastSyncedAt,
+          lastSyncedAt:
+            isPull && this.opts.remotes
+              ? (this.opts.now ?? Date.now)()
+              : this.status.lastSyncedAt,
         });
         // Edits made during this run are flushed by their own scheduled flush.
       } catch (e) {
         if (this.disposed) return;
         this.refreshCounts();
-        const err = e instanceof SyncFailure ? e.error : { message: errorMessage(e), kind: "server" as const };
-        this.setStatus({ state: err.kind === "offline" ? "offline" : "error", lastError: err.message });
+        const err =
+          e instanceof SyncFailure
+            ? e.error
+            : { message: errorMessage(e), kind: "server" as const };
+        this.setStatus({
+          state: err.kind === "offline" ? "offline" : "error",
+          lastError: err.message,
+        });
         // Row errors are parked inside the run, so whatever reaches here is
         // sync-wide: keep everything queued and try again later.
         this.scheduleRetry();
@@ -259,27 +354,51 @@ export class PlannerSync {
   }
 
   private failedMessage(n: number): string {
-    const first = this.queue.failedEntries("goals")[0] ?? this.queue.failedEntries("events")[0];
+    const first = TABLES.flatMap((table) => this.queue.failedEntries(table))[0];
     const reason = first ? `: ${first.error}` : "";
-    return n === 1 ? `1 change was rejected by the server${reason}` : `${n} changes were rejected by the server${reason}`;
+    return n === 1
+      ? `1 change was rejected by the server${reason}`
+      : `${n} changes were rejected by the server${reason}`;
   }
 
   private reportStorageError(e: unknown): void {
-    this.setStatus({ state: "error", lastError: `Couldn't save on this device: ${errorMessage(e)}` });
+    this.storageFailure = storageErrorMessage(e);
+    this.setStatus({
+      state: "error",
+      lastError: this.storageFailure,
+      storageError: true,
+    });
   }
 
   private refreshCounts(): void {
-    this.setStatus({ pending: this.queue.pendingCount, failed: this.queue.failedCount });
+    this.setStatus({
+      pending: this.queue.pendingCount,
+      failed: this.queue.failedCount,
+    });
   }
 
   private setStatus(patch: Partial<SyncStatus>): void {
-    const next = { ...this.status, ...patch };
-    if (!this.opts.remotes) next.state = next.state === "error" ? "error" : "local-only";
+    const next = {
+      ...this.status,
+      ...patch,
+      storageError: this.storageFailure !== null,
+    };
+    if (this.storageFailure) {
+      next.state = "error";
+      next.lastError = this.storageFailure;
+    }
+    if (!this.opts.remotes)
+      next.state = next.state === "error" ? "error" : "local-only";
     const prev = this.status;
     if (
-      next.state === prev.state && next.pending === prev.pending && next.failed === prev.failed &&
-      next.lastError === prev.lastError && next.lastSyncedAt === prev.lastSyncedAt
-    ) return;
+      next.state === prev.state &&
+      next.pending === prev.pending &&
+      next.failed === prev.failed &&
+      next.storageError === prev.storageError &&
+      next.lastError === prev.lastError &&
+      next.lastSyncedAt === prev.lastSyncedAt
+    )
+      return;
     this.status = next;
     this.emit();
   }

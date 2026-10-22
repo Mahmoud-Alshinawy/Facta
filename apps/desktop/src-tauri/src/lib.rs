@@ -4,6 +4,21 @@ use tauri::Emitter;
 use tauri::Manager;
 use tauri::RunEvent;
 use std::env;
+use std::sync::Mutex;
+
+struct WidgetActionDelivery(Mutex<Option<String>>);
+
+#[tauri::command]
+fn set_widget_action_delivery(consumer_id: String, ready: bool, state: tauri::State<'_, WidgetActionDelivery>) -> Result<(), String> {
+    let mut consumer = state.0.lock().map_err(|_| "Widget consumer lock failed")?;
+    if ready {
+        *consumer = Some(consumer_id);
+    } else if consumer.as_ref() == Some(&consumer_id) {
+        // A previous account's teardown must not pause a newer consumer.
+        *consumer = None;
+    }
+    Ok(())
+}
 
 fn tray_icon(theme: tauri::Theme) -> tauri::image::Image<'static> {
     match theme {
@@ -278,6 +293,7 @@ pub fn run() {
     // facta://focus) hands its args to this instance and exits instead
     // of starting a duplicate; the deep-link feature forwards the URL too.
     let mut builder = tauri::Builder::default()
+        .manage(WidgetActionDelivery(Mutex::new(None)))
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.unminimize();
@@ -294,6 +310,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             export_data_for_widgets,
             read_pending_actions,
+            set_widget_action_delivery,
             launch_widget_app,
             widget_app_running
         ]);
@@ -347,9 +364,14 @@ pub fn run() {
         // webview throttles JS timers, so polling there delayed widget
         // check-offs until the window was shown again.
         {
+            // IndexedDB hydration can outlast the first polling interval.
+            // Leave actions on disk until a signed-in consumer is listening.
             let handle = app.handle().clone();
             std::thread::spawn(move || loop {
                 std::thread::sleep(std::time::Duration::from_millis(400));
+                if !handle.state::<WidgetActionDelivery>().0.lock().map(|consumer| consumer.is_some()).unwrap_or(false) {
+                    continue;
+                }
                 match drain_pending_actions() {
                     Ok(actions) if !actions.is_empty() => {
                         let _ = handle.emit("widget-actions", actions);

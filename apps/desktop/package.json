@@ -26,6 +26,7 @@
     "@vitejs/plugin-react": "catalog:",
     "clsx": "catalog:",
     "date-fns": "^3.6.0",
+    "fake-indexeddb": "6.2.4",
     "lucide-react": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",

@@ -1,4 +1,88 @@
-# Handoff: feat/ui-redesign (branch 1 of 3), work in progress
+# Handoff: feat/notes-diary (branch 2 of 3), step 1 for review
+
+## Branch 2 current state (22 October 2026)
+- Branch created from origin/main at 48d1fc9. Step 1 only is implemented:
+  data, storage and sync. STOP after this commit/push for owner review.
+  Notes/Diary pages, editor, fonts, widget types and multi-day event UI have
+  not started. Sidebar entries remain hidden; TodayPanel is unchanged.
+- New re-runnable migration: 20261022140000_notes_diary.sql. Adds notes and
+  diary_entries with ownership RLS (UPDATE USING + WITH CHECK), indexes,
+  size/title/tag/enum constraints and the existing sticky-delete/newer-wins
+  guard. Adds inclusive events.end_date with its constraint.
+- Notes Trash is trashed_at (restorable edit); deleted_at is exclusively the
+  permanent sync tombstone. Body is an editor-independent typed block array.
+  Links are derived from UUID reference nodes; backlinks and Unicode word
+  count are client calculations. Full schema/body rules and sync protocol:
+  docs/notes-diary-data.md.
+- Diary writes use the security-invoker facta_write_diary RPC, serialized per
+  user/date with the partial live-date unique index as final guard. Newer
+  clamped updated_at wins one_line/mood/body/tags together; ties keep stored
+  fields and canonical ID/created_at. Covers offline duplicate UUIDs, sticky
+  deletes, lost-response replays and explicit newer re-creation. Client rekeys
+  queued identities without dropping newer in-flight edits. Entry dates are
+  immutable through the client/RPC; new entries default mood 3.
+- All four collection caches AND the pending/failed write queue now use an
+  IndexedDB-backed KeyValueStore: async hydration, synchronous read view,
+  atomic coalesced cache/queue writes and async durability barriers. First-run
+  per-user migration commits legacy bytes and its marker before removing
+  unchanged localStorage values. Other accounts/prefs/auth are untouched.
+  Later opens use IndexedDB without needing localStorage reads. Corrupt JSON
+  is retained and surfaced rather than silently clearing saved data.
+- Storage failures retain pending snapshots in memory, stay visible in the
+  toast/sidebar, and offer retry; storage-open failures show an explicit retry
+  screen. Remote work waits for persistence and cannot report success over a
+  failed durability barrier. Actual disk exhaustion was not induced.
+- Existing widget export reads the hydrated store. Native toggle polling now
+  waits for a signed-in frontend readiness lease, preserving queued actions
+  while IndexedDB hydrates; old lease release cannot pause a newer consumer.
+  Native runtime delivery across hydration/account changes needs owner testing.
+- Added test-only fake-indexeddb 6.2.4 for real storage/migration code in Node;
+  no production dependency, TipTap or font package was added. Notes chunk is
+  absent (0 KB before editor integration); current main JS is 658.41 kB,
+  191.48 kB gzip. Record the lazy Notes chunk before/after TipTap in step 2.
+
+## Step 1 verification (Windows, 22 October 2026)
+- Passed frozen install; npx tsc --noEmit in desktop/widgets/calendar; Vitest
+  desktop 292/292 and calendar 152/152; desktop build with PORT=1420 BASE_PATH=/;
+  widgets build; cargo check --offline in both src-tauri folders. Native system
+  prerequisites exist. Existing >500 kB desktop bundle warning remains.
+- Tests cover mapping/end_date, typed bodies and limits, UUID link extraction,
+  Unicode word count/backlinks, Trash versus tombstones, canonical diary ID
+  adoption/in-flight edits/restart, migration isolation/restart/abort, >10 MiB
+  persistence, storage failure retention/status/toast and corruption handling.
+- Real-browser isolated IndexedDB harness passed: migrated legacy goals/events
+  and queue; saved all four collections; closed/reopened >10 MiB of valid note
+  bodies; cache and pending queue survived together; a closed database retained
+  an edit in memory with a persistent error status. Test database/tab/server
+  and temporary files were removed before final builds. No live Supabase calls.
+- supabase/tests/notes_diary.sql is self-contained for the Supabase SQL editor:
+  prerequisites + proposed migration + rerun + assertions, all in one rollback
+  transaction. Refuses projects with existing planner tables; use a FRESH SCRATCH
+  project. Embedded migrations were compared with their source files; no psql
+  directives. SQL was written/read, NOT executed here. The owner runs the
+  scratch tests before applying the migration to his project.
+- Native WebView persistence after OS crash, live Supabase/RPC concurrency and
+  native widget readiness delivery are not runtime-verified in this step.
+
+## Approved remaining branch-2 work (wait for step-1 review)
+2. NotesApp/NA-cheat: lazy MIT-only TipTap core/extensions, list/grid/editor,
+   slash menu, selection-only toolbar, tags/pin/Trash+Undo/backlinks/switcher/
+   app-only Ctrl+Shift+N capture/focus mode. Ctrl+K in editor means link.
+   Bundle Geist/Geist Mono plus Source Serif 4 Latin only. Export Markdown and
+   plain TXT with logic tests; ZIP/PDF deferred. Measure Notes chunk size.
+3. DiaryApp/DA-cheat: Today/timeline/On this day/calendar/search/streak/missed/
+   empty; test streak and written counts; no lock or stored aggregates.
+4. Event end-date UI and calendar selectors/spans, including multi-day tests.
+5. Notes Sticky/Stack + Diary widgets, Settings picker and sidebar unhide.
+   Export only pinned notes plus four most recent non-trashed notes, title and
+   plain preview (never bodies); diary only today's line and On this day lines.
+   Pending actions must edit the full desktop record, never overwrite from a
+   truncated preview; preserve existing diary mood, default new mood to 3.
+6. Compare all four themes at 1440/1280/1100, fix, record gaps and stop for review.
+Every finished step: all required checks including BOTH builds and cargo
+checks, HANDOFF in the same commit, required human author, commit and push.
+
+## Branch 1 history (merged into main at 48d1fc9)
 
 ## Review fixes (22 October 2026)
 - All seven requested review fixes are implemented as separate commits.

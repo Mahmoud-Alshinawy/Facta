@@ -113,7 +113,9 @@ export default function App() {
   // Process widget toggle actions from floating widgets
   const appliedActionIds = useRef<Set<string>>(new Set());
   useEffect(() => {
+    if (!user?.id) return;
     if (typeof window === "undefined" || !((window as any).__TAURI_INTERNALS__ || (window as any).__TAURI__)) return;
+    const consumerId = crypto.randomUUID();
     type WidgetAction = { type: string; goal_id: string; id?: string };
     function apply(actions: WidgetAction[]) {
       for (const action of actions) {
@@ -126,22 +128,26 @@ export default function App() {
       }
     }
     let unlisten: (() => void) | undefined;
+    let pauseDelivery: (() => Promise<unknown>) | undefined;
     let cancelled = false;
     (async () => {
       try {
         const { invoke } = await import("@tauri-apps/api/core");
+        pauseDelivery = () => invoke("set_widget_action_delivery", { consumerId, ready: false });
         const { listen } = await import("@tauri-apps/api/event");
         const un = await listen<WidgetAction[]>("widget-actions", (e) => apply(e.payload));
         if (cancelled) { un(); return; }
         unlisten = un;
+        await invoke("set_widget_action_delivery", { consumerId, ready: true });
+        if (cancelled) { await pauseDelivery(); return; }
         // Pick up anything queued before this window started listening.
         apply((await invoke("read_pending_actions")) as WidgetAction[]);
       } catch (e) {
         console.error("[ActionApply] failed:", e);
       }
     })();
-    return () => { cancelled = true; unlisten?.(); };
-  }, [toggleComplete]);
+    return () => { cancelled = true; void pauseDelivery?.().finally(() => unlisten?.()).catch(() => {}); };
+  }, [toggleComplete, user?.id]);
 
   const openNew = useCallback((date?: string, time?: string, endTime?: string) => {
     setEditingEvent(null);
