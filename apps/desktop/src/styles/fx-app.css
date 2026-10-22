@@ -109,6 +109,8 @@
     .fx .goal-fields > span:empty { display: none; }
   }
   .fx .hd, .fx .foot { flex-shrink: 0; }
+  .fx .quick-add-footer > button { flex-shrink:0; }
+  .fx .quick-add-footer .b-commit { margin-left:auto; }
   .fx .calendar-heading { min-width:150px; }
   @container app (min-width: 1201px) and (max-width: 1440px) {
     .fx .calendar-toolbar { flex-wrap:nowrap;gap:12px;padding-inline:20px; }

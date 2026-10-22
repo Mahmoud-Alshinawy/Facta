@@ -1,6 +1,17 @@
 # Handoff: feat/ui-redesign (branch 1 of 3), work in progress
 
 ## Review fixes (22 October 2026)
+- Fix 5: Week quick-add measures the popover and visible grid below its sticky
+  header, flips above the selected range when needed, and clamps on scroll or
+  resize. Its footer buttons wrap instead of compressing out of view. Added
+  four pure placement tests (including 15:00–17:00 and changed viewport bounds).
+- Browser pointer drag at 1280x720 selected 15:00–17:00: popover flipped above,
+  all three action buttons stayed inside it and above the page footer. Resize
+  to 1210x600 also stayed within the grid; Escape restored grid focus; no console
+  errors. Disposable local fixture only, Supabase disabled.
+- Fix 5 checks passed: frozen install; npx tsc x3; desktop Vitest 268/268,
+  calendar 152/152; required desktop build; both cargo check --offline.
+  Fixtures removed before build. Existing Vite chunk-size warning only.
 - Fix 4: Calendar's 1201–1440px toolbar stays on one row with a flexible
   quick-add field. New event is icon-only at 1201–1320px, retaining its name,
   tooltip and shortcut. Browser checked all four views at 1440/1280/1210/1100;

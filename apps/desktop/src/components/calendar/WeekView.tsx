@@ -476,6 +476,9 @@ export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpen
           {qa && keys.includes(qa.key) && (
             <QuickAddPopover
               style={{ ...colHoriz(keys.indexOf(qa.key)), top: Math.max(8, (qa.a * H) / 2 - 20), width: 348 }}
+              viewportRef={scRef}
+              stickyRef={stickyRef}
+              slotBounds={{ start: (qa.a * H) / 2, end: ((qa.b + 1) * H) / 2 }}
               day={days[keys.indexOf(qa.key)]}
               start={qa.a * 30}
               end={(qa.b + 1) * 30}

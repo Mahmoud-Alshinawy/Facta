@@ -2,7 +2,7 @@
 // detail popover (click an event). Both trap focus, close on Escape and
 // outside clicks, and hand focus back to the grid.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { parseQuickEvent } from "@facta/calendar";
 import type { CalendarEvent, EventColor } from "@/types/planner";
@@ -12,6 +12,7 @@ import { useDialogFocus } from "@/hooks/useDialogFocus";
 import { IconCalendar, IconClock, IconClose, IconEdit, IconRepeat, IconTrash } from "@/components/shell/Icons";
 import { Commit, Kbd, colorVar, dayLabel, type Clocks } from "./common";
 import type { EventDraft } from "./types";
+import { popoverTop } from "@/lib/popoverPlacement";
 
 function useOutside(ref: React.RefObject<HTMLElement | null>, onOutside: () => void) {
   useEffect(() => {
@@ -28,7 +29,7 @@ const REPEAT_TEXT: Record<string, string> = {
   none: "Does not repeat", daily: "Every day", weekdays: "Every weekday", weekly: "Every week", custom: "On chosen days",
 };
 
-export function QuickAddPopover({ style, day, start, end, now, clocks: C, onClose, onAdd, onMore }: {
+export function QuickAddPopover({ style, day, start, end, now, clocks: C, onClose, onAdd, onMore, viewportRef, stickyRef, slotBounds }: {
   style: CSSProperties;
   day: Date;
   start: number;
@@ -38,11 +39,38 @@ export function QuickAddPopover({ style, day, start, end, now, clocks: C, onClos
   onClose: () => void;
   onAdd: (event: Omit<CalendarEvent, "id" | "updatedAt">) => void;
   onMore: (draft: EventDraft) => void;
+  viewportRef?: React.RefObject<HTMLDivElement | null>;
+  stickyRef?: React.RefObject<HTMLDivElement | null>;
+  slotBounds?: { start: number; end: number };
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [text, setText] = useState("");
   const [color, setColor] = useState<EventColor>("blue");
   const [blocked, setBlocked] = useState("");
+  const [placement, setPlacement] = useState<CSSProperties>({});
+  const slotStart = slotBounds?.start, slotEnd = slotBounds?.end;
+  useLayoutEffect(() => {
+    const popover = ref.current, viewport = viewportRef?.current;
+    if (!popover || !viewport || slotStart === undefined || slotEnd === undefined) return;
+    const place = () => {
+      const parent = popover.offsetParent;
+      if (!parent) return;
+      const origin = parent.getBoundingClientRect().top;
+      const bounds = viewport.getBoundingClientRect();
+      const visibleTop = Math.max(bounds.top, stickyRef?.current?.getBoundingClientRect().bottom ?? bounds.top) - origin + 8;
+      const visibleBottom = bounds.bottom - origin - 8;
+      const maxHeight = Math.max(0, visibleBottom - visibleTop);
+      const height = Math.min(popover.scrollHeight, maxHeight);
+      setPlacement({ top: popoverTop({ start: slotStart, end: slotEnd, height, visibleTop, visibleBottom }), maxHeight, overflowY: "auto" });
+    };
+    place();
+    const observer = new ResizeObserver(place);
+    observer.observe(viewport);
+    observer.observe(popover);
+    if (stickyRef?.current) observer.observe(stickyRef.current);
+    viewport.addEventListener("scroll", place);
+    return () => { observer.disconnect(); viewport.removeEventListener("scroll", place); };
+  }, [viewportRef, stickyRef, slotStart, slotEnd]);
   useDialogFocus(ref, true);
   useOutside(ref, onClose);
 
@@ -61,7 +89,7 @@ export function QuickAddPopover({ style, day, start, end, now, clocks: C, onClos
   };
 
   return (
-    <div ref={ref} className="pop" role="dialog" aria-label="Quick add event" style={style}
+    <div ref={ref} className="pop" role="dialog" aria-label="Quick add event" style={{ ...style, ...placement }}
       onMouseDown={(ev) => ev.stopPropagation()}
       onKeyDown={(ev) => {
         if (ev.key === "Escape") { ev.preventDefault(); ev.stopPropagation(); onClose(); }
@@ -86,7 +114,7 @@ export function QuickAddPopover({ style, day, start, end, now, clocks: C, onClos
         </div>
         <div className="sr-only" aria-live="assertive">{blocked}</div>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderTop: "1px solid var(--border-strong)", background: "var(--surface)" }}>
+      <div className="quick-add-footer" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, padding: "10px 14px", borderTop: "1px solid var(--border-strong)", background: "var(--surface)" }}>
         <button type="button" className="b b-quiet" onClick={() => onMore(draft())}>More options <Kbd>Ctrl Enter</Kbd></button>
         <span style={{ flex: 1 }} />
         <button type="button" className="b b-quiet" onClick={onClose}>Cancel <Kbd>Esc</Kbd></button>
