@@ -1,5 +1,14 @@
 # Handoff: feat/ui-redesign (branch 1 of 3), work in progress
 
+## Review fixes (22 October 2026)
+- Owner reports checks and native Windows testing passed for 0ad41a8.
+- Fix 1: sign-out falls back to local scope after remote failure; the hook
+  clears its user after either successful path. Only local failure propagates.
+  Three mocked-client tests cover fallback, double failure and remote success.
+- Fix 1 checks passed: frozen install; all three npx tsc checks; desktop
+  Vitest 260/260, calendar 152/152; desktop build (PORT=1420 BASE_PATH=/);
+  both cargo check --offline. Existing Vite chunk-size warning only.
+
 Design source: Claude Design canvas v97 (artifact 76b58a8f-…). Boards render
 locally: copy `artifact-type/dc-runtime.js` to `project/support.js`, serve
 `project/` and open `<Board>.dc.html` (or a wrapper with
