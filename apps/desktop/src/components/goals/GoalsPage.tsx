@@ -150,6 +150,12 @@ export default function GoalsPage({
         ? time
         : `${format(new Date(row.date + "T12:00"), "EEE d MMM")}${time ? ` · ${time}` : ""}`;
     const streak = row.rule ? goalStreak([row.goal], now).current : 0;
+    const title = (
+      <span className="goal-row-title">
+        <span className="tt">{row.goal.title}</span>
+        {row.overdue && <span className="goal-overdue">Overdue</span>}
+      </span>
+    );
     const check = row.rule ? (
       <span className="rule-icon">
         <IconRepeat size={12} />
@@ -203,7 +209,7 @@ export default function GoalsPage({
           <>
             <div className="r1">
               {check}
-              <span className="tt flex-1">{row.goal.title}</span>
+              {title}
               {reminder}
             </div>
             <div className="r2">
@@ -214,7 +220,7 @@ export default function GoalsPage({
         ) : (
           <>
             {check}
-            <span className="tt">{row.goal.title}</span>
+            {title}
             <span className={`chp ${cls}`} title={`Priority: ${label}`}>
               <span className="pb" aria-hidden="true">
                 {[0, 1, 2].map((i) => (

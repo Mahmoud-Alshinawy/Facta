@@ -16,6 +16,19 @@ const goal = (over: Partial<Goal>): Goal => ({
 const now = new Date(2026, 9, 21, 12);
 
 describe("Goals Mine sections", () => {
+  it("marks only unfinished past one-offs as overdue, retaining their own date", () => {
+    const sections = goalsMineSections([
+      goal({ id: "past", date: "2026-10-20" }),
+      goal({ id: "today" }),
+      goal({ id: "future", date: "2026-10-22" }),
+      goal({ id: "done", date: "2026-10-20", completed: true }),
+      goal({ id: "repeat", date: "2026-10-19", repeat: "daily", completedDates: ["2026-10-20"] }),
+    ], now, { weekStart: 1 });
+    const overdue = sections.flatMap(section => section.rows).filter(row => row.overdue);
+    expect(overdue).toHaveLength(1);
+    expect(overdue[0]).toMatchObject({ goal: { id: "past" }, date: "2026-10-20", done: false, rule: false });
+    expect(sections[0].rows).toHaveLength(3);
+  });
   it("separates recurring rules from today's ticks and dated history", () => {
     const repeat = goal({
       repeat: "daily",

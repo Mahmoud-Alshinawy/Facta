@@ -99,6 +99,9 @@
   .fx .goal-next { height: 30px; }
   .fx .rule-icon { display: flex; width: 16px; flex-shrink: 0; justify-content: center; color: var(--subtle); }
   .fx .goal-section-empty { padding: 12px 0; font-size: 13px; color: var(--subtle); }
+  .fx .goal-row-title { display:flex;flex-direction:column;min-width:0; }
+  .fx .bcard .goal-row-title { flex:1; }
+  .fx .goal-overdue { font-size:11px;line-height:1.3;color:var(--warning); }
   .fx .gempty h2 { margin: 0; font-size: 18px; font-weight: 600; }
   .fx .gempty p { font-size: 13.5px; color: var(--text-2); }
   .fx .glist:focus-visible { outline: 2px solid var(--text); outline-offset: 4px; }

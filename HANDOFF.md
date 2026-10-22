@@ -1,6 +1,18 @@
 # Handoff: feat/ui-redesign (branch 1 of 3), work in progress
 
 ## Review fixes (22 October 2026)
+- Fix 6: overdue unfinished one-offs carry an Overdue sub-label in Goals Mine
+  List and Board. Their original date and Today section membership remain;
+  Done today still counts today's scheduled occurrences only. Added a mapper
+  test excluding current/future goals, completed history and recurring rows.
+- Browser verified List at 1280 and Board at 1100 with one due-today and one
+  overdue goal; Today 2, Done today 0 of 1, and only the overdue row labelled.
+  Light theme uses the warning token. Final Calendar audit: 16 view/width
+  combinations (1440/1280/1210/1100), no wrapping/overflow. Preview closed,
+  viewport reset, server stopped and fixtures removed before build.
+- Fix 6 checks passed: frozen install; npx tsc x3; desktop Vitest 269/269,
+  calendar 152/152; required desktop build; both cargo check --offline.
+  Existing Vite chunk-size warning only.
 - Fix 5: Week quick-add measures the popover and visible grid below its sticky
   header, flips above the selected range when needed, and clamps on scroll or
   resize. Its footer buttons wrap instead of compressing out of view. Added

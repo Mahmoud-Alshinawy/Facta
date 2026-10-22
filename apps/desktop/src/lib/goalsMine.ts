@@ -19,6 +19,7 @@ export interface GoalRow {
   done: boolean;
   rule: boolean;
   reminder: boolean;
+  overdue: boolean;
 }
 export interface GoalSection {
   id: GoalGroup;
@@ -52,6 +53,7 @@ export function goalsMineSections(
       date,
       rule,
       done,
+      overdue: !rule && !done && (goal.repeat ?? "none") === "none" && date < today,
       reminder: !rule && !done && date <= today && reminderPending(goal, now),
     };
   };
