@@ -21,6 +21,7 @@ import { supabase } from "@/lib/supabase";
 import { requestWidgetExport } from "@/lib/widgetExportBus";
 import AuthScreen from "@/components/AuthScreen";
 import { Toaster } from "sonner";
+const DiaryPage = lazy(() => import("@/components/diary/DiaryPage"));
 const NotesPage = lazy(() => import("@/components/notes/NotesPage"));
 export default function App() {
   const { user, loading: authLoading } = useAuth();
@@ -202,7 +203,7 @@ export default function App() {
         if (target?.closest('[contenteditable="true"]')) return;
         e.preventDefault(); setSearchOpen(true); return;
       }
-      if (section === "notes") return;
+      if (section === "notes" || section === "diary") return;
       if (target?.closest('input, textarea, select, [contenteditable="true"], [role="dialog"]')) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const key = e.key.toLowerCase();
@@ -244,6 +245,7 @@ export default function App() {
           actions={calendarActions} keyboardBlocked={dialogOpen || goalDialogOpen || searchOpen || cheatOpen} />}
         {section === "goals" && <GoalsPage keyboardBlocked={dialogOpen || goalDialogOpen || searchOpen || cheatOpen} />}
         {section === "notes" && <Suspense fallback={<p role="status" className="p-8 text-subtle">Opening Notes…</p>}><NotesPage captureRequest={noteCaptureRequest} keyboardBlocked={dialogOpen || goalDialogOpen || searchOpen || cheatOpen} /></Suspense>}
+        {section === "diary" && <Suspense fallback={<p role="status" className="p-8 text-subtle">Opening Diary…</p>}><DiaryPage keyboardBlocked={dialogOpen || goalDialogOpen || searchOpen || cheatOpen} onOpenToday={() => changeSection("today")} /></Suspense>}
         {section === "settings" && <SettingsPage />}
       </main>
       <GoalDialog open={goalDialogOpen} onClose={() => setGoalDialogOpen(false)} onSave={createGoal}
@@ -251,7 +253,7 @@ export default function App() {
       <EventDialog open={dialogOpen} onClose={() => { setDialogOpen(false); setEditingEvent(null); }}
         onSave={handleSave} onDelete={deleteEvent} initialDate={dialogInitialDate} initialStartTime={dialogInitialTime}
         initialEndTime={dialogInitialEnd} editEvent={editingEvent} draft={eventDraft} />
-      <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} events={events} goals={goals} onSelectEvent={openEdit}
+      <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} events={events} goals={goals} onSelectEvent={openEdit} onOpenPage={changeSection}
         onGoToDate={(date, nextView) => { setSelectedDate(date); setView(nextView); setSection("calendar"); }} />
       {cheatOpen && <CheatSheet context={section === "goals" ? "goals" : section === "today" ? "today" : "calendar"} onClose={() => setCheatOpen(false)} />}
       <Toaster richColors position="bottom-right" />

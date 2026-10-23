@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { format, parseISO } from "date-fns";
-import { Search, X, Calendar, Target, Clock } from "lucide-react";
+import { Search, X, Calendar, Target, Clock, BookOpen } from "lucide-react";
+import { useDialogFocus } from "@/hooks/useDialogFocus";
 import { CalendarEvent, COLOR_MAP } from "@/hooks/useEvents";
 import { Goal, CATEGORY_META } from "@/hooks/useGoals";
 
@@ -10,16 +11,20 @@ interface SearchModalProps {
   events: CalendarEvent[];
   goals: Goal[];
   onSelectEvent: (event: CalendarEvent) => void;
+  onOpenPage: (page: "notes" | "diary") => void;
   onGoToDate: (date: Date, view: "day") => void;
 }
 
 type Result =
   | { kind: "event"; event: CalendarEvent }
-  | { kind: "goal"; goal: Goal };
+  | { kind: "goal"; goal: Goal }
+  | { kind: "page"; page: "notes" | "diary" };
 
-export default function SearchModal({ open, onClose, events, goals, onSelectEvent, onGoToDate }: SearchModalProps) {
+export default function SearchModal({ open, onClose, events, goals, onSelectEvent, onGoToDate, onOpenPage }: SearchModalProps) {
   const [query, setQuery] = useState("");
   const [cursor, setCursor] = useState(0);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(dialogRef, open);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -45,7 +50,8 @@ export default function SearchModal({ open, onClose, events, goals, onSelectEven
       .slice(0, 5)
       .map((goal) => ({ kind: "goal", goal }));
 
-    return [...matchedEvents, ...matchedGoals];
+    const pages: Result[] = (["notes", "diary"] as const).filter(page => page.includes(q)).map(page => ({kind: "page", page}));
+    return [...pages, ...matchedEvents, ...matchedGoals];
   }, [query, events, goals]);
 
   useEffect(() => {
@@ -58,7 +64,8 @@ export default function SearchModal({ open, onClose, events, goals, onSelectEven
       if (e.key === "Escape") { onClose(); return; }
       if (e.key === "ArrowDown") { e.preventDefault(); setCursor((c) => Math.min(c + 1, results.length - 1)); }
       if (e.key === "ArrowUp") { e.preventDefault(); setCursor((c) => Math.max(c - 1, 0)); }
-      if (e.key === "Enter" && results[cursor]) {
+      if (e.key === "Enter" && results[cursor] && e.target === inputRef.current) {
+        e.preventDefault();
         handleSelect(results[cursor]);
       }
     };
@@ -70,6 +77,8 @@ export default function SearchModal({ open, onClose, events, goals, onSelectEven
     if (result.kind === "event") {
       onSelectEvent(result.event);
       onGoToDate(parseISO(result.event.date), "day");
+    } else if (result.kind === "page") {
+      onOpenPage(result.page);
     } else {
       onGoToDate(parseISO(result.goal.date), "day");
     }
@@ -84,19 +93,21 @@ export default function SearchModal({ open, onClose, events, goals, onSelectEven
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-      <div className="relative w-full max-w-lg mx-4 bg-card rounded-2xl shadow-2xl border border-border overflow-hidden">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Search" tabIndex={-1} className="relative w-full max-w-lg mx-4 bg-card rounded-2xl shadow-2xl border border-border overflow-hidden">
         <div className="flex items-center gap-3 px-4 py-3.5 border-b border-border">
           <Search size={16} className="text-muted-foreground shrink-0" />
           <input
             ref={inputRef}
             type="text"
-            placeholder="Search events and goals…"
+            aria-label="Search events, goals and pages"
+            data-autofocus
+            placeholder="Search events, goals and pages…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
           />
           {query && (
-            <button onClick={() => setQuery("")} className="text-muted-foreground hover:text-foreground transition-colors">
+            <button aria-label="Clear search" onClick={() => setQuery("")} className="text-muted-foreground hover:text-foreground transition-colors">
               <X size={15} />
             </button>
           )}
@@ -115,20 +126,20 @@ export default function SearchModal({ open, onClose, events, goals, onSelectEven
           {!query && (
             <div className="px-4 py-6 text-center text-sm text-muted-foreground">
               <Search size={24} className="mx-auto mb-2 opacity-30" />
-              Type to search events and goals
+              Type to search events, goals, Notes or Diary
             </div>
           )}
 
           {results.map((result, i) => (
             <button
-              key={result.kind === "event" ? result.event.id : result.goal.id}
+              key={result.kind === "page" ? result.page : result.kind === "event" ? result.event.id : result.goal.id}
               onClick={() => handleSelect(result)}
               onMouseEnter={() => setCursor(i)}
               className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
                 i === cursor ? "bg-primary/8 text-foreground" : "text-foreground hover:bg-muted/60"
               }`}
             >
-              {result.kind === "event" ? (
+              {result.kind === "page" ? <><BookOpen size={16}/><span className="flex-1 text-sm capitalize">{result.page}</span><span className="text-xs text-muted-foreground">Open page</span></> : result.kind === "event" ? (
                 <>
                   <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${COLOR_MAP[result.event.color].bg}`} />
                   <div className="flex-1 min-w-0">

@@ -1,4 +1,65 @@
-# Handoff: feat/notes-diary (branch 2 of 3), step 2 implemented
+# Handoff: feat/notes-diary (branch 2 of 3), step 3 implemented
+
+## Step 3 Diary page (23 October 2026)
+- Implemented DiaryApp/DA-cheat in components/diary: Today with a one-line
+  composer, five moods, user-derived/custom tags, optional plain-text body,
+  yesterday backfill, paused/current/best streak information, a seven-day mood
+  strip, read-only goals/events context and On this day. No diary lock.
+- Timeline is bounded to the selected month, with gap rows, inline Today
+  capture, expandable bodies and historical edit dialogs. Calendar uses the
+  saved week-start preference, mood bars, previews, selected-day detail,
+  written/average statistics and an accessible mood trend. Search covers lines,
+  longer entries and tags; selected moods are OR, selected tags are AND.
+- New entries save the line and details together; default mood is 3. Editing
+  never removes the existing entry. Existing mood/tag changes save immediately;
+  longer text saves on blur. Line drafts remain explicit Enter/Save and survive
+  Diary view changes during this visit. All writes use useDiary/the existing
+  IndexedDB sync collection and date-based identity; no new persistence path.
+  At midnight, yesterday's unsaved backfill is cleared rather than relabeled
+  as a different day; Today/Search header dates follow the actual current day.
+- Streaks count unique days, retain yesterday's run until today ends and derive
+  best/last run from history. Future rows cannot inflate aggregates. Written
+  denominator is elapsed days this month, all days in a past month, zero in a
+  future month. On this day follows the board's same-day-number recalls from
+  earlier MONTHS, newest first (not only previous years). Future calendar days
+  are browsable; new entries are for today or earlier days.
+- W/T/L/C, /, ?, P, 1–5, Enter, Escape, Tab and [/] follow DA-cheat, scoped away
+  from typing and unrelated dialogs. Radio groups and the single-tab-stop
+  calendar support arrows; calendar also supports Home/End/PageUp/PageDown.
+  Dialogs trap/restore focus. Escape leaves the line for its visible Save
+  control; a subsequent Escape closes a historical editor. Empty saves announce
+  errors. Today goals/events remain read-only and Open Today navigates back.
+- App lazily mounts Diary. Sidebar Notes/Diary stay hidden until step 5; use
+  Ctrl+K, type Diary (or Notes), Enter to open the page for review now. The
+  shared search now has a focus trap and does not double-activate results when
+  Enter is pressed on an actual result button. TodayPanel is unchanged.
+- 15 pure logic tests cover unique/newer-wins history, timestamp ties/offsets,
+  current/paused/best runs, year/leap/DST day boundaries, written denominators,
+  invalid dates, monthly recalls, bounded gaps, search and week-start grids.
+  The same 15 tests also passed with TZ=America/New_York for the DST boundary.
+- Browser verification used the actual App shell and engine with two isolated
+  IndexedDB fixtures, blank Supabase configuration and locally bundled fonts.
+  Verified blocked empty saves, mood/tags/body, backfill, history editing with
+  mood preserved, search/highlighting/filters, shortcut focus trapping/restoring,
+  radio and calendar arrows, Escape focus, draft retention, reload durability,
+  empty state and timeline capture (default mood 3). No browser console errors.
+- Calendar geometry passed all four themes at 1440/1280/1100 with no horizontal
+  or header overflow; inspected Calendar and Today screenshots. Today also
+  checked at 1280 and 1100. Full rendered-board comparison remains step 6; the
+  hosted board URL could not be fetched with the web tool, so the local design
+  component was the reference. Native WebView keyboard/IME behavior, native
+  opener runtime and live multi-device sync have not been runtime-tested here.
+- Preview files/private context exports, test databases, tabs and server were
+  removed after QA. Screenshot: this task's visualization directory,
+  diary-step3.png (outside the repository). No new runtime dependency.
+- Required Windows checks passed: pnpm install --frozen-lockfile; npx tsc
+  --noEmit in desktop/widgets/calendar; Vitest 342/342 desktop and 152/152
+  calendar; PORT=1420 BASE_PATH=/ desktop build; widgets build; cargo check
+  --offline in both src-tauri folders. Existing main-chunk warning remains.
+- Lazy Diary JS 30.27 kB / 9.35 kB gzip; CSS 11.44 / 2.68. Notes remains lazy:
+  JS 363.08 / 111.91; CSS 18.04 / 3.81. Main 662.05 / 192.84.
+- STOP after this commit. Step 4 events end-date UI/calendar, step 5 widgets/
+  sidebar unhide and step 6 final board comparison have not started.
 
 ## Step 2 review fixes (23 October 2026)
 - External editor links support Ctrl+click and an Open button in the link
