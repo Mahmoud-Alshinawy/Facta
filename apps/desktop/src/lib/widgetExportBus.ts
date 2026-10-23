@@ -2,8 +2,13 @@
 // after a mutation, and all calls within the debounce window coalesce into a
 // single export_data_for_widgets invocation.
 
+import { toast } from "sonner";
 import { getStorageKey } from "@/hooks/useAuth";
 import { readPrefs } from "@/hooks/usePrefs";
+import { projectWidgetJournal } from "./widgetJournal";
+import { widgetReceiptsKey } from "./widgetActions";
+import { keyOf } from "./calendarData";
+import type { Note, DiaryEntry } from "@/types/planner";
 import type { KeyValueStore } from "@/lib/sync/storage";
 
 let timer: ReturnType<typeof setTimeout> | null = null;
@@ -39,7 +44,12 @@ export function requestWidgetExport() {
   timer = setTimeout(flush, 500);
 }
 
-export async function exportWidgetsNow() {
+let exporting: Promise<void> = Promise.resolve();
+export function exportWidgetsNow(): Promise<void> {
+  exporting = exporting.then(writeWidgetSnapshot);
+  return exporting;
+}
+async function writeWidgetSnapshot() {
   try {
     const userId = exportUserId;
     const source = exportStore;
@@ -52,6 +62,23 @@ export async function exportWidgetsNow() {
     const eventsKey = getStorageKey("planner_events", exportUserId);
     const goalsJson = userId ? source!.store.get(goalsKey) || "[]" : "[]";
     const eventsJson = userId ? source!.store.get(eventsKey) || "[]" : "[]";
+    const notes: Note[] = userId
+      ? JSON.parse(
+          source!.store.get(getStorageKey("planner_notes", userId)) || "[]",
+        )
+      : [];
+    const diary: DiaryEntry[] = userId
+      ? JSON.parse(
+          source!.store.get(getStorageKey("planner_diary_entries", userId)) ||
+            "[]",
+        )
+      : [];
+    const journalJson = JSON.stringify(
+      projectWidgetJournal(notes, diary, keyOf(new Date())),
+    );
+    const results = userId
+      ? JSON.parse(source!.store.get(widgetReceiptsKey(userId)) || "[]")
+      : [];
     // The widgets read the calendar settings (time format, week start) from
     // the same file, under config.prefs.
     let config: Record<string, unknown> = { widgets: [] };
@@ -67,9 +94,16 @@ export async function exportWidgetsNow() {
       goalsJson,
       eventsJson,
       configJson,
+      journalJson,
+      actionResultsJson: JSON.stringify(results),
+      userId,
     });
   } catch (e) {
     console.error("[WidgetExport] failed:", e);
+    toast.error(
+      "Could not update desktop widgets. Your planner data is kept.",
+      { id: "widget-export-error" },
+    );
   }
 }
 

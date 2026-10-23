@@ -65,6 +65,7 @@ function toggleDoneToday(g: Goal): Goal {
 export default function TaskWidget() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
+  const ownerRef = useRef<string | null>(null);
   const goalsRef = useRef<Goal[]>([]);
   // goalId -> expected done state, kept until the exported data agrees.
   const pending = useRef(new Map<string, { expected: boolean; until: number }>());
@@ -78,6 +79,8 @@ export default function TaskWidget() {
     try {
       const data = await readSharedDataFresh();
       if (data) {
+        if(ownerRef.current !== (data.user_id ?? null)) pending.current.clear();
+        ownerRef.current = data.user_id ?? null;
         const now = Date.now();
         const fresh = (data?.goals || []) as Goal[];
         commit(fresh.map((g) => {
@@ -115,6 +118,7 @@ export default function TaskWidget() {
         actionJson: JSON.stringify({
           type: "toggle_goal",
           goal_id: goalId,
+          ...(ownerRef.current ? {user_id:ownerRef.current} : {}),
           id: crypto.randomUUID(),
         }),
       });

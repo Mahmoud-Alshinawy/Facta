@@ -17,18 +17,22 @@ import { WIDGET_LABELS, type WidgetConfig } from "@/lib/widgetConfig";
 import { IconCheck } from "../shell/Icons";
 import { Calendar, Clock, LayoutGrid, Sun, Target } from "lucide-react";
 
+import JournalPreview from "./JournalPreview";
+
 const PREVIEW_ICONS = {
   tasks: LayoutGrid,
   events: Clock,
   progress: Target,
   calendar: Calendar,
   dayview: Sun,
+  notes: LayoutGrid,
+  diary: Calendar,
 };
 
 export default function WidgetPreview({
   widget,
 }: {
-  widget: Pick<WidgetConfig, "theme" | "type" | "translucent">;
+  widget: Pick<WidgetConfig, "theme" | "type" | "translucent" | "noteStyle">;
 }) {
   const now = useNow(),
     prefs = usePrefs(),
@@ -55,6 +59,7 @@ export default function WidgetPreview({
     nowMin,
     { height: 280, taskHeight: 28 },
   );
+  if(widget.type === "notes" || widget.type === "diary") return <JournalPreview widget={widget}/>;
   return (
     <div
       className="widget-preview-stage"

@@ -4,3 +4,4 @@ export * from "./dayTimeline";
 export * from "./quickParse";
 export * from "./spans";
 export * from "./eventSchedule";
+export * from "./widgetJournal";

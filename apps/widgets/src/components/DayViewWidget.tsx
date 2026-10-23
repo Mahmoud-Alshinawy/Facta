@@ -41,6 +41,7 @@ export default function DayViewWidget({ theme, translucent }: { theme: string; t
   const [events, setEvents] = useState<WidgetEvent[]>([]);
   const [prefs, setPrefs] = useState<CalendarPrefs>(() => parsePrefs(undefined));
   const [loading, setLoading] = useState(true);
+  const ownerRef = useRef<string | null>(null);
   const goalsRef = useRef<WidgetGoal[]>([]);
   const pending = useRef(new Map<string, { expected: boolean; until: number }>());
   const now = useMinuteClock();
@@ -56,6 +57,8 @@ export default function DayViewWidget({ theme, translucent }: { theme: string; t
       const data = await readSharedDataFresh();
       if (!alive) return;
       if (data) {
+        if(ownerRef.current !== (data.user_id ?? null)) pending.current.clear();
+        ownerRef.current = data.user_id ?? null;
         const t = Date.now();
         commitGoals(((data.goals ?? []) as WidgetGoal[]).map((g) => {
           const p = pending.current.get(g.id);
@@ -81,7 +84,7 @@ export default function DayViewWidget({ theme, translucent }: { theme: string; t
     commitGoals(goalsRef.current.map((g) => (g.id === id ? next : g)));
     try {
       const { invoke } = await import("@tauri-apps/api/core");
-      await invoke("write_action", { actionJson: JSON.stringify({ type: "toggle_goal", goal_id: id, id: crypto.randomUUID() }) });
+      await invoke("write_action", { actionJson: JSON.stringify({ type: "toggle_goal", goal_id: id, ...(ownerRef.current ? {user_id:ownerRef.current} : {}), id: crypto.randomUUID() }) });
     } catch (e) {
       console.error("[DayWidget] write_action failed:", e);
     }

@@ -82,6 +82,8 @@ export class PlannerSync {
   readonly notes: CollectionSync<"notes", Note, NoteRow>;
   readonly diaryEntries: CollectionSync<"diary_entries", DiaryEntry, DiaryRow>;
   readonly userId: string;
+  /** Hydrated local store; widget action receipts share the collection batch. */
+  readonly localStore: KeyValueStore;
 
   private readonly queue: WriteQueue;
   private readonly opts: PlannerSyncOptions;
@@ -99,6 +101,7 @@ export class PlannerSync {
 
   constructor(opts: PlannerSyncOptions) {
     this.opts = opts;
+    this.localStore = opts.store;
     this.userId = opts.userId;
     const now = opts.now ?? Date.now;
     const onStorageError = (e: unknown) => this.reportStorageError(e);

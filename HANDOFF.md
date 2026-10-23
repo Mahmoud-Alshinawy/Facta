@@ -1,4 +1,75 @@
-# Handoff: feat/notes-diary (branch 2 of 3), step 4 review fix complete
+# Handoff: feat/notes-diary (branch 2 of 3), step 5 implemented
+
+## Step 5 Notes/Diary widgets + picker + sidebar (23 October 2026)
+- Implemented the NotesWidget Sticky and Stack cards and DiaryWidget one-line
+  card, using NotesDesk/Settings as layout references. Shared presentational
+  JournalCards render the same cards in the companion and Settings previews.
+  All four theme tokens, solid/transparent plates, bundled Geist/Geist Mono,
+  labelled controls and visible keyboard focus; no dependency or CDN added.
+- Sticky rotates pinned-to-widget notes and edits title, text and colour.
+  It autosaves after 800 ms idle, supports Save/Ctrl Enter, and saves before
+  rotation. Text remains editable while waiting for Facta. Small recovery
+  drafts in companion localStorage are scoped by account/window/note; these
+  are bounded editing drafts, not collection caches. Recovery write failures
+  are visible. A stale edit keeps its draft and asks the user to review Notes.
+- Stack exports/displays the four most recently edited live notes and captures
+  a new title-only note with Enter. Rows open their note in Facta. Sticky/Open
+  and Diary/Open also use validated facta://focus section/note links; the main
+  app handles running/cold-start links and consumes note-open requests once.
+- Diary exports only today's line and three same-day-number recalls from prior
+  months, not full bodies, tags or moods. Enter creates/edits one line; new mood
+  is 3, while an existing entry keeps its id, mood, body, tags and creation time.
+  Queued lines retain their intended date after midnight. Stale/future dates and
+  invalid/oversized input fail visibly. A stale-day widget waits for fresh data.
+- widgetJournal projects only pinned-to-widget + four recent notes, title and
+  an 800-character Unicode-safe plain-text preview, colour and small metadata.
+  No full note body/tags/links. The complete journal projection is capped at
+  128 KiB; Stack slots are reserved first, and unusually large pinned sets get
+  a visible 'More pinned notes' notice. Counts and word counts use real data.
+- Preview edits replace only the changed prefix range of the canonical body,
+  preserving unseen text, unaffected marks, note links, heading/checklist state
+  and blocks. Subsequent autosaves may use the prior acknowledged prefix;
+  tests cover continued typing beyond the exported preview without duplication.
+- New actions are account-scoped and apply through the existing notes/diary
+  sync collections. Existing goal toggles now use the same consumer; Tasks/Day
+  attach the snapshot owner. Native pending actions remain under the existing
+  file lock until cache + queue + a bounded receipt ledger commit in one IDB
+  transaction. Explicit acknowledgements remove only committed action ids.
+  Restart replay does not toggle twice or duplicate quick notes. Failed storage
+  never acknowledges. Corrupt pending JSON is retained rather than overwritten.
+- Added the per-user receipt key to IndexedDbStore hydration; old cache/queue
+  migration remains compatible. Receipt metadata is local only (not synced).
+  Export includes bounded receipts for widget acknowledgement/status, is
+  serialized, and replaces widgets.json through a temporary snapshot. Signed-out
+  snapshots are empty; another account's actions remain queued for their owner.
+- Added Notes (Sticky/Stack) and Diary to config, native window sizing, Settings
+  type picker/style choices, live previews and per-widget style metadata.
+  Existing tasklist companion-status check and window placement policy remain.
+  Sidebar now exposes Notes and Diary; both pages remain lazy-loaded. Previews
+  use non-form containers so the New widget form has no nested forms.
+- Vitest exercises projection/privacy/size bounds, Unicode, safe rich-body edits,
+  validation, conflicts, Diary mood preservation, restart replay and real IDB
+  durability/failure. Frozen install, npx tsc --noEmit in desktop/widgets/calendar,
+  desktop Vitest 371/371, calendar 184/184, both Vite builds and cargo check
+  --offline in both native folders pass on Windows. Main chunk warning remains.
+- Bundle sizes (kB / gzip): main 688.75 / 201.88; lazy Notes 362.54 / 111.71
+  (before step 5: 363.08 / 111.91); lazy Diary 28.05 / 8.42; widgets main
+  228.20 / 72.32 plus lazy window API 15.21 / 3.85.
+- Browser QA used an isolated memory engine, invented fixtures and blank
+  Supabase configuration. Verified Sticky save/autosave/colour/rotation, Stack
+  capture, Diary creation/editing, picker style persistence, both sidebar pages,
+  and Settings geometry at 1440/1280/1100 (rail at 1100). All four themes passed
+  solid/transparent card overflow checks. Fresh final page had no console errors
+  or warnings; a nested preview-form issue found during QA was fixed.
+- Also browser-smoked the prior 24-hour fix: Week/Day bands, full-range tooltip
+  and detail, middle-day continuation and short overnight split segments.
+  Temporary preview files/context exports, tab and server were removed. Proof:
+  task visualization directory, notes-diary-widgets-step5.png.
+- Not verified: actual native companion launch/window drag/resize, file IPC while
+  desktop is hidden/closed/restarted, OS deep-link delivery and multi-device sync.
+  These need an owner native smoke run. No SQL changed/run; no live Supabase.
+- STOP after step 5 for review. Step 6's full rendered-board comparison across
+  all pages/themes/1440/1280/1100 is still pending; no branch 3 work started.
 
 ## Step 4 review: 24-hour spanning bars (23 October 2026)
 - Week/Day/Month put timed events lasting >=24 hours in the spanning band;

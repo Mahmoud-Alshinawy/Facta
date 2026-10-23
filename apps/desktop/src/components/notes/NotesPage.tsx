@@ -125,9 +125,13 @@ function ColourPicker({
 
 export default function NotesPage({
   captureRequest = 0,
+  openRequest,
+  onOpenRequestHandled,
   keyboardBlocked = false,
 }: {
   captureRequest?: number;
+  openRequest?: {id:string;request:number}|null;
+  onOpenRequestHandled?: () => void;
   keyboardBlocked?: boolean;
 }) {
   const {
@@ -274,6 +278,7 @@ export default function NotesPage({
     },
     [addNote],
   );
+  const handledOpen = useRef<number|null>(null);
   const openNote = useCallback(
     (id: string) => {
       const note = notes.find((n) => n.id === id);
@@ -292,6 +297,10 @@ export default function NotesPage({
     },
     [notes],
   );
+  useEffect(()=>{
+    if(!openRequest || handledOpen.current===openRequest.request || !notes.some(n=>n.id===openRequest.id)) return;
+    handledOpen.current=openRequest.request;openNote(openRequest.id);onOpenRequestHandled?.();
+  },[openRequest,openNote,notes,onOpenRequestHandled]);
   const trash = useCallback(() => {
     if (!selected || selected.trashedAt) return;
     trashNote(selected.id);

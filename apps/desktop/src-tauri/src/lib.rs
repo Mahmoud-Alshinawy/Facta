@@ -133,6 +133,9 @@ fn export_data_for_widgets(
     goals_json: String,
     events_json: String,
     config_json: String,
+    journal_json: String,
+    action_results_json: String,
+    user_id: Option<String>,
 ) -> Result<(), String> {
     let local_app_data = dirs::data_local_dir()
         .ok_or_else(|| {
@@ -153,6 +156,9 @@ fn export_data_for_widgets(
         "goals": serde_json::from_str::<serde_json::Value>(&goals_json).unwrap_or(serde_json::json!([])),
         "events": serde_json::from_str::<serde_json::Value>(&events_json).unwrap_or(serde_json::json!([])),
         "config": config,
+        "user_id": user_id,
+        "journal": serde_json::from_str::<serde_json::Value>(&journal_json).map_err(|e| e.to_string())?,
+        "action_results": serde_json::from_str::<serde_json::Value>(&action_results_json).map_err(|e| e.to_string())?,
         "exported_at": chrono::Utc::now().to_rfc3339(),
         "exported_at_ms": chrono::Utc::now().timestamp_millis(),
     });
@@ -162,7 +168,7 @@ fn export_data_for_widgets(
         String::new()
     });
     let bytes_written = json.len();
-    if let Err(e) = std::fs::write(&path, &json) {
+    if let Err(e) = std::fs::write(dir.join("widgets.json.tmp"), &json).and_then(|_| std::fs::rename(dir.join("widgets.json.tmp"), &path)) {
         eprintln!("[WidgetExport] write {:?} failed: {}", path, e);
         return Err(e.to_string());
     }
@@ -267,10 +273,17 @@ async fn launch_widget_app() -> Result<(), String> {
 
 #[tauri::command]
 fn read_pending_actions() -> Result<Vec<serde_json::Value>, String> {
-    drain_pending_actions()
+    pending_actions(None)
 }
 
-fn drain_pending_actions() -> Result<Vec<serde_json::Value>, String> {
+#[tauri::command]
+fn ack_widget_actions(ids: Vec<String>) -> Result<(), String> {
+    pending_actions(Some(&ids)).map(|_| ())
+}
+
+// Read under the same lock as widget appends. Leave actions on disk until the
+// webview acknowledges its cache, sync queue and receipt transaction committed.
+fn pending_actions(ack: Option<&[String]>) -> Result<Vec<serde_json::Value>, String> {
     let path = dirs::data_local_dir()
         .ok_or("Could not find local app data directory")?
         .join("Facta")
@@ -280,7 +293,7 @@ fn drain_pending_actions() -> Result<Vec<serde_json::Value>, String> {
         return Ok(Vec::new());
     }
 
-    // Hold an exclusive advisory lock across the whole read AND the clear so a
+    // Hold an exclusive advisory lock across the whole read/acknowledge so a
     // widget app's write_action append can never interleave between the two.
     use fs2::FileExt;
     let mut file = std::fs::OpenOptions::new()
@@ -306,24 +319,26 @@ fn drain_pending_actions() -> Result<Vec<serde_json::Value>, String> {
         use std::io::{Read, Seek};
         file.seek(std::io::SeekFrom::Start(0)).map_err(|e| e.to_string())?;
         let mut contents = String::new();
-        if file.read_to_string(&mut contents).is_err() {
-            contents = String::new();
-        }
-        let actions: Vec<serde_json::Value> =
-            serde_json::from_str(&contents).unwrap_or_default();
+        file.read_to_string(&mut contents).map_err(|e| e.to_string())?;
+        let actions: Vec<serde_json::Value> = if contents.trim().is_empty() { Vec::new() }
+            else { serde_json::from_str(&contents).map_err(|e| format!("Invalid widget queue; original retained: {}", e))? };
 
-        if actions.is_empty() {
-            return Ok(Vec::new());
+        if ack.is_none() || actions.is_empty() {
+            return Ok(actions);
         }
+        let remaining: Vec<_> = actions.into_iter().filter(|action| {
+            !action.get("id").and_then(|v| v.as_str()).map(|id| ack.unwrap().iter().any(|a| a == id)).unwrap_or(false)
+        }).collect();
 
-        // Clear the file (truncate) — still under the same lock.
+        // Rewrite the remaining actions — still under the same lock.
         file.seek(std::io::SeekFrom::Start(0)).map_err(|e| e.to_string())?;
         file.set_len(0).map_err(|e| e.to_string())?;
         use std::io::Write;
-        file.write_all(b"[]").map_err(|e| e.to_string())?;
+        file.write_all(serde_json::to_string(&remaining).map_err(|e| e.to_string())?.as_bytes()).map_err(|e| e.to_string())?;
         file.flush().map_err(|e| e.to_string())?;
 
-        Ok(actions)
+        file.sync_data().map_err(|e| e.to_string())?;
+        Ok(remaining)
     })();
 
     let _ = file.unlock();
@@ -376,6 +391,7 @@ pub fn run() {
             open_note_link,
             export_data_for_widgets,
             read_pending_actions,
+            ack_widget_actions,
             set_widget_action_delivery,
             launch_widget_app,
             widget_app_running
@@ -426,7 +442,7 @@ pub fn run() {
             })
             .build(app)?;
 
-        // Drain widget actions from a native thread. A hidden (close-to-tray)
+        // Deliver pending widget actions from a native thread. A hidden (close-to-tray)
         // webview throttles JS timers, so polling there delayed widget
         // check-offs until the window was shown again.
         {
@@ -438,12 +454,12 @@ pub fn run() {
                 if !handle.state::<WidgetActionDelivery>().0.lock().map(|consumer| consumer.is_some()).unwrap_or(false) {
                     continue;
                 }
-                match drain_pending_actions() {
+                match pending_actions(None) {
                     Ok(actions) if !actions.is_empty() => {
                         let _ = handle.emit("widget-actions", actions);
                     }
                     Ok(_) => {}
-                    Err(e) => eprintln!("[Facta] drain_pending_actions failed: {}", e),
+                    Err(e) => eprintln!("[Facta] pending_actions failed: {}", e),
                 }
             });
         }
