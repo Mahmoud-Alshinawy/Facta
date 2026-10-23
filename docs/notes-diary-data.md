@@ -68,6 +68,14 @@ mutations made together are coalesced into one transaction with strict
 durability. Remote work waits for storage before sending and again before
 reporting completion. Edits remain optimistic until that transaction completes.
 
+Desktop Quit emits a webview request before exiting. A listener installed before
+React mounts awaits every open store's `flush()`, including stores closing after
+an account change, with a two-second limit. Native `ExitRequested` routes other
+explicit exits through the same handshake; closing the window still hides it.
+A 2.2-second native fallback bounds an unresponsive webview. Storage failure or
+timeout is logged before exiting, so this remains a best-effort bounded flush.
+The widgets companion has no IndexedDB store; its exits save positions natively.
+
 On first open for each account, old cache/queue bytes and the migration marker
 are committed together. Only then are unchanged legacy values removed.
 Other accounts, settings and auth keys are untouched. An aborted migration

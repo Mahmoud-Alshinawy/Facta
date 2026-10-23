@@ -1,4 +1,5 @@
 import type { KeyValueStore } from "./storage";
+import { plannerQuit } from "./quitBarrier";
 
 const DB_NAME = "facta-planner";
 const OBJECT_STORE = "kv";
@@ -63,12 +64,14 @@ export class IndexedDbStore implements KeyValueStore {
   private scheduled = false;
   private listeners = new Set<(error: unknown) => void>();
   private failure: unknown = null;
+  private unregisterQuit: () => void;
 
   private constructor(
     private db: IDBDatabase,
     private values: Map<string, string>,
     private allowed: Set<string>,
   ) {
+    this.unregisterQuit = plannerQuit.register(this);
     db.onversionchange = () => {
       db.close();
       this.report(
@@ -188,6 +191,7 @@ export class IndexedDbStore implements KeyValueStore {
   async close(): Promise<void> {
     await this.flush();
     this.db.close();
+    this.unregisterQuit();
   }
 
   private checkKey(key: string) {

@@ -1,5 +1,20 @@
 # Handoff: feat/notes-diary (branch 2 of 3), step 1 for review
 
+## Step 1 review fixes (23 October 2026)
+- Fix 1: desktop Quit now emits a webview event and awaits every open store's
+  flush (including account-change teardown) for up to two seconds before the
+  native exit acknowledgement. Other desktop ExitRequested paths use the same
+  handler. Startup listener replay, repeated-request suppression and a 2.2 s
+  native fallback handle early/stalled webviews. Close-to-tray stays unchanged.
+  Widgets have no IndexedDB cache; their explicit exits save positions natively.
+- Fix 1 checks: frozen install, all three typechecks, desktop 296/296 and calendar
+  152/152 tests, both builds, both cargo check --offline passed on Windows.
+  Existing desktop bundle warning remains. Barrier tests cover real IndexedDB
+  persistence before acknowledgement, multiple stores/failure and the deadline.
+  Native tray handshake was compile-checked, not runtime-tested here.
+- Fixes 2–4 are pending. Do not start step 2. SQL will be tested locally by the
+  owner before migration application; no Supabase project was contacted.
+
 ## Branch 2 current state (22 October 2026)
 - Branch created from origin/main at 48d1fc9. Step 1 only is implemented:
   data, storage and sync. STOP after this commit/push for owner review.

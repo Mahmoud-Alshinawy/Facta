@@ -5,6 +5,43 @@ use tauri::Manager;
 use tauri::RunEvent;
 use std::env;
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
+
+#[derive(Default)]
+struct QuitState {
+    requested: AtomicBool,
+    allowed: AtomicBool,
+    code: AtomicI32,
+}
+
+fn request_quit(app: &tauri::AppHandle, code: i32) {
+    let state = app.state::<QuitState>();
+    if state.requested.swap(true, Ordering::SeqCst) { return; }
+    state.code.store(code, Ordering::SeqCst);
+    let _ = app.emit("facta-request-quit", ());
+    // A hung/hidden webview must not make Quit hang forever. JS has two seconds
+    // to await IndexedDB; this native deadline also works when JS timers stall.
+    let handle = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(2200));
+        finish_quit(handle);
+    });
+}
+
+#[tauri::command]
+fn finish_quit(app: tauri::AppHandle) {
+    let state = app.state::<QuitState>();
+    if !state.requested.load(Ordering::SeqCst) { return; }
+    state.allowed.store(true, Ordering::SeqCst);
+    app.exit(state.code.load(Ordering::SeqCst));
+}
+
+#[tauri::command]
+fn quit_listener_ready(app: tauri::AppHandle) {
+    if app.state::<QuitState>().requested.load(Ordering::SeqCst) {
+        let _ = app.emit("facta-request-quit", ());
+    }
+}
 
 struct WidgetActionDelivery(Mutex<Option<String>>);
 
@@ -293,6 +330,7 @@ pub fn run() {
     // facta://focus) hands its args to this instance and exits instead
     // of starting a duplicate; the deep-link feature forwards the URL too.
     let mut builder = tauri::Builder::default()
+        .manage(QuitState::default())
         .manage(WidgetActionDelivery(Mutex::new(None)))
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
             if let Some(window) = app.get_webview_window("main") {
@@ -308,6 +346,8 @@ pub fn run() {
         ))
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
+            finish_quit,
+            quit_listener_ready,
             export_data_for_widgets,
             read_pending_actions,
             set_widget_action_delivery,
@@ -340,7 +380,7 @@ pub fn run() {
             .menu(&menu)
             .on_menu_event(move |app, event| match event.id().as_ref() {
                 "quit" => {
-                    app.exit(0);
+                    request_quit(app, 0);
                 }
                 "show" => {
                     if let Some(window) = app.get_webview_window("main") {
@@ -410,6 +450,12 @@ pub fn run() {
 
     app.run(|app_handle, event| {
         match event {
+            RunEvent::ExitRequested { api, code, .. } => {
+                if !app_handle.state::<QuitState>().allowed.load(Ordering::SeqCst) {
+                    api.prevent_exit();
+                    request_quit(app_handle, code.unwrap_or(0));
+                }
+            }
             RunEvent::WindowEvent { label, event: win_event, .. } => {
                 if label == "main" {
                     if let tauri::WindowEvent::ThemeChanged(theme) = &win_event {
