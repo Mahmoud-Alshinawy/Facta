@@ -119,3 +119,63 @@ desktop build with `PORT=1420 BASE_PATH=/`; widgets build; and `cargo check
 Bundle kB / gzip: main **689.68 / 202.26**; lazy Notes **364.52 / 112.23**
 (before this step: 362.54 / 111.71), Notes CSS **18.57 / 3.93**; lazy Diary
 **28.05 / 8.42**; widgets **229.15 / 72.60**, plus window API **15.21 / 3.85**.
+
+## Independent verification of d762229 (23–24 October 2026)
+
+This follow-up reran the required checks and exercised the final Notes changes.
+It found no application defect and makes no production-code changes. It adds
+behavioral and long-content coverage to the visual pass above, rather than
+claiming that every design-board state was exercised.
+
+The temporary browser entry used the real App, PlannerSync, IndexedDbStore,
+collections and editor with an invented account. Supabase configuration was
+explicitly blank and guarded; remotes were null. The database name was
+`facta-step6-verification` on the separate localhost:1422 origin, with no legacy
+cache input. No production data, live backend or SQL was accessed.
+
+Verified behavior:
+
+- J/K changed the selected grid note; Enter opened its collapsed editor. List
+  explicitly reopened the panel. At 1100, the collection selector returned ten
+  research notes and the single seeded Trash note correctly.
+- Grid fast capture created a note with Inbox and focused its title. Editing its
+  title and Unicode body, then reloading, retained both and the Inbox tag in real
+  IndexedDB. The 32 KB unbroken long note retained its Arabic/emoji tail in the
+  editor; its card preview did not replace the canonical body.
+- Ctrl P filtered/opened a note. Selection revealed formatting; Bold applied
+  actual strong marks. The picker offered Geist, Geist Mono and Source Serif 4,
+  and selected the serif. Ctrl . entered focus mode; Escape exited. Trash Undo
+  restored the selected test note. Slash-menu ArrowDown/Enter inserted a real
+  checklist and dismissed the menu.
+- Quick capture: all twelve theme/width combinations at height 720 fit the
+  viewport, focused the text field, closed with Escape and restored Export
+  opener focus. A sampled dialog wrapped forward and backward Tab at its ends.
+- Slash menu: all twelve combinations fit above the status footer, with six
+  options and six icon tiles. Long-content grid, expanded list and collapsed
+  editor: 36 cases across four themes and 1440/1280/1100 × 720, with screenshots
+  and horizontal-overflow measurements; no overflow found. Contact sheets and
+  full-size samples inspected. This is a finite stress case, not all possible
+  large notes or overlay positions.
+- Diary saved a new day's line and mood 4; both appeared after reload. Timeline
+  showed the two expected dates; text search found one entry and a mismatching
+  mood filter found zero. Before-first-entry days were neutral; streak changed
+  from one day to two days after writing today's line.
+- Markdown download inspected on disk: title, bold paragraphs and checked item
+  serialized correctly. The TXT menu action was clicked, but no downloaded TXT
+  file was verified. The existing Markdown/TXT serializer tests passed. The
+  browser's download wait exceeded its requested timeout substantially; no
+  additional download wait was attempted. Native download dialogs remain an
+  owner check. The invented Markdown file remains in Downloads.
+
+Browser warning/error log was empty. No native runtime smoke, real auth/backend,
+multi-device sync or SQL execution was performed in this follow-up. Earlier
+native-test limits remain unchanged. Temporary entry/context exports were
+restored/removed, the server stopped, viewport reset and tab closed. The isolated
+synthetic IndexedDB is confined to the fixture origin. Evidence is local under
+`facta-step6-verification/` in the task visualization directory: three stress
+contact sheets, individual captures, geometry/capture/slash JSON, persistence,
+focus-mode and Diary screenshots.
+
+Required Windows checks passed again: frozen install; all three TypeScript
+checks; **375 desktop + 184 calendar tests**; both production builds; both
+`cargo check --offline` runs. No fixture source is included in the builds.

@@ -1,5 +1,32 @@
 # Handoff: feat/notes-diary (branch 2 of 3), step 6 complete — STOP for review
 
+## Step 6 verification follow-up (23–24 October 2026)
+- Verified d762229 separately: required checks passed again (frozen install,
+  all three TypeScript checks, desktop 375 and calendar 184 tests, both production
+  builds, both Windows cargo check --offline). Existing main-chunk warning only.
+- Used real IndexedDB with an invented account in a separate database on the
+  localhost:1422 fixture origin, with backend configuration explicitly blank.
+  Notes title/Unicode body/Inbox and Diary line/mood survived browser reload.
+  Diary timeline and text/mood filters returned the expected entries/counts.
+- Exercised Notes keyboard movement/open, default collapsed editor, explicit
+  List expansion, narrow tag/Trash selection, fast capture/autofocus, switcher,
+  bold/font selection, focus mode, Trash Undo, and keyboard checklist insertion.
+  Long content (32 KB unbroken paragraph, long title and ten tags) fit all four
+  themes at 1440/1280/1100 × 720 in grid/list/editor: 36 cases, no horizontal
+  overflow. Capture and slash-menu checks passed in all 12 combinations each.
+  Capture Escape returned focus; Tab/Shift Tab trapped correctly in the sampled
+  dialog. Browser warning/error log empty. No application defect found.
+- Markdown download contents verified (bold/checklist); TXT action clicked but
+  no saved file was verified. Both serializers pass logic tests. Browser download
+  waiting stalled well beyond its requested timeout, so it was not repeated.
+  Native export dialogs, production auth/backend and packaged smoke remain owner
+  checks; no new native runtime or SQL testing was performed in this pass.
+- Temporary entry/context exports and server/tab removed; production builds
+  contain no fixture. Evidence: visualization directory / facta-step6-verification/.
+  The synthetic IndexedDB stays isolated to the fixture origin; an invented
+  Verification notebook.md download remains in Downloads. Full detail appended
+  to docs/notes-diary-visual-review.md. Documentation-only follow-up; STOP.
+
 ## Step 6 final visual comparison (23 October 2026)
 - Completed a four-theme × 1440/1280/1100 comparison pass using local design
   components and hosted spot references. Captured 18 core surfaces in all 12
