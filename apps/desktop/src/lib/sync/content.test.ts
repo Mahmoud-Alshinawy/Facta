@@ -33,6 +33,42 @@ const diaryRow = (
   ({ ...diaryToRow(entry, USER, updated, deleted), created_at: T }) as DiaryRow;
 
 describe("notes and diary mappers", () => {
+  it("allows null and 50-character fonts, rejecting 51 Unicode characters", () => {
+    expect(noteRow(makeNote()).font).toBeNull();
+    expect(noteRow(makeNote({ font: "🙂".repeat(50) })).font).toBe(
+      "🙂".repeat(50),
+    );
+    expect(() => noteRow(makeNote({ font: "🙂".repeat(51) }))).toThrow("50");
+    expect(() => noteFromRow({ ...noteRow(), font: "x".repeat(51) })).toThrow(
+      "50",
+    );
+  });
+  it("caps derived links at 500 unique note IDs, before writing any local state", () => {
+    const content = Array.from({ length: 501 }, () => ({
+      type: "noteLink" as const,
+      noteId: crypto.randomUUID(),
+      label: "Reference",
+    }));
+    const body = [{ id: "references", type: "paragraph" as const, content }];
+    const valid = makeNote({
+      body: [{ ...body[0], content: content.slice(0, 500) }],
+    });
+    expect(noteRow(valid).links).toHaveLength(500);
+    expect(() => noteRow(makeNote({ body }))).toThrow("500");
+    const h = context();
+    expect(() => h.engine.notes.upsert(makeNote({ body }))).toThrow("500");
+    expect(h.engine.notes.getSnapshot()).toEqual([]);
+    expect(h.engine.getStatus().pending).toBe(0);
+    // Repeated references count once; stale metadata never supplies stored links.
+    expect(
+      noteRow(
+        makeNote({
+          body: [{ ...body[0], content: Array(501).fill(content[0]) }],
+          links: content.map((link) => link.noteId),
+        }),
+      ).links,
+    ).toEqual([content[0].noteId]);
+  });
   it("round-trips every note field and derives UUID links instead of trusting metadata", () => {
     const linked = crypto.randomUUID();
     const note = makeNote({

@@ -185,10 +185,14 @@ export function prepareNote(note: Note): Note {
     throw new Error("Note title exceeds 500 characters");
   if (!validTags(note.tags))
     throw new Error("Use at most 20 tags, each 1–50 characters");
+  if (note.font !== null && [...note.font].length > 50)
+    throw new Error("Note font exceeds 50 characters");
+  const links = extractNoteLinks(note.body);
+  if (links.length > 500) throw new Error("Note exceeds 500 linked notes");
   return {
     ...note,
     title: note.title?.trim() || null,
-    links: extractNoteLinks(note.body),
+    links,
   };
 }
 

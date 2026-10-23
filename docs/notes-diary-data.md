@@ -51,7 +51,9 @@ Inline marks: bold, italic, token colour a/b/c/d and safe HTTP/HTTPS/mailto link
 (needed for the design's Ctrl+K link command). Note references are typed UUID
 nodes; arbitrary `[[text]]` and code are not treated as stored references.
 `links` is always recalculated from the body on save; backlinks are computed
-from non-trashed notes. Word count uses Unicode word segmentation over the
+from non-trashed notes. Saves allow at most 500 distinct linked note IDs and a
+nullable font name of at most 50 Unicode characters; database constraints also
+enforce the font limit and 500-element links cap. Word count uses Unicode word segmentation over the
 title and plain body text. Editor adapters and Markdown/TXT exporters follow
 in step 2; ZIP/PDF remain deferred. Only MIT core/extensions will be used.
 

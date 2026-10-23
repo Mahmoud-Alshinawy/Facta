@@ -17,7 +17,15 @@
   tombstones; same-date edits remain allowed. SQL assertions cover those paths.
   Full required checks passed again (296 desktop / 152 calendar tests).
   SQL is written/read only; its embedded migration refresh is fix 4, pending.
-- Fixes 3–4 are pending. Do not start step 2. SQL will be tested locally by the
+- Fix 3: re-runnable notes_font_check (nullable, <=50 characters) and
+  notes_links_check (<=500 array elements) use the pg_constraint existence
+  pattern. Matching client validation rejects >500 derived unique note IDs or
+  long fonts before mutating the cache/queue. Vitest covers Unicode boundaries,
+  null fonts, deduplicated references and rejection before local writes. SQL
+  assertions cover valid boundaries and INSERT/UPDATE violations.
+  Full required checks passed (298 desktop / 152 calendar tests); SQL has not
+  been executed, and embedded migration synchronization follows in fix 4.
+- Fix 4 is pending. Do not start step 2. SQL will be tested locally by the
   owner before migration application; no Supabase project was contacted.
 
 ## Branch 2 current state (22 October 2026)

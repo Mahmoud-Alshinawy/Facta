@@ -666,6 +666,18 @@ select pg_temp.expect_error($q$select * from public.facta_write_diary(jsonb_buil
 update public.notes set title='Forged' where user_id='bbbbbbbb-0000-4000-8000-000000000002';
 
 -- Data constraints, including UTF-8 body size despite jsonb compression.
+select pg_temp.expect_error($q$insert into public.notes(font) values (repeat('x',51))$q$,'23514');
+select pg_temp.expect_error($q$insert into public.notes(font) values (repeat('🙂',51))$q$,'23514');
+select pg_temp.expect_error($q$insert into public.notes(links) values (array_fill('cccccccc-0000-4000-8000-000000000001'::uuid,array[501]))$q$,'23514');
+insert into public.notes(id,font,links,updated_at) values ('cccccccc-1111-4000-8000-000000000001',repeat('🙂',50),
+  array_fill('cccccccc-0000-4000-8000-000000000001'::uuid,array[500]),now()-interval '1 day');
+select pg_temp.check_it((select char_length(font)=50 and cardinality(links)=500 from public.notes
+  where id='cccccccc-1111-4000-8000-000000000001'),'font and links accept boundary values');
+select pg_temp.expect_error($q$update public.notes set font=repeat('x',51),updated_at=now()
+  where id='cccccccc-1111-4000-8000-000000000001'$q$,'23514');
+select pg_temp.expect_error($q$update public.notes set links=array_fill('cccccccc-0000-4000-8000-000000000001'::uuid,array[501]),updated_at=now()
+  where id='cccccccc-1111-4000-8000-000000000001'$q$,'23514');
+delete from public.notes where id='cccccccc-1111-4000-8000-000000000001';
 select pg_temp.expect_error($q$insert into public.notes(title) values (repeat('x',501))$q$,'23514');
 select pg_temp.expect_error($q$insert into public.notes(color) values ('red')$q$,'23514');
 select pg_temp.expect_error($q$insert into public.notes(align) values ('diagonal')$q$,'23514');

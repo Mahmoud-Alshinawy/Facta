@@ -37,6 +37,16 @@ create table if not exists public.notes (
   constraint notes_tags_check check (public.facta_tags_valid(tags))
 );
 
+-- Add constraints to existing tables too when re-running this migration.
+do $$ begin
+  if not exists (select 1 from pg_constraint where conrelid = 'public.notes'::regclass and conname = 'notes_font_check') then
+    alter table public.notes add constraint notes_font_check check (font is null or char_length(font) <= 50);
+  end if;
+  if not exists (select 1 from pg_constraint where conrelid = 'public.notes'::regclass and conname = 'notes_links_check') then
+    alter table public.notes add constraint notes_links_check check (cardinality(links) <= 500);
+  end if;
+end $$;
+
 create table if not exists public.diary_entries (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
