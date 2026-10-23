@@ -717,6 +717,19 @@ select * from public.facta_write_diary(pg_temp.diary_payload('dddddddd-0000-4000
 select pg_temp.check_it((select one_line='New entry' and id='dddddddd-0000-4000-8000-000000000007' from public.diary_entries where date='2026-10-01' and deleted_at is null),'replacement survives old UUID and delete replay');
 select pg_temp.expect_error($q$select * from public.facta_write_diary(pg_temp.diary_payload('dddddddd-0000-4000-8000-000000000007','2026-10-03','Moved',3::smallint,now()))$q$,'23514');
 
+-- Direct table writes must enforce the same identity rule, before the sync
+-- guard can skip stale edits or sticky tombstones. Same-date edits still work.
+select pg_temp.expect_error($q$update public.diary_entries set date='2026-10-03',updated_at=now()
+  where id='dddddddd-0000-4000-8000-000000000007'$q$,'23514');
+select pg_temp.expect_error($q$update public.diary_entries set date='2026-10-03',updated_at=now()-interval '2 days'
+  where id='dddddddd-0000-4000-8000-000000000007'$q$,'23514');
+select pg_temp.expect_error($q$update public.diary_entries set date='2026-10-03',updated_at=now()
+  where id='dddddddd-0000-4000-8000-000000000001'$q$,'23514');
+update public.diary_entries set date=date,one_line='Same date edit',updated_at=now()
+  where id='dddddddd-0000-4000-8000-000000000007';
+select pg_temp.check_it((select date='2026-10-01' and one_line='Same date edit' from public.diary_entries
+  where id='dddddddd-0000-4000-8000-000000000007'),'direct same-date edits remain allowed');
+
 -- Another owner may use the same day, but cannot read, update or delete A.
 reset role;
 select pg_temp.check_it((select title='Owner B' from public.notes where user_id='bbbbbbbb-0000-4000-8000-000000000002'),'cross-owner update was filtered');

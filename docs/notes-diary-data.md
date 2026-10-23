@@ -105,7 +105,9 @@ must fetch the full note in the desktop; a preview must never replace its body.
 ## Same-date diary reconciliation
 
 The partial unique index allows one live row per `(user_id,date)`. An entry's
-date is immutable through the client/RPC. `facta_write_diary(jsonb)` runs as
+date is immutable through the client/RPC and a BEFORE UPDATE database trigger.
+The date trigger runs before the sync guard, rejecting direct date changes even
+on stale edits or tombstones. `facta_write_diary(jsonb)` runs as
 the caller with RLS active and takes a transaction advisory lock per owner/day.
 An atomic `ON CONFLICT ... WHERE deleted_at IS NULL` upsert keeps the canonical
 ID and created_at. The newer server-clamped updated_at wins one_line, mood,

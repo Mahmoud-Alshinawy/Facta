@@ -12,7 +12,12 @@
   Existing desktop bundle warning remains. Barrier tests cover real IndexedDB
   persistence before acknowledgement, multiple stores/failure and the deadline.
   Native tray handshake was compile-checked, not runtime-tested here.
-- Fixes 2–4 are pending. Do not start step 2. SQL will be tested locally by the
+- Fix 2: added a re-runnable BEFORE UPDATE diary date trigger, ordered before
+  the sync guard. Direct date changes raise 23514, including stale writes and
+  tombstones; same-date edits remain allowed. SQL assertions cover those paths.
+  Full required checks passed again (296 desktop / 152 calendar tests).
+  SQL is written/read only; its embedded migration refresh is fix 4, pending.
+- Fixes 3–4 are pending. Do not start step 2. SQL will be tested locally by the
   owner before migration application; no Supabase project was contacted.
 
 ## Branch 2 current state (22 October 2026)

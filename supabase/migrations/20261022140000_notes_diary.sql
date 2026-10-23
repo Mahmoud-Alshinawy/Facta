@@ -66,6 +66,22 @@ create index if not exists diary_entries_user_id_idx on public.diary_entries(use
 create unique index if not exists diary_entries_live_date_idx on public.diary_entries(user_id, date) where deleted_at is null;
 create index if not exists diary_entries_user_date_idx on public.diary_entries(user_id, date desc);
 
+-- The day is the entry's identity, including for direct table writes. This
+-- trigger sorts before the sync guard, so stale edits/tombstones cannot hide
+-- an attempted date change by returning NULL from that guard first.
+create or replace function public.facta_diary_date_immutable()
+returns trigger language plpgsql security invoker set search_path = '' as $$
+begin
+  if new.date is distinct from old.date then
+    raise exception 'Diary date cannot change' using errcode = '23514';
+  end if;
+  return new;
+end $$;
+revoke all on function public.facta_diary_date_immutable() from public, anon, authenticated;
+drop trigger if exists diary_entries_date_immutable on public.diary_entries;
+create trigger diary_entries_date_immutable before update on public.diary_entries
+  for each row execute function public.facta_diary_date_immutable();
+
 drop trigger if exists notes_sync_guard on public.notes;
 create trigger notes_sync_guard before insert or update on public.notes
   for each row execute function public.facta_sync_guard();
