@@ -16,7 +16,7 @@
   the sync guard. Direct date changes raise 23514, including stale writes and
   tombstones; same-date edits remain allowed. SQL assertions cover those paths.
   Full required checks passed again (296 desktop / 152 calendar tests).
-  SQL is written/read only; its embedded migration refresh is fix 4, pending.
+  SQL is written/read only; embedded migration refresh is recorded in fix 4.
 - Fix 3: re-runnable notes_font_check (nullable, <=50 characters) and
   notes_links_check (<=500 array elements) use the pg_constraint existence
   pattern. Matching client validation rejects >500 derived unique note IDs or
@@ -24,9 +24,20 @@
   null fonts, deduplicated references and rejection before local writes. SQL
   assertions cover valid boundaries and INSERT/UPDATE violations.
   Full required checks passed (298 desktop / 152 calendar tests); SQL has not
-  been executed, and embedded migration synchronization follows in fix 4.
-- Fix 4 is pending. Do not start step 2. SQL will be tested locally by the
-  owner before migration application; no Supabase project was contacted.
+  been executed; embedded migration synchronization is recorded in fix 4.
+- Fix 4: synchronized BOTH embedded branch migration copies (initial apply and
+  rerun) in supabase/tests/notes_diary.sql. An automated source-comparison test
+  now checks the base migration and both branch copies, excluding only their
+  outer BEGIN/COMMIT. The standalone scratch script retains its guard and final
+  rollback. This is copy verification, not SQL execution.
+- Final fix-4 checks: frozen install, npx tsc --noEmit in desktop/widgets/calendar,
+  Vitest desktop 301/301 and calendar 152/152, desktop build with PORT=1420
+  BASE_PATH=/, widgets build and cargo check --offline in both src-tauri folders
+  all passed on Windows. Main JS: 659.58 kB / 191.91 kB gzip; existing >500 kB
+  warning remains. No new dependencies or step-2 UI work in these fixes.
+- All four review fixes are implemented. STOP before step 2. SQL will be tested
+  against local Supabase by the owner before migration application; no Supabase
+  project was contacted. The native Quit handshake still needs a runtime check.
 
 ## Branch 2 current state (22 October 2026)
 - Branch created from origin/main at 48d1fc9. Step 1 only is implemented:
@@ -48,7 +59,7 @@
   fields and canonical ID/created_at. Covers offline duplicate UUIDs, sticky
   deletes, lost-response replays and explicit newer re-creation. Client rekeys
   queued identities without dropping newer in-flight edits. Entry dates are
-  immutable through the client/RPC; new entries default mood 3.
+  immutable through the client/RPC and database trigger; new entries default mood 3.
 - All four collection caches AND the pending/failed write queue now use an
   IndexedDB-backed KeyValueStore: async hydration, synchronous read view,
   atomic coalesced cache/queue writes and async durability barriers. First-run

@@ -283,6 +283,16 @@ create table if not exists public.notes (
   constraint notes_tags_check check (public.facta_tags_valid(tags))
 );
 
+-- Add constraints to existing tables too when re-running this migration.
+do $$ begin
+  if not exists (select 1 from pg_constraint where conrelid = 'public.notes'::regclass and conname = 'notes_font_check') then
+    alter table public.notes add constraint notes_font_check check (font is null or char_length(font) <= 50);
+  end if;
+  if not exists (select 1 from pg_constraint where conrelid = 'public.notes'::regclass and conname = 'notes_links_check') then
+    alter table public.notes add constraint notes_links_check check (cardinality(links) <= 500);
+  end if;
+end $$;
+
 create table if not exists public.diary_entries (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
@@ -311,6 +321,22 @@ create index if not exists notes_user_updated_idx on public.notes(user_id, updat
 create index if not exists diary_entries_user_id_idx on public.diary_entries(user_id);
 create unique index if not exists diary_entries_live_date_idx on public.diary_entries(user_id, date) where deleted_at is null;
 create index if not exists diary_entries_user_date_idx on public.diary_entries(user_id, date desc);
+
+-- The day is the entry's identity, including for direct table writes. This
+-- trigger sorts before the sync guard, so stale edits/tombstones cannot hide
+-- an attempted date change by returning NULL from that guard first.
+create or replace function public.facta_diary_date_immutable()
+returns trigger language plpgsql security invoker set search_path = '' as $$
+begin
+  if new.date is distinct from old.date then
+    raise exception 'Diary date cannot change' using errcode = '23514';
+  end if;
+  return new;
+end $$;
+revoke all on function public.facta_diary_date_immutable() from public, anon, authenticated;
+drop trigger if exists diary_entries_date_immutable on public.diary_entries;
+create trigger diary_entries_date_immutable before update on public.diary_entries
+  for each row execute function public.facta_diary_date_immutable();
 
 drop trigger if exists notes_sync_guard on public.notes;
 create trigger notes_sync_guard before insert or update on public.notes
@@ -432,7 +458,6 @@ do $$ declare t text; begin
     end if;
   end loop;
 end $$;
-
 -- END embedded branch migration
 
 -- Test helpers are session-local and disappear with the rollback.
@@ -500,6 +525,16 @@ create table if not exists public.notes (
   constraint notes_tags_check check (public.facta_tags_valid(tags))
 );
 
+-- Add constraints to existing tables too when re-running this migration.
+do $$ begin
+  if not exists (select 1 from pg_constraint where conrelid = 'public.notes'::regclass and conname = 'notes_font_check') then
+    alter table public.notes add constraint notes_font_check check (font is null or char_length(font) <= 50);
+  end if;
+  if not exists (select 1 from pg_constraint where conrelid = 'public.notes'::regclass and conname = 'notes_links_check') then
+    alter table public.notes add constraint notes_links_check check (cardinality(links) <= 500);
+  end if;
+end $$;
+
 create table if not exists public.diary_entries (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
@@ -528,6 +563,22 @@ create index if not exists notes_user_updated_idx on public.notes(user_id, updat
 create index if not exists diary_entries_user_id_idx on public.diary_entries(user_id);
 create unique index if not exists diary_entries_live_date_idx on public.diary_entries(user_id, date) where deleted_at is null;
 create index if not exists diary_entries_user_date_idx on public.diary_entries(user_id, date desc);
+
+-- The day is the entry's identity, including for direct table writes. This
+-- trigger sorts before the sync guard, so stale edits/tombstones cannot hide
+-- an attempted date change by returning NULL from that guard first.
+create or replace function public.facta_diary_date_immutable()
+returns trigger language plpgsql security invoker set search_path = '' as $$
+begin
+  if new.date is distinct from old.date then
+    raise exception 'Diary date cannot change' using errcode = '23514';
+  end if;
+  return new;
+end $$;
+revoke all on function public.facta_diary_date_immutable() from public, anon, authenticated;
+drop trigger if exists diary_entries_date_immutable on public.diary_entries;
+create trigger diary_entries_date_immutable before update on public.diary_entries
+  for each row execute function public.facta_diary_date_immutable();
 
 drop trigger if exists notes_sync_guard on public.notes;
 create trigger notes_sync_guard before insert or update on public.notes
@@ -649,7 +700,6 @@ do $$ declare t text; begin
     end if;
   end loop;
 end $$;
-
 -- END embedded migration rerun
 
 -- Owner A can see/change only their rows; invoker RPC cannot forge ownership.
