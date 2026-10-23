@@ -1,5 +1,22 @@
 # Handoff: feat/notes-diary (branch 2 of 3), step 2 implemented
 
+## Step 2 review fixes (23 October 2026)
+- External editor links support Ctrl+click and an Open button in the link
+  dialog. Both TypeScript and the native open_note_link command revalidate
+  http/https/mailto immediately before opening through tauri-plugin-opener.
+  Automatic plugin click interception is disabled. This is the same MIT
+  opener plugin already used by widgets; no additional JS dependency.
+- Replaced the white title/body focus boxes with subtle token-based
+  focus-visible rings. Created/Edited both use locale short month + day.
+- Browser fixture verified Ctrl+click destination, invalid-scheme rejection,
+  Open control, computed focus styles and date labels. No live Supabase.
+  Native OS opener was not runtime-tested; its real Rust guard passed 1 test.
+- Required checks passed: frozen install, three typechecks, desktop 327/327
+  and calendar 152/152 tests, both builds, both cargo check --offline.
+  Notes JS 363.08 kB / 111.90 kB gzip; CSS 18.04 / 3.81. Main chunk warning
+  remains. Preview harness/private context export removed after verification.
+- Owner authorized step 3 Diary after these fixes. Steps 4–6 remain later.
+
 ## Step 2 Notes page (23 October 2026)
 - Implemented NotesApp/NA-cheat in components/notes: masonry grid, grouped list,
   editor, folder/tag/search filters, pinned/recent views, inline capture and a

@@ -45,6 +45,30 @@ fn quit_listener_ready(app: tauri::AppHandle) {
 
 struct WidgetActionDelivery(Mutex<Option<String>>);
 
+fn external_note_url(value: &str) -> Result<String, String> {
+    if value.chars().any(char::is_control) { return Err("Use an https, http or mailto link".into()); }
+    let url = tauri::Url::parse(value.trim()).map_err(|_| "Invalid note link")?;
+    if !matches!(url.scheme(), "http" | "https" | "mailto") { return Err("Use an https, http or mailto link".into()); }
+    Ok(url.to_string())
+}
+
+#[tauri::command]
+fn open_note_link(app: tauri::AppHandle, url: String) -> Result<(), String> {
+    use tauri_plugin_opener::OpenerExt;
+    // Re-check in Rust immediately before passing a target to the OS opener.
+    app.opener().open_url(external_note_url(&url)?, None::<&str>).map_err(|error| error.to_string())
+}
+
+#[cfg(test)]
+mod note_link_tests {
+    use super::external_note_url;
+    #[test]
+    fn note_links_allow_only_web_and_mail() {
+        for url in ["https://example.com/", "http://example.com/", "mailto:a@example.com"] { assert!(external_note_url(url).is_ok()); }
+        for url in ["javascript:alert(1)", "file:///C:/private", "facta://focus", "https://", "https://example.com\n", ""] { assert!(external_note_url(url).is_err()); }
+    }
+}
+
 #[tauri::command]
 fn set_widget_action_delivery(consumer_id: String, ready: bool, state: tauri::State<'_, WidgetActionDelivery>) -> Result<(), String> {
     let mut consumer = state.0.lock().map_err(|_| "Widget consumer lock failed")?;
@@ -340,6 +364,7 @@ pub fn run() {
             }
         }))
         .plugin(tauri_plugin_deep_link::init())
+        .plugin(tauri_plugin_opener::Builder::new().open_js_links_on_click(false).build())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec!["--hidden"]),
@@ -348,6 +373,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             finish_quit,
             quit_listener_ready,
+            open_note_link,
             export_data_for_widgets,
             read_pending_actions,
             set_widget_action_delivery,

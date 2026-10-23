@@ -15,6 +15,7 @@ import {
 import { noteExtensions } from "./editorExtensions";
 import { bodyToEditor, editorToBody } from "@/lib/noteEditorAdapter";
 import { extractNoteLinks } from "@/lib/noteBody";
+import { openExternalNoteLink } from "@/lib/externalLinks";
 import { NOTE_COLORS, noteTitle } from "@/lib/notes";
 import type { Note, NoteBlock, NoteAlign } from "@/types/planner";
 
@@ -146,6 +147,19 @@ export default function NoteEditor({
         if (anchor) {
           event.preventDefault();
           latest.current.onOpen(anchor.dataset.noteId!);
+          return true;
+        }
+        const external = (
+          event.target as HTMLElement
+        ).closest<HTMLAnchorElement>("a[href]");
+        if (external) {
+          event.preventDefault();
+          if (event.ctrlKey || event.metaKey)
+            void openExternalNoteLink(
+              external.getAttribute("href") ?? "",
+            ).catch((e) =>
+              setError(e instanceof Error ? e.message : String(e)),
+            );
           return true;
         }
         return false;

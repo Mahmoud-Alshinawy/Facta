@@ -496,9 +496,16 @@
   padding-block: 4px 40px;
   white-space: pre-wrap;
 }
+.notes-page .ntitle:focus,
+.note-editor-input .tiptap:focus {
+  outline: none;
+  box-shadow: none;
+}
+.notes-page .ntitle:focus-visible,
 .note-editor-input .tiptap:focus-visible {
-  outline: 2px solid var(--text);
-  outline-offset: 4px;
+  outline: 1px solid var(--control-border);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 2px var(--accent-soft);
   border-radius: 4px;
 }
 .note-editor-input .tiptap > p {

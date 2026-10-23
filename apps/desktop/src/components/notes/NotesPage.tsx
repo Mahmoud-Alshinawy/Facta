@@ -43,6 +43,7 @@ import {
   type NoteFilter,
 } from "@/lib/notes";
 import { downloadNote } from "@/lib/noteExport";
+import { externalNoteUrl, openExternalNoteLink } from "@/lib/externalLinks";
 import type { Note, NoteColor } from "@/types/planner";
 import NoteEditor, { noteFont } from "./NoteEditor";
 import NotesDialog from "./NotesDialog";
@@ -452,7 +453,7 @@ export default function NotesPage({
       closeOverlay();
       return;
     }
-    if (url.trim() && !/^(https?:|mailto:)/i.test(url.trim())) {
+    if (url.trim() && !externalNoteUrl(url)) {
       setError("Use an https, http or mailto link.");
       return;
     }
@@ -461,7 +462,7 @@ export default function NotesPage({
         .chain()
         .focus()
         .extendMarkRange("link")
-        .setMark("link", { href: url.trim() })
+        .setMark("link", { href: externalNoteUrl(url)! })
         .run();
     else editor.chain().focus().extendMarkRange("link").unsetMark("link").run();
     closeOverlay();
@@ -1040,7 +1041,10 @@ export default function NotesPage({
                       <span>·</span>
                       <span>
                         Created{" "}
-                        {new Date(selected.createdAt).toLocaleDateString()}
+                        {new Date(selected.createdAt).toLocaleDateString(
+                          undefined,
+                          { day: "numeric", month: "short" },
+                        )}
                       </span>
                     </div>
                     <NoteEditor
@@ -1362,6 +1366,17 @@ export default function NotesPage({
               </p>
             )}
             <div className="notes-dialog-foot">
+              <button
+                type="button"
+                className="ctl"
+                onClick={() => {
+                  void openExternalNoteLink(url).catch((e) =>
+                    setError(e instanceof Error ? e.message : String(e)),
+                  );
+                }}
+              >
+                Open
+              </button>
               <button type="submit" className="b b-commit b-primary">
                 <span className="lab">Save link</span>
                 <span className="key">Enter</span>
