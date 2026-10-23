@@ -1,7 +1,8 @@
 # Notes and diary: data and storage (branch 2, step 1)
 
-This step contains no Notes/Diary pages, editor dependency, widget types or
-multi-day event UI. Those remain steps 2–5. Notes/Diary stay hidden in the shell.
+This document records the step-1 data/storage protocol. The Notes page added
+in step 2 is documented in notes-page.md; Diary, widgets and multi-day event UI
+remain later steps. Notes/Diary sidebar entries stay hidden until step 5.
 
 ## Schema and owner review
 

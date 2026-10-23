@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { lazy, Suspense, useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { format, getISOWeek } from "date-fns";
 import { Plus } from "lucide-react";
 import TodayPanel from "@/components/TodayPanel";
@@ -21,6 +21,7 @@ import { supabase } from "@/lib/supabase";
 import { requestWidgetExport } from "@/lib/widgetExportBus";
 import AuthScreen from "@/components/AuthScreen";
 import { Toaster } from "sonner";
+const NotesPage = lazy(() => import("@/components/notes/NotesPage"));
 export default function App() {
   const { user, loading: authLoading } = useAuth();
   const [section, setSection] = useState<Section>("today");
@@ -36,6 +37,7 @@ export default function App() {
   const [goalDialogOpen, setGoalDialogOpen] = useState(false);
   const [sidebarMode, setSidebarMode] = useState<SidebarMode>("");
   const [cheatOpen, setCheatOpen] = useState(false);
+  const [noteCaptureRequest, setNoteCaptureRequest] = useState(0);
   const createGoal = useCreateGoal();
   const now = useNow();
   const { events, addEvent, updateEvent, deleteEvent } = useEvents();
@@ -192,9 +194,15 @@ export default function App() {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target instanceof HTMLElement ? e.target : null;
       if (e.defaultPrevented || dialogOpen || goalDialogOpen || searchOpen || cheatOpen) return;
+      if (target?.closest('[role="dialog"]')) return;
+      if (user && (e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "n") {
+        e.preventDefault(); setSection("notes"); setNoteCaptureRequest((value) => value + 1); return;
+      }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        if (target?.closest('[contenteditable="true"]')) return;
         e.preventDefault(); setSearchOpen(true); return;
       }
+      if (section === "notes") return;
       if (target?.closest('input, textarea, select, [contenteditable="true"], [role="dialog"]')) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const key = e.key.toLowerCase();
@@ -204,7 +212,7 @@ export default function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [section, dialogOpen, goalDialogOpen, searchOpen, cheatOpen, openNew, openNewGoal, selectedDate]);
+  }, [section, user, dialogOpen, goalDialogOpen, searchOpen, cheatOpen, openNew, openNewGoal, selectedDate]);
 
   if (authLoading) return <div className="flex min-h-screen items-center justify-center bg-background text-foreground"><span className="text-sm text-muted-foreground">Loading…</span></div>;
   if (!user) return <AuthScreen />;
@@ -235,6 +243,7 @@ export default function App() {
         {section === "calendar" && <CalendarPage anchor={selectedDate} view={view} onAnchor={setSelectedDate} onView={setView}
           actions={calendarActions} keyboardBlocked={dialogOpen || goalDialogOpen || searchOpen || cheatOpen} />}
         {section === "goals" && <GoalsPage keyboardBlocked={dialogOpen || goalDialogOpen || searchOpen || cheatOpen} />}
+        {section === "notes" && <Suspense fallback={<p role="status" className="p-8 text-subtle">Opening Notes…</p>}><NotesPage captureRequest={noteCaptureRequest} keyboardBlocked={dialogOpen || goalDialogOpen || searchOpen || cheatOpen} /></Suspense>}
         {section === "settings" && <SettingsPage />}
       </main>
       <GoalDialog open={goalDialogOpen} onClose={() => setGoalDialogOpen(false)} onSave={createGoal}

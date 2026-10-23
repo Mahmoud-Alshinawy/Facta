@@ -1,4 +1,54 @@
-# Handoff: feat/notes-diary (branch 2 of 3), step 1 for review
+# Handoff: feat/notes-diary (branch 2 of 3), step 2 implemented
+
+## Step 2 Notes page (23 October 2026)
+- Implemented NotesApp/NA-cheat in components/notes: masonry grid, grouped list,
+  editor, folder/tag/search filters, pinned/recent views, inline capture and a
+  real restorable Trash with Undo and explicit permanent-delete confirmation.
+  Week groups use the saved week-start preference; Recent means the last 7 days.
+- Lazy NotesPage uses MIT TipTap 3.32.0 core/react/pm/extensions (UndoRedo only).
+  Custom flat nodes preserve the exact seven-block storage schema and stable
+  IDs; no editor document wrapper is persisted. Slash menu and [[ UUID note
+  references work with keyboard suggestions. Backlinks are computed locally.
+  Selection-only toolbar supports bold/italic, token text colours, links,
+  note-level font and alignment. No permanent formatting toolbar or Pro code.
+- App-only Ctrl+Shift+N opens capture from any app page; Ctrl+N creates a note,
+  Ctrl+P switches, Ctrl+K in the editor opens a link dialog, Ctrl+. focuses,
+  Ctrl+Shift+E exports, and NA-cheat lists the exact scoped shortcuts.
+  Dialogs trap focus, restore it and close with Escape. Oversized body/link
+  edits are blocked before changing the stored note, with an error message.
+- Added local Source Serif 4 5.3.1 (OFL), Latin regular/italic/bold only, alongside
+  bundled Geist/Geist Mono. No CDN loads. Added the four note colour tokens to
+  the shared theme blocks. Markdown/TXT exports are per note; ZIP/PDF deferred.
+- Notes/Diary sidebar entries remain hidden until step 5 as ordered. To open
+  Notes now, use Ctrl+Shift+N inside Facta, then save or close capture. Widget
+  pinning saves pinned_to_widget and labels it as a pin for the future Notes
+  widget; actual widget export/rendering/actions remain step 5.
+- Logic tests cover all seven blocks through the real ProseMirror schema,
+  stable IDs/splits, marks/references, body limits, filters/order/capture/week
+  boundaries, and Markdown/TXT escaping/code fences/references/safe filenames.
+- Browser verification used an isolated IndexedDB account/database with no
+  Supabase configuration. Passed slash keyboard insertion, selection toolbar,
+  local fonts, Ctrl+K, [[ links, tags, focus mode, capture/focus trap, switcher,
+  title reset, Trash/Undo, reload persistence and an actual Markdown download.
+  Verified in the real App shell that Ctrl+Shift+N loads Notes lazily and that
+  Ctrl+K in capture cannot open the global search underneath it.
+- Inspected list/editor/grid/empty/no-results/cheat states; checked all four
+  themes at 1440/1280/1100 with no horizontal or action-toolbar overflow. Full
+  branch-wide rendered-board comparison remains step 6. Screenshot is outside
+  the repository in this task's visualization directory (notes-step2.png).
+- Temporary preview code, private-context exports, test databases, downloaded
+  fixture, tab and preview server were removed. TodayPanel is unchanged.
+  Native WebView export/keyboard behavior and live multi-device Notes sync
+  were not runtime-tested; native code remains compile-checked.
+- Step 3 Diary, step 4 event end-date UI and step 5 widgets have NOT started.
+- Final checks passed on Windows: pnpm install --frozen-lockfile; npx tsc
+  --noEmit in desktop/widgets/calendar; Vitest 312/312 desktop and 152/152
+  calendar; PORT=1420 BASE_PATH=/ desktop build; widgets build; cargo check
+  --offline in both src-tauri folders. Existing main-chunk warning remains.
+- Bundle before editor: no Notes chunk (0 KB), main 659.58 kB / 191.91 kB gzip.
+  After: lazy Notes JS 362.24 kB / 111.58 kB gzip; lazy Notes CSS 17.87 kB /
+  3.79 kB gzip; main 660.74 kB / 192.45 kB gzip. Source Serif assets are Latin
+  only and load through the lazy Notes stylesheet. No TipTap imports in App.
 
 ## Step 1 local SQL review / step 2 authorization (23 October 2026)
 - Fixed the polymorphic array_fill tags fixture with an explicit text cast.
@@ -12,7 +62,7 @@
 - SQL test-fix checks passed: frozen install, three typechecks, 301 desktop /
   152 calendar tests, both builds and both cargo check --offline on Windows.
 
-## Step 1 review fixes (23 October 2026)
+## Step 1 review-fix history (23 October 2026)
 - Fix 1: desktop Quit now emits a webview event and awaits every open store's
   flush (including account-change teardown) for up to two seconds before the
   native exit acknowledgement. Other desktop ExitRequested paths use the same
@@ -51,7 +101,7 @@
   against local Supabase by the owner before migration application; no Supabase
   project was contacted. The native Quit handshake still needs a runtime check.
 
-## Branch 2 current state (22 October 2026)
+## Step 1 implementation history (22 October 2026)
 - Branch created from origin/main at 48d1fc9. Step 1 only is implemented:
   data, storage and sync. STOP after this commit/push for owner review.
   Notes/Diary pages, editor, fonts, widget types and multi-day event UI have
@@ -115,8 +165,8 @@
 - Native WebView persistence after OS crash, live Supabase/RPC concurrency and
   native widget readiness delivery are not runtime-verified in this step.
 
-## Approved remaining branch-2 work (wait for step-1 review)
-2. NotesApp/NA-cheat: lazy MIT-only TipTap core/extensions, list/grid/editor,
+## Approved branch-2 sequence (step 2 complete; steps 3–6 pending)
+2. COMPLETE — NotesApp/NA-cheat: lazy MIT-only TipTap core/extensions, list/grid/editor,
    slash menu, selection-only toolbar, tags/pin/Trash+Undo/backlinks/switcher/
    app-only Ctrl+Shift+N capture/focus mode. Ctrl+K in editor means link.
    Bundle Geist/Geist Mono plus Source Serif 4 Latin only. Export Markdown and
