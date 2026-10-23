@@ -295,6 +295,11 @@
   outline: 1px solid var(--text);
   outline-offset: 2px;
 }
+.diary-week-tile.neutral {
+  background: var(--raised);
+  box-shadow: none;
+  opacity: .45;
+}
 .diary-context {
   display: flex;
   gap: 8px;

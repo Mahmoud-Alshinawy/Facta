@@ -75,7 +75,7 @@ export default function MonthView({ anchor, now, prefs, actions, onAnchor, onOpe
         <div key={r.keys[0]} className="mw" role="row" style={{ gridTemplateRows: `28px ${r.lanes ? `repeat(${r.lanes}, 22px) ` : ""}1fr` }}>
           {r.days.map((dt, i) => {
             const key = r.keys[i];
-            const { timed } = splitDay(eventsOn(key));
+            const { timed } = splitDay(eventsOn(key), key);
             const gs = goalsOn(goals, key);
             const out = dt.getMonth() !== M;
             const isToday = sameDay(dt, today);
@@ -107,7 +107,7 @@ export default function MonthView({ anchor, now, prefs, actions, onAnchor, onOpe
                     onClick={(e) => { e.stopPropagation(); actions.newEvent({ date: key }); }}><IconPlus size={13} /></button>
                 </span>
                 {timed.slice(0, chips.shown).map((t) => (
-                  <span key={t.event.id} className="chip" style={{ ["--c" as string]: colorVar(t.event.color) }}>
+                  <span key={t.id} className="chip" style={{ ["--c" as string]: colorVar(t.event.color) }}>
                     <span className="evdot" /><span className="t">{C.chip(t.start)} {t.event.title}</span>
                   </span>
                 ))}
@@ -168,7 +168,7 @@ function DayPopover({ day, pos, rows, prefsClocks: C, events, goals, onToggle, o
 }) {
   const ref = useRef<HTMLDivElement>(null);
   useDialogFocus(ref, true);
-  const { allDay, timed } = splitDay(events);
+  const { allDay, timed } = splitDay(events, keyOf(day));
   // Flip away from the nearest edges: right of the cell in the left half,
   // left of it otherwise; from the top in the first rows, else from the bottom.
   const hz: CSSProperties = pos.i <= 3 ? { left: `calc(${((pos.i + 1) / 7) * 100}% + 6px)` } : { right: `calc(${((7 - pos.i) / 7) * 100}% + 6px)` };
@@ -197,7 +197,7 @@ function DayPopover({ day, pos, rows, prefsClocks: C, events, goals, onToggle, o
             <button type="button" className="gt mpop-btn" onClick={() => onEdit(a)}>{a.title}</button><span className="em">All day</span></li>
         ))}
         {items.map((it) => it.kind === "ev" ? (
-          <li key={it.t.event.id}><span className="evdot" style={{ ["--c" as string]: colorVar(it.t.event.color) }} />
+          <li key={it.t.id}><span className="evdot" style={{ ["--c" as string]: colorVar(it.t.event.color) }} />
             <button type="button" className="gt mpop-btn" onClick={() => onEdit(it.t.event)}>{it.t.event.title}</button>
             <span className="em">{C.chipRange(it.t.start, it.t.end)}</span></li>
         ) : (

@@ -3,6 +3,7 @@
 // cache and the widgets use.
 
 import type { Tables, TablesInsert } from "@/lib/database.types";
+import { dayIndex } from "@facta/calendar";
 import type {
   CalendarEvent,
   EventColor,
@@ -141,6 +142,8 @@ export function eventToRow(
   updatedAt: string,
   deletedAt: string | null,
 ): EventWrite {
+  if (event.endDate !== undefined && (!Number.isFinite(dayIndex(event.endDate)) || !Number.isFinite(dayIndex(event.date)) || event.endDate < event.date))
+    throw new Error("End date must be a valid date on or after start date");
   return {
     id: event.id,
     user_id: userId,

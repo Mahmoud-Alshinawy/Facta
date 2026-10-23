@@ -3,7 +3,7 @@ import { addDays, addMonths, format, getDaysInMonth } from "date-fns";
 import { weekdayOrder, type WeekStart } from "@facta/calendar";
 import type { DiaryEntry } from "@/types/planner";
 import { keyOf, noonOf } from "@/lib/calendarData";
-import { diaryMonth, diaryMonthCells, MOODS } from "@/lib/diary";
+import { dayUnit, diaryMonth, diaryMonthCells, MOODS } from "@/lib/diary";
 
 export function MonthNavigation({
   month,
@@ -173,7 +173,7 @@ export default function DiaryCalendar({
           <div>
             <span className="sec">STREAK</span>
             <strong>{streak}</strong>
-            <small>days</small>
+            <small>{dayUnit(streak)}</small>
           </div>
           <div>
             <span className="sec">WRITTEN</span>

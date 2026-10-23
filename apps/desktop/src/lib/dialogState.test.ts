@@ -25,6 +25,22 @@ describe("dialog drafts and reset state", () => {
 });
 
 describe("blocked dialog submission", () => {
+  it("resets end dates, preserves drafts and existing ranges",()=>{
+    expect(eventForm(null,"2026-10-21").endDate).toBe("2026-10-21");
+    expect(eventForm(null,"2026-10-21",{endDate:"2026-10-23"}).endDate).toBe("2026-10-23");
+    const saved={...eventForm(null,"2026-10-21"),id:"trip",endDate:"2026-10-25"};
+    expect(eventForm(saved,"2026-11-01").endDate).toBe("2026-10-25");
+    expect(eventForm(null,"2026-11-01").endDate).toBe("2026-11-01");
+  });
+  it("validates all-day ranges and allows overnight times only with a later end date",()=>{
+    const form=eventForm(null,"2026-10-21",{title:"Trip",startTime:"22:00",endTime:"07:00"});
+    expect(eventFormError(form)).toMatch(/after start time/);
+    form.endDate="2026-10-22";expect(eventFormError(form)).toBe("");
+    form.endDate="2026-10-20";expect(eventFormError(form)).toMatch(/End date/);
+    form.allDay=true;expect(eventFormError(form)).toMatch(/End date/);
+    form.endDate="2026-02-30";expect(eventFormError(form)).toMatch(/valid end date/);
+    form.endDate="2026-10-21";expect(eventFormError(form)).toBe("");
+  });
   it("rejects blank titles, invalid dates and empty custom repeats", () => {
     const form = goalForm(null, "2026-10-21");
     expect(goalFormError(form)).toMatch(/title/);

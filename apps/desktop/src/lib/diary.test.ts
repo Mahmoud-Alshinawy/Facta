@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { dayUnit, diaryDayState } from "./diary";
 import {
   diaryDays,
   diaryMonth,
@@ -21,6 +22,15 @@ const entry = (date: string, patch: Partial<DiaryEntry> = {}): DiaryEntry => ({
   tags: [],
   createdAt: `${date}T12:00:00.000Z`,
   ...patch,
+});
+it("uses singular days and treats pre-history days as neutral", () => {
+  expect(dayUnit(1)).toBe("day");
+  expect(dayUnit(0)).toBe("days");
+  expect(dayUnit(2)).toBe("days");
+  expect(diaryDayState("2026-10-20", "2026-10-21", false)).toBe("neutral");
+  expect(diaryDayState("2026-10-22", "2026-10-21", false)).toBe("missed");
+  expect(diaryDayState("2026-10-21", "2026-10-21", true)).toBe("written");
+  expect(diaryDayState("2026-10-20", undefined, false)).toBe("neutral");
 });
 
 describe("diary streaks", () => {

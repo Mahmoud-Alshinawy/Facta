@@ -1,7 +1,7 @@
 // What the calendar views show for a day, from the goal and event records.
 // Pure: the views pass in the records and the day.
 
-import { parseClock } from "@facta/calendar";
+import { eventDayRanges, parseClock, shiftDate } from "@facta/calendar";
 import type { CalendarEvent, Goal } from "@/types/planner";
 import { goalsForDay, isCompletedToday, toggleGoalCompletion } from "@/lib/goalDates";
 
@@ -35,6 +35,8 @@ export function toggledOn(goal: Goal, key: string): Partial<Goal> {
 }
 
 export interface TimedEvent {
+  /** Stable layout key; the record id is always event.id. */
+  id: string;
   event: CalendarEvent;
   start: number;
   end: number;
@@ -48,12 +50,15 @@ export function eventMinutes(e: Pick<CalendarEvent, "startTime" | "endTime">): {
   return { start, end };
 }
 
-export function splitDay(events: readonly CalendarEvent[]): { allDay: CalendarEvent[]; timed: TimedEvent[] } {
+export function splitDay(events: readonly CalendarEvent[], day?: string): { allDay: CalendarEvent[]; timed: TimedEvent[] } {
   const allDay: CalendarEvent[] = [];
   const timed: TimedEvent[] = [];
   for (const e of events) {
     if (e.allDay) allDay.push(e);
-    else timed.push({ event: e, ...eventMinutes(e) });
+    else {
+      const ranges = day ? eventDayRanges(e, day) : [eventMinutes(e)];
+      ranges.forEach(range => timed.push({id:ranges.length === 1 ? e.id : `${e.id}:${range.start}`,event:e,...range}));
+    }
   }
   timed.sort((a, b) => a.start - b.start || b.end - a.end);
   return { allDay, timed };
@@ -96,8 +101,8 @@ export interface AllDaySpan {
  */
 export function allDaySpans(keys: readonly string[], eventsOn: (key: string) => readonly CalendarEvent[]): AllDaySpan[] {
   if (!keys.length) return [];
-  const before = keyOf(new Date(noonOf(keys[0]).getTime() - 86400000));
-  const after = keyOf(new Date(noonOf(keys[keys.length - 1]).getTime() + 86400000));
+  const before = shiftDate(keys[0], -1);
+  const after = shiftDate(keys[keys.length - 1], 1);
   const days = [before, ...keys, after];
   const runs = new Map<string, AllDaySpan>();
   const out: AllDaySpan[] = [];

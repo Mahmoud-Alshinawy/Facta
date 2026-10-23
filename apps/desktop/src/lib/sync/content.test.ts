@@ -143,6 +143,9 @@ describe("notes and diary mappers", () => {
     expect(
       eventFromRow({ ...row, end_date: null } as never).endDate,
     ).toBeUndefined();
+    expect(eventToRow({...event,endDate:undefined},USER,T,null).end_date).toBeNull();
+    expect(()=>eventToRow({...event,endDate:"2026-10-21"},USER,T,null)).toThrow("End date");
+    expect(()=>eventToRow({...event,endDate:"2026-02-30"},USER,T,null)).toThrow("End date");
   });
 });
 

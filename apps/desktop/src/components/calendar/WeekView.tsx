@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, MouseEvent as ReactMouseEvent } from "react";
 import {
-  conflicts, isWeekend, layoutColumns, minutesAt, moveBlock, resizeBlock, spanLanes, weekDates, type CalendarPrefs,
+  eventSpanDays, conflicts, isWeekend, layoutColumns, minutesAt, moveBlock, resizeBlock, spanLanes, weekDates, type CalendarPrefs,
 } from "@facta/calendar";
 import { useEvents } from "@/hooks/useEvents";
 import { useGoals } from "@/hooks/useGoals";
@@ -52,7 +52,7 @@ export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpen
   const [slot, setSlot] = useState(() => Math.min(SLOTS - 1, Math.floor(nowMin / 30)));
   const [drag, setDrag] = useState<Drag | null>(null);
   const [qa, setQa] = useState<{ key: string; a: number; b: number } | null>(null);
-  const [detail, setDetail] = useState<{ key: string; id: string } | null>(null);
+  const [detail, setDetail] = useState<{ key: string; id: string; at?: number } | null>(null);
   const scRef = useRef<HTMLDivElement>(null);
   const colsRef = useRef<HTMLDivElement>(null);
   const stickyRef = useRef<HTMLDivElement>(null);
@@ -64,7 +64,7 @@ export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpen
 
   // ---- data per day ----
   const perDay = keys.map((key) => {
-    const { timed } = splitDay(eventsOn(key));
+    const { timed } = splitDay(eventsOn(key), key);
     const gs = goalsOn(goals, key);
     return { key, timed, goals: gs };
   });
@@ -169,7 +169,7 @@ export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpen
       }
       const repeating = (d.event.repeat ?? "none") !== "none";
       const patch: Partial<CalendarEvent> = { startTime: clockValue(d.s), endTime: clockValue(d.e) };
-      if (!repeating) patch.date = d.toKey;
+      if (!repeating) { patch.date = d.toKey; if (d.event.endDate) patch.endDate = d.toKey; }
       updateEvent(d.event.id, patch);
       say(`${d.kind === "move" ? "Moved" : "Resized"} · ${d.event.title} · ${dayLabel(new Date(`${d.toKey}T12:00`))} · ${C.range(d.s, d.e)}${repeating ? " · every repeat" : ""}`);
     };
@@ -238,7 +238,7 @@ export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpen
         return;
       }
       const hit = perDay[curIdx].timed.find((t) => t.start <= t0 && t.end > t0);
-      if (hit) { setDetail({ key, id: hit.event.id }); return; }
+      if (hit) { setDetail({ key, id: hit.event.id, at: t0 }); return; }
       setDrag({ kind: "create", key, a: slot, b: Math.min(SLOTS - 1, slot + 1), kb: true });
     }
   };
@@ -256,7 +256,7 @@ export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpen
     const items: Item[] = [];
     for (const t of perDay[i].timed) {
       const origin = !!pending && pending.event.id === t.event.id && pending.fromKey === key;
-      items.push({ kind: "ev", id: t.event.id, event: t.event, start: t.start, end: Math.max(t.end, t.start + GOAL_MIN), origin });
+      items.push({ kind: "ev", id: t.id, event: t.event, start: t.start, end: Math.max(t.end, t.start + GOAL_MIN), origin });
     }
     if (pending && pending.toKey === key) {
       items.push({ kind: "ev", id: `lift:${pending.event.id}`, event: pending.event, start: pending.s, end: Math.max(pending.e, pending.s + GOAL_MIN), lift: true });
@@ -267,7 +267,7 @@ export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpen
     }
     const laid = layoutColumns(items);
     const realTimed = perDay[i].timed.filter((t) => !(pending && pending.event.id === t.event.id && pending.fromKey === key))
-      .map((t) => ({ id: t.event.id, start: t.start, end: t.end }));
+      .map((t) => ({ id: t.id, start: t.start, end: t.end }));
     if (pending && pending.toKey === key) realTimed.push({ id: `lift:${pending.event.id}`, start: pending.s, end: pending.e });
     const clash = conflicts(realTimed);
     return { key, dt, isToday, isPastDay, laid, clash, weekend: isWeekend(dt.getDay(), prefs) };
@@ -281,6 +281,7 @@ export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpen
 
   const startEventDrag = (e: ReactMouseEvent, event: CalendarEvent, key: string, start: number, end: number, kind: "move" | "start" | "end") => {
     if (e.button !== 0) return;
+    if (eventSpanDays(event)) { e.preventDefault(); e.stopPropagation(); setDetail({key,id:event.id,at:pointAt(e.clientX,e.clientY)?.min ?? start}); return; }
     e.stopPropagation();
     e.preventDefault();
     const p = pointAt(e.clientX, e.clientY);
@@ -414,7 +415,7 @@ export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpen
                         </div>
                       );
                     }
-                    const real = perDay[days.indexOf(c.dt)].timed.find((t) => t.event.id === it.event.id);
+                    const real = perDay[days.indexOf(c.dt)].timed.find((t) => t.id === it.id);
                     const s = it.lift ? lift!.s : real ? real.start : it.start;
                     const en = it.lift ? lift!.e : real ? real.end : it.end;
                     const top = (s / 60) * H + 1;
@@ -423,7 +424,7 @@ export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpen
                     const row = h < 34;
                     const narrow = cc >= 2;
                     const past = !it.lift && (c.isPastDay || (c.isToday && en <= nowMin));
-                    const clashing = c.clash.ids.has(it.lift ? `lift:${it.event.id}` : it.event.id);
+                    const clashing = c.clash.ids.has(it.id);
                     const time = row && narrow ? "" : row ? C.chip(s) : C.chipRange(s, en);
                     return (
                       <button
@@ -435,13 +436,13 @@ export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpen
                         aria-label={`${it.event.title}, ${dayLabel(c.dt)}, ${C.range(s, en)}${clashing ? ", overlaps another event" : ""}${past ? ", past" : ""}`}
                         title={`${it.event.title}, ${C.range(s, en)}`}
                         onMouseDown={(e) => !it.lift && real && startEventDrag(e, it.event, c.key, real.start, real.end, "move")}
-                        onClick={(e) => { e.stopPropagation(); if (e.detail === 0 && !it.lift) setDetail({ key: c.key, id: it.event.id }); }}
+                        onClick={(e) => { e.stopPropagation(); if (e.detail === 0 && !it.lift) setDetail({ key: c.key, id: it.event.id, at: s }); }}
                       >
                         <span className="ee" aria-hidden="true" />
                         <span className="in"><span className={narrow ? "et wrap" : "et"}>{it.event.title}</span>{time && <span className="em">{time}</span>}</span>
                         {clashing && !it.lift && cc > 1 && h > 28 && <span className="ci" title="Overlaps another event"><IconWarn size={12} /></span>}
                         {it.lift && <><span className="grip" style={{ top: 3 }} /><span className="grip" style={{ bottom: 3 }} /></>}
-                        {!it.lift && !it.origin && real && (
+                        {!it.lift && !it.origin && real && !eventSpanDays(it.event) && (
                           <>
                             <span className="rsz rsz-t" aria-hidden="true" onMouseDown={(e) => startEventDrag(e, it.event, c.key, real.start, real.end, "start")} />
                             <span className="rsz rsz-b" aria-hidden="true" onMouseDown={(e) => startEventDrag(e, it.event, c.key, real.start, real.end, "end")} />
@@ -491,10 +492,11 @@ export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpen
           )}
 
           {detailEvent && detailIdx >= 0 && (() => {
-            const t = splitDay([detailEvent]).timed[0];
+            const t = splitDay([detailEvent], detail!.key).timed[0];
             return (
               <DetailPopover
-                event={detailEvent}
+                event={detailEvent} at={detail?.at}
+                viewportRef={scRef} stickyRef={stickyRef} slotBounds={{start:t ? t.start / 60 * H : 0,end:t ? t.end / 60 * H : 0}}
                 day={days[detailIdx]}
                 clocks={C}
                 style={{ ...colHoriz(detailIdx), top: Math.max(8, t ? (t.start / 60) * H - 12 : 8), width: 330 }}

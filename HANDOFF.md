@@ -1,4 +1,72 @@
-# Handoff: feat/notes-diary (branch 2 of 3), step 3 implemented
+# Handoff: feat/notes-diary (branch 2 of 3), step 4 implemented
+
+## Step 4 event end dates + Diary nits (23 October 2026)
+- EventDialog New/Edit now expose start/end dates for both timed and all-day
+  events. The month grid edits the focused endpoint; native date input changes
+  also move the grid to that month. Equal dates save a null end_date through
+  the mapper. Invalid/reversed dates block submission, including all-day forms;
+  an overnight end time is valid only with a later end date. Empty native date
+  fields retain a valid calendar fallback. Reopening resets the complete form.
+- Native date/time input events update the controlled draft immediately, so
+  saving uses the displayed values. Existing initialEndTime, draft title/colour/
+  all-day state, title autofocus, focus trap, Escape and fixed footer remain.
+  The recurrence hint explains that the dates set EACH occurrence's length.
+- New packages/calendar/eventSchedule.ts supplies DST-independent date maths,
+  inclusive occurrence lookup, clipped day portions and overlap union. Repeats
+  apply to occurrence START dates and retain the original span length; weekday
+  spans can continue into weekends. A daily overnight rule can produce separate
+  morning/evening portions. Long spans inspect at most two starts per weekday;
+  exhaustive-start comparisons cover that bound. No per-day record is saved.
+  A timed midnight end has no zero-length block on its final date.
+- useEvents, Week/Day/Month/Agenda, MiniCalendar (through the getter), Today and
+  Diary context use range-aware lookup. All-day spans join across week/month/
+  year edges through existing spanLanes. Timed spans clip to each day (00:00
+  through 24:00 for an interior day). Layout keys distinguish separate portions;
+  all editing/deleting still uses the canonical event id and original dates.
+  TodayPanel changed only the row key and displayed clipped times; no restyle.
+- Details show the occurrence's full date range and respect clock preferences.
+  The selected day/time chooses the morning versus evening occurrence for
+  repeating overnight events (unit-tested). Detail popovers reuse the existing
+  visible-grid clamping used by quick add, including off-screen start times.
+- Multi-day timed moves/resizes use the full dialog, with a visible hint; a
+  pointer press opens details instead of shortening a clipped portion. Existing
+  single-day drag behavior remains, including moving a legacy explicit same-day
+  endDate along with date. Pointer drag/native WebView regression smoke remains
+  owner-run. No new now line in Week, Day or the Day widget; Today retains its.
+- Existing Day widget and its Settings preview share range-aware day selection/
+  clipping. No new widget type, pending action, picker option or sidebar unhide
+  was started. Notes/Diary widgets are step 5. Actual companion runtime was not
+  exercised; real widget selection logic is tested and both apps compile.
+- Folded the approved Diary nits into this commit: singular day labels (including
+  calendar/best/paused run), a distinct Try placeholder, and neutral week tiles
+  with 'Before your diary began' accessible labels before the first-ever entry.
+  Days after the diary began remain 'not written'; empty history is neutral.
+- The step-1 migration/database types already contain events.end_date. Mapper
+  round-trip/clear checks remain and invalid end dates now fail before local
+  mutation. No schema/migration change, SQL execution or live Supabase contact.
+- Browser QA used the actual App shell/engine with an isolated IndexedDB fixture
+  and blank Supabase configuration. Verified new/edit timed/all-day ranges,
+  reversed/empty date blocking, endpoint grid/native keyboard input, canonical
+  continuation editing, clearing/restoring ranges, persisted end dates after
+  reload, timed day portions, all four views and the three Diary nits. No
+  console errors/warnings. Final morning/evening selection fix is unit/type/
+  build verified; native runtime and live multi-device behavior are unverified.
+- Week + Month geometry passed all 4 themes at 1440/1280/1100 (24 combinations),
+  without page/header/grid horizontal overflow. EventDialog passed the same
+  12 theme/width combinations; at 1280x720 its body scrolls while the footer is
+  visible. Full rendered-board comparison remains step 6; local EventDialog
+  design read as reference, with the new date fields required by branch 2.
+- Preview files/private context exports, isolated database, tab and server were
+  removed. Screenshot outside the repo: task visualization directory,
+  events-step4.png. No new runtime dependency.
+- Final required Windows checks passed: pnpm install --frozen-lockfile; npx tsc
+  --noEmit in desktop/widgets/calendar; Vitest 350/350 desktop and 176/176
+  calendar (Riyadh/New York projects); PORT=1420 BASE_PATH=/ desktop build;
+  widgets build; cargo check --offline in both src-tauri folders. Existing main
+  chunk warning remains. Main JS 666.09 kB / 194.28 kB gzip; lazy Notes remains
+  363.08 / 111.91; lazy Diary 30.58 / 9.48; widgets JS 214.57 / 67.96.
+- STOP after step 4. Steps 5 (widgets/picker/sidebar) and 6 (final comparison)
+  have not started.
 
 ## Step 3 Diary page (23 October 2026)
 - Implemented DiaryApp/DA-cheat in components/diary: Today with a one-line

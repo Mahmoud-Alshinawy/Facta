@@ -1,7 +1,7 @@
 // Today's goals and events from widgets.json. The file holds the app's own
 // records (camelCase); "today" is always the local calendar day.
 
-import { parseClock, parsePrefs, type CalendarPrefs } from "@facta/calendar";
+import { eventOccursOn, parseClock, parsePrefs, type CalendarPrefs } from "@facta/calendar";
 
 export interface WidgetGoal {
   id: string;
@@ -18,6 +18,7 @@ export interface WidgetEvent {
   id: string;
   title: string;
   date: string;
+  endDate?: string;
   startTime: string;
   endTime: string;
   color: string;
@@ -60,7 +61,7 @@ export function isDoneToday(g: WidgetGoal, now: Date = new Date()): boolean {
 
 export function eventsToday(events: WidgetEvent[], now: Date = new Date()): WidgetEvent[] {
   const day = localDay(now);
-  return events.filter((e) => repeatsOn(e.repeat, e.date, e.repeatDays, day));
+  return events.filter((e) => eventOccursOn(e, day));
 }
 
 export function prefsFrom(config: unknown): CalendarPrefs {

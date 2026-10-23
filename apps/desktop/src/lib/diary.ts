@@ -23,6 +23,13 @@ export const DIARY_PROMPTS = [
   "What felt good, or felt difficult?",
 ];
 export const lineLength = (text: string) => Array.from(text).length;
+export const dayUnit = (count: number) => (count === 1 ? "day" : "days");
+export const diaryDayState = (
+  date: string,
+  firstDate: string | undefined,
+  written: boolean,
+) =>
+  written ? "written" : !firstDate || date < firstDate ? "neutral" : "missed";
 
 function validDate(key: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(key) && keyOf(noonOf(key)) === key;

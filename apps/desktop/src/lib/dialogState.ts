@@ -28,6 +28,7 @@ export function eventForm(event: CalendarEvent | null | undefined, initialDate: 
   const startTime = event?.startTime ?? draft?.startTime ?? "09:00";
   return {
     title: event?.title ?? draft?.title ?? "", date: event?.date ?? draft?.date ?? initialDate,
+    endDate: event?.endDate ?? draft?.endDate ?? event?.date ?? draft?.date ?? initialDate,
     startTime, endTime: event?.endTime ?? draft?.endTime ?? nextHour(startTime),
     color: event?.color ?? draft?.color ?? "blue", allDay: event?.allDay ?? draft?.allDay ?? false,
     description: event?.description ?? "", repeat: event?.repeat ?? "none", repeatDays: [...(event?.repeatDays ?? [])],
@@ -54,8 +55,11 @@ export function goalFormError(form: GoalForm): string {
 
 export function eventFormError(form: EventForm): string {
   const common = commonError(form);
-  if (common || form.allDay) return common;
+  if (common) return common;
+  if (!validDay(form.endDate)) return "Choose a valid end date.";
+  if (form.endDate < form.date) return "End date must be on or after start date.";
+  if (form.allDay) return "";
   const start = parseClock(form.startTime), end = parseClock(form.endTime);
   if (start === null || end === null) return "Choose a start and end time.";
-  return end <= start ? "End time must be after start time." : "";
+  return form.endDate === form.date && end <= start ? "End time must be after start time." : "";
 }

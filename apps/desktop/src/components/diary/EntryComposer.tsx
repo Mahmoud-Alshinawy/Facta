@@ -192,7 +192,7 @@ export default function EntryComposer({
                 data-autofocus
                 className="diary-line"
                 autoComplete="off"
-                placeholder={DIARY_PROMPTS[prompt]}
+                placeholder="Try: Made time for a quiet walk."
                 value={line}
                 onChange={(e) => {
                   setLine(Array.from(e.target.value).slice(0, 120).join(""));

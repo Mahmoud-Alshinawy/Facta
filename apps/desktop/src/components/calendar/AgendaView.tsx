@@ -56,7 +56,7 @@ export default function AgendaView({ start, now, prefs, actions, filter, onFilte
     const key = keyOf(dt);
     const isToday = sameDay(dt, now);
     const evs = getEventsForDate(key).filter((e) => !deleting.has(e.id));
-    const { allDay, timed } = splitDay(evs);
+    const { allDay, timed } = splitDay(evs, key);
     const gs = goalsOn(goals, key);
     goalsTotal += gs.length;
     goalsDone += gs.filter((g) => g.done).length;
@@ -146,7 +146,7 @@ export default function AgendaView({ start, now, prefs, actions, filter, onFilte
                 const time = r.at < 0 ? "All day" : r.kind === "goal" && r.g.at === null ? "" : C.chip(r.at);
                 if (r.kind === "ev") {
                   return (
-                    <div key={`${r.event.id}:${g.key}`} className={`arow${r.past ? " is-past" : ""}`} role="listitem" id={`ai-${i}`} data-ai={i}>
+                    <div key={`${r.event.id}:${g.key}:${r.at}`} className={`arow${r.past ? " is-past" : ""}`} role="listitem" id={`ai-${i}`} data-ai={i}>
                       <span className="mono tm">{time}</span>
                       <button type="button" className={`bd ev ${curCls}`} style={{ ["--c" as string]: colorVar(r.event.color) }} tabIndex={-1}
                         aria-label={`${r.event.title}, ${time}`} onClick={() => { setCur(i); actions.editEvent(r.event); }}>

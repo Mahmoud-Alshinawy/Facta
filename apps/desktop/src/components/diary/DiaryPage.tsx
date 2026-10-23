@@ -7,14 +7,16 @@ import {
   startOfMonth,
 } from "date-fns";
 import { Flame, Pencil, Search } from "lucide-react";
-import { formatClock, parseClock } from "@facta/calendar";
+import { formatClock, formatRange } from "@facta/calendar";
 import { useDiary } from "@/hooks/useDiary";
 import { useNow } from "@/hooks/useNow";
 import { usePrefs } from "@/hooks/usePrefs";
 import { useGoals } from "@/hooks/useGoals";
 import { useEvents } from "@/hooks/useEvents";
-import { goalsOn, keyOf, noonOf } from "@/lib/calendarData";
+import { goalsOn, keyOf, noonOf, splitDay } from "@/lib/calendarData";
 import {
+  dayUnit,
+  diaryDayState,
   diaryDays,
   diaryOnThisDay,
   diaryStreak,
@@ -309,13 +311,19 @@ export default function DiaryPage({
       mark: done ? "✓" : "○",
       time: at === null ? "" : formatClock(at, prefs.timeFormat),
     })),
-    ...getEventsForDate(today).map((e) => ({
-      id: e.id,
-      title: e.title,
+    ...getEventsForDate(today)
+      .filter((e) => e.allDay)
+      .map((e) => ({
+        id: e.id,
+        title: e.title,
+        mark: "◇",
+        time: "All day",
+      })),
+    ...splitDay(getEventsForDate(today), today).timed.map((t) => ({
+      id: t.id,
+      title: t.event.title,
       mark: "◇",
-      time: e.allDay
-        ? "All day"
-        : formatClock(parseClock(e.startTime) ?? 0, prefs.timeFormat),
+      time: formatRange(t.start, t.end, prefs.timeFormat),
     })),
   ];
   const toggleMood = (n: number) =>
@@ -482,13 +490,15 @@ export default function DiaryPage({
                 <div className="diary-streak">
                   <Flame size={30} />
                   {streak.paused ? streak.lastRun : streak.current}
-                  <small>days</small>
+                  <small>
+                    {dayUnit(streak.paused ? streak.lastRun : streak.current)}
+                  </small>
                 </div>
                 <p>
                   {streak.paused
-                    ? `Paused, not lost. Write today to begin again. Best: ${streak.best} days.`
+                    ? `Paused, not lost. Write today to begin again. Best: ${streak.best} ${dayUnit(streak.best)}.`
                     : streak.current
-                      ? `One line at a time. Your best is ${streak.best} days.`
+                      ? `One line at a time. Your best is ${streak.best} ${dayUnit(streak.best)}.`
                       : "Start with today. One line is enough."}
                 </p>
                 <div className="diary-week-strip" aria-label="Last 7 days">
@@ -496,19 +506,22 @@ export default function DiaryPage({
                     keyOf(addDays(now, i - 6)),
                   ).map((d) => {
                     const e = byDate.get(d);
+                    const state = diaryDayState(d, entries.at(-1)?.date, !!e);
+                    const label = e
+                      ? MOODS[e.mood - 1].label
+                      : state === "neutral"
+                        ? "Before your diary began"
+                        : "not written";
                     return (
-                      <span
-                        key={d}
-                        title={`${d}: ${e ? MOODS[e.mood - 1].label : "not written"}`}
-                      >
+                      <span key={d} title={`${d}: ${label}`}>
                         <i
-                          className={`diary-week-tile diary-m${e?.mood ?? 0} ${d === today ? "today" : ""}`}
+                          className={`diary-week-tile diary-m${e?.mood ?? 0} ${state === "neutral" ? "neutral" : ""} ${d === today ? "today" : ""}`}
                         />
                         <span className="mono">
                           {format(noonOf(d), "EEEEE")}
                         </span>
                         <span className="sr-only">
-                          {d}: {e ? MOODS[e.mood - 1].label : "not written"}
+                          {d}: {label}
                         </span>
                       </span>
                     );

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { eventOccursOn, spanLanes } from "@facta/calendar";
 import { allDaySpans, clockValue, durationText, eventMinutes, goalsOn, isoWeek, keyOf, noonOf, splitDay, toggledOn } from "./calendarData";
 import type { CalendarEvent, Goal } from "@/types/planner";
 
@@ -75,5 +76,30 @@ describe("allDaySpans", () => {
     const on = (k: string) => (["2026-10-10", "2026-10-12", "2026-10-13", "2026-10-15"].includes(k) ? [e, timed] : []);
     const spans = allDaySpans(week, on);
     expect(spans.map((s) => [s.first, s.last])).toEqual([["2026-10-12", "2026-10-13"], ["2026-10-15", "2026-10-15"]]);
+  });
+});
+
+describe("multi-day calendar data",()=>{
+  it("clips timed continuations while keeping canonical records for editing",()=>{
+    const e=event({date:"2026-10-22",endDate:"2026-10-24",startTime:"20:00",endTime:"09:00"});
+    expect(splitDay([e],"2026-10-23").timed).toEqual([{id:e.id,event:e,start:0,end:1440}]);
+    expect(splitDay([e],"2026-10-24").timed[0]).toMatchObject({start:0,end:540});
+    expect(e.date).toBe("2026-10-22");expect(e.startTime).toBe("20:00");
+  });
+  it("gives disjoint recurring pieces unique layout keys",()=>{
+    const e=event({date:"2026-10-22",endDate:"2026-10-23",startTime:"20:00",endTime:"09:00",repeat:"daily"});
+    const pieces=splitDay([e],"2026-10-23").timed;
+    expect(pieces.map(t=>[t.start,t.end])).toEqual([[0,540],[1200,1440]]);
+    expect(new Set(pieces.map(t=>t.id)).size).toBe(2);
+    expect(pieces.every(t=>t.event===e)).toBe(true);
+  });
+  it("joins a real inclusive span and continues correctly across week/month/year edges",()=>{
+    const e=event({allDay:true,date:"2026-12-30",endDate:"2027-01-04"});
+    const keys=["2026-12-28","2026-12-29","2026-12-30","2026-12-31","2027-01-01","2027-01-02","2027-01-03"];
+    const on=(key:string)=>eventOccursOn(e,key)?[e]:[];
+    const spans=allDaySpans(keys,on);
+    expect(spanLanes(spans,keys).segments[0]).toMatchObject({from:2,to:6,contL:false,contR:true});
+    const next=["2027-01-04","2027-01-05","2027-01-06","2027-01-07","2027-01-08","2027-01-09","2027-01-10"];
+    expect(spanLanes(allDaySpans(next,on),next).segments[0]).toMatchObject({from:0,to:0,contL:true,contR:false});
   });
 });
