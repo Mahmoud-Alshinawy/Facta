@@ -37,6 +37,7 @@ import {
   NOTE_COLORS,
   captureNote,
   noteColor,
+  noteCardPreview,
   noteSection,
   noteTitle,
   selectNotes,
@@ -130,7 +131,7 @@ export default function NotesPage({
   keyboardBlocked = false,
 }: {
   captureRequest?: number;
-  openRequest?: {id:string;request:number}|null;
+  openRequest?: { id: string; request: number } | null;
   onOpenRequestHandled?: () => void;
   keyboardBlocked?: boolean;
 }) {
@@ -278,7 +279,7 @@ export default function NotesPage({
     },
     [addNote],
   );
-  const handledOpen = useRef<number|null>(null);
+  const handledOpen = useRef<number | null>(null);
   const openNote = useCallback(
     (id: string) => {
       const note = notes.find((n) => n.id === id);
@@ -292,15 +293,23 @@ export default function NotesPage({
       setQuery("");
       setSelectedId(id);
       setView("list");
+      setCollapsed(true);
       setOverlay(null);
       setError("");
     },
     [notes],
   );
-  useEffect(()=>{
-    if(!openRequest || handledOpen.current===openRequest.request || !notes.some(n=>n.id===openRequest.id)) return;
-    handledOpen.current=openRequest.request;openNote(openRequest.id);onOpenRequestHandled?.();
-  },[openRequest,openNote,notes,onOpenRequestHandled]);
+  useEffect(() => {
+    if (
+      !openRequest ||
+      handledOpen.current === openRequest.request ||
+      !notes.some((n) => n.id === openRequest.id)
+    )
+      return;
+    handledOpen.current = openRequest.request;
+    openNote(openRequest.id);
+    onOpenRequestHandled?.();
+  }, [openRequest, openNote, notes, onOpenRequestHandled]);
   const trash = useCallback(() => {
     if (!selected || selected.trashedAt) return;
     trashNote(selected.id);
@@ -481,6 +490,26 @@ export default function NotesPage({
     setExportOpen(false);
     requestAnimationFrame(() => exportOpener.current?.focus());
   };
+  const fastCapture = (
+    <form
+      className="ncap"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (fast.trim() && create(fast, null, true)) setFast("");
+      }}
+    >
+      <label htmlFor="note-fast" className="sr-only">
+        Fast capture
+      </label>
+      <input
+        id="note-fast"
+        value={fast}
+        onChange={(e) => setFast(e.target.value)}
+        placeholder="Capture a thought"
+      />
+      <span className="kbd">Enter</span>
+    </form>
+  );
   const folderNav = (
     <>
       <div className="note-collections">
@@ -532,6 +561,30 @@ export default function NotesPage({
       </button>
     </>
   );
+  const compactFilters = (
+    <div className="note-compact-filters">
+      <label>
+        Collection
+        <select
+          aria-label="Notes collection"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value as NoteFilter)}
+        >
+          {collections.map((c) => (
+            <option value={c.key} key={c.key}>
+              {c.name} ({c.count})
+            </option>
+          ))}
+          {tags.map((t) => (
+            <option key={t} value={`tag:${t}`}>
+              #{t}
+            </option>
+          ))}
+          <option value="trash">Trash ({notes.length - live.length})</option>
+        </select>
+      </label>
+    </div>
+  );
   return (
     <div
       className={`notes-page ${focus ? "notes-focus" : ""}`}
@@ -544,14 +597,17 @@ export default function NotesPage({
       {!focus && (
         <header className="hd notes-header">
           <div className="notes-heading">
-            <span className="mono">YOUR SPACE</span>
+            <span className="mono">{live.length} NOTES</span>
             <h1>Notes</h1>
           </div>
           <div className="seg" role="group" aria-label="Notes layout">
             <button
               type="button"
               aria-pressed={view === "list"}
-              onClick={() => setView("list")}
+              onClick={() => {
+                setView("list");
+                setCollapsed(false);
+              }}
             >
               <List size={14} />
               List
@@ -609,46 +665,6 @@ export default function NotesPage({
           </button>
         </header>
       )}
-      {!focus && (
-        <div className="note-compact-filters">
-          <label>
-            Collection
-            <select
-              aria-label="Notes collection"
-              value={filter}
-              onChange={(e) => setFilter(e.target.value as NoteFilter)}
-            >
-              {collections.map((c) => (
-                <option value={c.key} key={c.key}>
-                  {c.name} ({c.count})
-                </option>
-              ))}
-              {tags.map((t) => (
-                <option key={t} value={`tag:${t}`}>
-                  #{t}
-                </option>
-              ))}
-              <option value="trash">
-                Trash ({notes.length - live.length})
-              </option>
-            </select>
-          </label>
-          <button
-            type="button"
-            className="b b-quiet"
-            onClick={() => openOverlay("switcher")}
-          >
-            Switch
-          </button>
-          <button
-            type="button"
-            className="b b-quiet"
-            onClick={() => openOverlay("capture")}
-          >
-            Capture
-          </button>
-        </div>
-      )}
       <div className="nwrap">
         {!focus && (
           <nav className="npa" aria-label="Notes folders and tags">
@@ -672,24 +688,8 @@ export default function NotesPage({
                   <ChevronLeft size={16} />
                 </button>
               </div>
-              <form
-                className="ncap"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (fast.trim() && create(fast, null, true)) setFast("");
-                }}
-              >
-                <label htmlFor="note-fast" className="sr-only">
-                  Fast capture
-                </label>
-                <input
-                  id="note-fast"
-                  value={fast}
-                  onChange={(e) => setFast(e.target.value)}
-                  placeholder="Capture a thought"
-                />
-                <span className="kbd">Enter</span>
-              </form>
+              {compactFilters}
+              {fastCapture}
             </div>
             <div
               className="nitems"
@@ -758,9 +758,11 @@ export default function NotesPage({
         {view === "grid" && !focus ? (
           <div className="note-grid-scroll">
             <div className="note-grid-top">
-              <span className="sec">
-                {filter === "trash" ? "TRASH" : "YOUR NOTES"} · {visible.length}
-              </span>
+              {filter === "trash" ? (
+                <span className="sec">TRASH · {visible.length}</span>
+              ) : (
+                fastCapture
+              )}
             </div>
             <div
               className="ngrid"
@@ -784,16 +786,24 @@ export default function NotesPage({
                   onClick={() => openNote(note.id)}
                 >
                   <span className="tl">{noteTitle(note)}</span>
-                  <span className="pv">
-                    {noteBodyText(note.body).slice(0, 440)}
-                  </span>
+                  <span className="pv">{noteCardPreview(note)}</span>
                   <span className="ft">
-                    {note.tags.map((t) => (
-                      <span key={t}>#{t}</span>
-                    ))}
                     <span>Edited {editedLabel(note)}</span>
-                    {note.pinned && <Pin size={12} />}
-                    {note.pinnedToWidget && <PanelsTopLeft size={12} />}
+                    {note.pinned && (
+                      <span className="note-card-badge">
+                        <Pin size={10} />
+                        Pinned
+                      </span>
+                    )}
+                    {note.pinnedToWidget && (
+                      <span className="note-card-badge">
+                        <PanelsTopLeft size={10} />
+                        Widget
+                      </span>
+                    )}
+                    <span className="note-card-tags">
+                      {note.tags.map((t) => `#${t}`).join(" ")}
+                    </span>
                   </span>
                 </button>
               ))}
@@ -1046,7 +1056,10 @@ export default function NotesPage({
                           : `Edited ${editedLabel(selected)}`}
                       </span>
                       <span>·</span>
-                      <span>{noteWordCount(selected)} words</span>
+                      <span>
+                        {noteWordCount(selected)}{" "}
+                        {noteWordCount(selected) === 1 ? "word" : "words"}
+                      </span>
                       <span>·</span>
                       <span>
                         Created{" "}
@@ -1095,6 +1108,29 @@ export default function NotesPage({
                     )}
                   </article>
                 </div>
+                {!focus && (
+                  <div className="foot note-status" aria-label="Note status">
+                    <span>
+                      {noteWordCount(selected)}{" "}
+                      {noteWordCount(selected) === 1 ? "word" : "words"}
+                    </span>
+                    <span className="note-status-meta">
+                      Edited {editedLabel(selected)}
+                    </span>
+                    <span>
+                      {status.storageError
+                        ? "Local save needs attention"
+                        : "On this device"}
+                    </span>
+                    <span className="note-spacer" />
+                    <span className="k">
+                      <span className="kbd">/</span>blocks
+                    </span>
+                    <span className="k">
+                      <span className="kbd">Ctrl .</span>focus
+                    </span>
+                  </div>
+                )}
               </>
             ) : (
               <EmptyNotes
@@ -1163,16 +1199,17 @@ export default function NotesPage({
       {!focus && (
         <footer className="foot">
           <span className="k">
-            <span className="kbd">Ctrl N</span>new note
+            <span className="kbd">J</span>
+            <span className="kbd">K</span>move
           </span>
           <span className="k">
-            <span className="kbd">/</span>search
+            <span className="kbd">Enter</span>open
           </span>
           <span className="k">
             <span className="kbd">G</span>list or grid
           </span>
           <span className="k">
-            <span className="kbd">Ctrl P</span>switch
+            <span className="kbd">Ctrl P</span>switcher
           </span>
           <span className="note-spacer" />
           <button

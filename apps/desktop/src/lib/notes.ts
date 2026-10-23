@@ -17,6 +17,23 @@ export const noteColor = (note: Pick<Note, "color">) =>
   NOTE_COLORS.find((c) => c.value === note.color)?.token ?? "var(--text-2)";
 export const noteTitle = (note: Pick<Note, "title">) =>
   note.title?.trim() || "Untitled";
+
+/** The grid shows four content blocks, keeping list/checklist meaning visible. */
+export function noteCardPreview(note: Pick<Note, "body">): string {
+  const text = note.body
+    .filter((block) => block.type !== "heading" && block.type !== "divider")
+    .slice(0, 4)
+    .map((block) => {
+      const text = noteBodyText([block]);
+      return block.type === "checklist"
+        ? `${block.checked ? "[x]" : "[ ]"} ${text}`
+        : block.type === "bullet"
+          ? `- ${text}`
+          : text;
+    })
+    .join("\n");
+  return [...text].slice(0, 440).join("");
+}
 export type NoteFilter =
   "all" | "pinned" | "recent" | "trash" | `tag:${string}`;
 

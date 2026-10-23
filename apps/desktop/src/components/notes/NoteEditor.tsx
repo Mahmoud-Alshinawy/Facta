@@ -11,6 +11,12 @@ import {
   AlignRight,
   AlignJustify,
   ChevronDown,
+  Heading2,
+  ListChecks,
+  List as BulletList,
+  Minus,
+  Quote,
+  Code2,
 } from "lucide-react";
 import { noteExtensions } from "./editorExtensions";
 import { bodyToEditor, editorToBody } from "@/lib/noteEditorAdapter";
@@ -27,12 +33,12 @@ export const NOTE_FONTS = [
 export const noteFont = (font: string | null) =>
   NOTE_FONTS.find((f) => f.name === font)?.family ?? NOTE_FONTS[0].family;
 const BLOCKS = [
-  { type: "heading", label: "Heading", key: "#" },
-  { type: "checklist", label: "Checklist", key: "[ ]" },
-  { type: "bullet", label: "Bullet list", key: "-" },
-  { type: "divider", label: "Divider", key: "---" },
-  { type: "quote", label: "Quote", key: ">" },
-  { type: "code", label: "Code", key: "```" },
+  { type: "heading", label: "Heading", key: "#", Icon: Heading2 },
+  { type: "checklist", label: "Checklist", key: "[ ]", Icon: ListChecks },
+  { type: "bullet", label: "Bullet list", key: "-", Icon: BulletList },
+  { type: "divider", label: "Divider", key: "---", Icon: Minus },
+  { type: "quote", label: "Quote", key: ">", Icon: Quote },
+  { type: "code", label: "Code", key: "```", Icon: Code2 },
 ];
 type InsertMenu = {
   kind: "slash" | "reference";
@@ -544,7 +550,10 @@ export default function NoteEditor({
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => choose(i)}
                 >
-                  <span>{block.label}</span>
+                  <span className="note-block-icon" aria-hidden="true">
+                    <block.Icon size={15} />
+                  </span>
+                  <span className="note-block-name">{block.label}</span>
                   <span className="mono">{block.key}</span>
                 </button>
               ))

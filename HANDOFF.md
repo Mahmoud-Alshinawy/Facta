@@ -1,4 +1,34 @@
-# Handoff: feat/notes-diary (branch 2 of 3), step 5 implemented
+# Handoff: feat/notes-diary (branch 2 of 3), step 6 complete — STOP for review
+
+## Step 6 final visual comparison (23 October 2026)
+- Completed a four-theme × 1440/1280/1100 comparison pass using local design
+  components and hosted spot references. Captured 18 core surfaces in all 12
+  combinations (216): Notes grid/editor/list; Diary Today/Timeline/Calendar/
+  Search; four Calendar views; EventDialog; Goals List/Board; Today; all three
+  Settings tabs. Visually inspected contact sheets/full-size samples and measured
+  page/header bounds. No page/header overflow; sidebar 240px wide / 64px rail.
+- Fixed Notes grid fast capture, count subtitle, four-block bounded Unicode
+  previews with list/checklist markers, metadata badges, default collapsed-list
+  editor, narrow controls in the list panel, widget label, slash-menu width/icons,
+  status/shortcut footers and singular word counts. Added two pure preview tests.
+  Today styling remains unchanged. No dependency, CDN, schema or native change.
+- Additional checks: 72 picker previews (Sticky/Stack/Diary, solid/transparent,
+  all themes/widths); 12 capture overlays with Ctrl Shift N/Escape; 24 empty
+  Notes/Diary views at 1100; sampled selection/fonts/slash/focus/export/switcher/
+  cheat/Trash Undo; fast-capture creation; 1210x720 header and 15:00–17:00 quick-add
+  popover clear of the footer; short-window dialogs. Final browser console empty.
+- Full coverage, intentional adaptations and remaining owner checks are recorded
+  in docs/notes-diary-visual-review.md. Not a claim of exhaustive 431-board QA.
+  Native/backend limits from step 5 remain; no new native runtime smoke or SQL.
+  Fixture backend access was disabled. Temporary entries/context exports, tab and
+  server removed. Local evidence: task visualization directory / facta-step6/.
+- Required Windows checks passed: frozen install; npx tsc --noEmit in all three
+  packages; desktop Vitest 375/375; calendar 184/184; both builds; cargo check
+  --offline in both native folders. Existing main chunk warning. Bundle kB/gzip:
+  main 689.68/202.26, lazy Notes 364.52/112.23 (was 362.54/111.71), Notes CSS
+  18.57/3.93, lazy Diary 28.05/8.42, widgets 229.15/72.60 + window API 15.21/3.85.
+- All six branch-2 steps are implemented. STOP for owner review. Do not start
+  branch 3 or any new scope without the owner's instruction.
 
 ## Step 5 review + Windows native smoke (23 October 2026)
 - Reproduced/fixed two native issues: covered WebView2 windows stalled receipt

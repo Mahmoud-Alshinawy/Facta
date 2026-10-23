@@ -1,8 +1,62 @@
 import { describe, expect, it } from "vitest";
 import { makeNote } from "@/test/contentFixtures";
-import { captureNote, noteSection, selectNotes } from "./notes";
+import {
+  captureNote,
+  noteCardPreview,
+  noteSection,
+  selectNotes,
+} from "./notes";
 
 describe("notes selection and capture", () => {
+  it("bounds card previews without splitting Unicode or changing the full note", () => {
+    const note = makeNote({
+      body: [
+        {
+          id: "long",
+          type: "paragraph",
+          content: [{ type: "text", text: "😀".repeat(500) }],
+        },
+      ],
+    });
+    expect(noteCardPreview(note)).toBe("😀".repeat(440));
+    expect(note.body[0].content[0]).toEqual({
+      type: "text",
+      text: "😀".repeat(500),
+    });
+  });
+  it("previews four content blocks with checklist/bullet markers and readable note links", () => {
+    const block = (
+      type: "paragraph" | "heading" | "divider" | "checklist" | "bullet",
+      text: string,
+      checked = false,
+    ) => ({
+      id: crypto.randomUUID(),
+      type,
+      checked,
+      content: [{ type: "text" as const, text }],
+    });
+    const note = makeNote({
+      body: [
+        block("heading", "Heading"),
+        block("paragraph", "First 📝"),
+        block("divider", ""),
+        block("checklist", "Done", true),
+        block("checklist", "Still to do"),
+        {
+          id: "link",
+          type: "bullet",
+          content: [
+            { type: "noteLink", noteId: "other", label: "Related note" },
+          ],
+        },
+        block("paragraph", "Not in this preview"),
+      ],
+    });
+    expect(noteCardPreview(note)).toBe(
+      "First 📝\n[x] Done\n[ ] Still to do\n- Related note",
+    );
+    expect(noteCardPreview(makeNote())).toBe("");
+  });
   const now = new Date("2026-10-23T12:00:00+03:00");
   const notes = [
     makeNote({
