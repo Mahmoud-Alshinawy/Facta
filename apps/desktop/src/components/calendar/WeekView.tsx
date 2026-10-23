@@ -14,7 +14,7 @@ import { useGoals } from "@/hooks/useGoals";
 import type { CalendarEvent, Goal } from "@/types/planner";
 import { allDaySpans, clockValue, durationText, goalsOn, keyOf, splitDay, toggledOn } from "@/lib/calendarData";
 import { IconWarn } from "@/components/shell/Icons";
-import { Check, Commit, Kbd, addDays, clocks, colorVar, dayLabel, dayLabelLong, deleteEventWithUndo, dowShort, sameDay, useDeletingEvents } from "./common";
+import { Check, Commit, Kbd, addDays, bandTooltip, clocks, colorVar, dayLabel, dayLabelLong, deleteEventWithUndo, dowShort, sameDay, useDeletingEvents } from "./common";
 import { DetailPopover, QuickAddPopover } from "./Popovers";
 import type { CalendarActions } from "./types";
 
@@ -64,7 +64,7 @@ export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpen
 
   // ---- data per day ----
   const perDay = keys.map((key) => {
-    const { timed } = splitDay(eventsOn(key), key);
+    const { timed } = splitDay(eventsOn(key), key, true);
     const gs = goalsOn(goals, key);
     return { key, timed, goals: gs };
   });
@@ -347,7 +347,7 @@ export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpen
             {spans.segments.map((s) => (
               <button key={s.item.id} type="button"
                 className={`ad${s.contL ? " cl" : ""}${s.contR ? " cr" : ""}`}
-                title={`${s.item.event.title}, all day`}
+                title={bandTooltip(s.item.event, keys[s.from], C)}
                 style={{ ["--c" as string]: colorVar(s.item.event.color), gridColumn: `${s.from + 2} / span ${s.to - s.from + 1}`, gridRow: s.lane + 1 }}
                 onClick={() => setDetail({ key: s.item.first < keys[0] ? keys[0] : s.item.first, id: s.item.event.id })}>
                 <span className="ee" aria-hidden="true" /><span className="at">{s.item.event.title}</span>
@@ -492,7 +492,7 @@ export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpen
           )}
 
           {detailEvent && detailIdx >= 0 && (() => {
-            const t = splitDay([detailEvent], detail!.key).timed[0];
+            const t = splitDay([detailEvent], detail!.key, true).timed[0];
             return (
               <DetailPopover
                 event={detailEvent} at={detail?.at}

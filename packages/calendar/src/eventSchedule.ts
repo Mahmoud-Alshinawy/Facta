@@ -36,6 +36,10 @@ export function eventDurationMinutes(event: ScheduledEvent): number {
   );
 }
 
+/** Long timed events share the spanning band without becoming all-day records. */
+export const eventInAllDayBand = (event: ScheduledEvent): boolean =>
+  !!event.allDay || eventDurationMinutes(event) >= 1440;
+
 function startsOn(event: ScheduledEvent, index: number): boolean {
   if (index < dayIndex(event.date)) return false;
   const dow = (((index + 4) % 7) + 7) % 7;

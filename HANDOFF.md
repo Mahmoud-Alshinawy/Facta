@@ -1,4 +1,19 @@
-# Handoff: feat/notes-diary (branch 2 of 3), step 4 implemented
+# Handoff: feat/notes-diary (branch 2 of 3), step 4 review fix complete
+
+## Step 4 review: 24-hour spanning bars (23 October 2026)
+- Week/Day/Month put timed events lasting >=24 hours in the spanning band;
+  they retain allDay=false and their original dates/times for editing, native
+  tooltips and the existing detail popover. Shorter overnight events stay split
+  in the timed grid. Today/Agenda and the Day widget retain timed semantics.
+- Shared eventInAllDayBand has exact 23h59m/24h/24h01m and repeating threshold
+  tests. Desktop tests verify canonical records, joined bars and short overnight
+  portions. All-day events remain in the band regardless of their clock fields.
+- Required Windows checks passed: frozen install; npx tsc --noEmit in all three
+  packages; desktop Vitest 352 and calendar 184; desktop and widgets builds;
+  cargo check --offline in both native folders. Existing main chunk warning.
+  This fix was unit/type/build checked; no new browser/native smoke run yet.
+- Step 5 is now authorized: Notes Sticky/Stack, Diary, compact export/pending
+  actions, Settings picker and sidebar unhide. No schema changes or live backend.
 
 ## Step 4 event end dates + Diary nits (23 October 2026)
 - EventDialog New/Edit now expose start/end dates for both timed and all-day

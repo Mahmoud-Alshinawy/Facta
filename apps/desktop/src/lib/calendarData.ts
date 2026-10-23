@@ -1,7 +1,7 @@
 // What the calendar views show for a day, from the goal and event records.
 // Pure: the views pass in the records and the day.
 
-import { eventDayRanges, parseClock, shiftDate } from "@facta/calendar";
+import { eventDayRanges, eventInAllDayBand, parseClock, shiftDate } from "@facta/calendar";
 import type { CalendarEvent, Goal } from "@/types/planner";
 import { goalsForDay, isCompletedToday, toggleGoalCompletion } from "@/lib/goalDates";
 
@@ -50,11 +50,11 @@ export function eventMinutes(e: Pick<CalendarEvent, "startTime" | "endTime">): {
   return { start, end };
 }
 
-export function splitDay(events: readonly CalendarEvent[], day?: string): { allDay: CalendarEvent[]; timed: TimedEvent[] } {
+export function splitDay(events: readonly CalendarEvent[], day?: string, spanningBand = false): { allDay: CalendarEvent[]; timed: TimedEvent[] } {
   const allDay: CalendarEvent[] = [];
   const timed: TimedEvent[] = [];
   for (const e of events) {
-    if (e.allDay) allDay.push(e);
+    if (e.allDay || (spanningBand && eventInAllDayBand(e))) allDay.push(e);
     else {
       const ranges = day ? eventDayRanges(e, day) : [eventMinutes(e)];
       ranges.forEach(range => timed.push({id:ranges.length === 1 ? e.id : `${e.id}:${range.start}`,event:e,...range}));
@@ -108,7 +108,7 @@ export function allDaySpans(keys: readonly string[], eventsOn: (key: string) => 
   const out: AllDaySpan[] = [];
   days.forEach((key, i) => {
     for (const e of eventsOn(key)) {
-      if (!e.allDay) continue;
+      if (!eventInAllDayBand(e)) continue;
       const open = runs.get(e.id);
       if (open && open.last === days[i - 1]) {
         open.last = key;

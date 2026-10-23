@@ -103,3 +103,23 @@ describe("multi-day calendar data",()=>{
     expect(spanLanes(allDaySpans(next,on),next).segments[0]).toMatchObject({from:0,to:0,contL:true,contR:false});
   });
 });
+
+
+describe("timed spanning band", () => {
+  it("moves a 24h event out of every grid portion, retains its canonical times, and joins its bar", () => {
+    const e = event({ date:"2026-10-22", endDate:"2026-10-23", startTime:"10:00", endTime:"10:00" });
+    for (const key of [e.date, e.endDate!]) {
+      expect(splitDay([e],key,true)).toEqual({ allDay:[e], timed:[] });
+      expect(splitDay([e],key).timed).toHaveLength(1); // Today/Agenda keep timed semantics.
+    }
+    expect(e.allDay).toBeUndefined();
+    const keys=["2026-10-22","2026-10-23"];
+    expect(spanLanes(allDaySpans(keys,k=>eventOccursOn(e,k)?[e]:[]),keys).segments[0]).toMatchObject({from:0,to:1});
+  });
+  it("keeps a 22:00–02:00 overnight in split grid segments", () => {
+    const e=event({date:"2026-10-22",endDate:"2026-10-23",startTime:"22:00",endTime:"02:00"});
+    expect(splitDay([e],e.date,true).timed[0]).toMatchObject({start:1320,end:1440});
+    expect(splitDay([e],e.endDate,true).timed[0]).toMatchObject({start:0,end:120});
+    expect(allDaySpans([e.date,e.endDate!],k=>eventOccursOn(e,k)?[e]:[])).toEqual([]);
+  });
+});

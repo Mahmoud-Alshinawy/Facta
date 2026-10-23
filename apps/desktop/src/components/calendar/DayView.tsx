@@ -10,7 +10,7 @@ import { useGoals } from "@/hooks/useGoals";
 import { goalsOn, keyOf, splitDay, toggledOn } from "@/lib/calendarData";
 import type { CalendarEvent } from "@/types/planner";
 import { IconWarn } from "@/components/shell/Icons";
-import { Check, Commit, Kbd, addDays, clocks, colorVar, dayLabel, deleteEventWithUndo, sameDay, useDeletingEvents } from "./common";
+import { Check, Commit, Kbd, addDays, bandTooltip, clocks, colorVar, dayLabel, deleteEventWithUndo, sameDay, useDeletingEvents } from "./common";
 import { DetailPopover, QuickAddPopover } from "./Popovers";
 import type { CalendarActions } from "./types";
 
@@ -37,7 +37,7 @@ export default function DayView({ anchor, now, prefs, actions, onAnchor, say }: 
   const isPast = !isToday && anchor < now;
   const nowMin = now.getHours() * 60 + now.getMinutes();
   const events = getEventsForDate(key).filter((e) => !deleting.has(e.id));
-  const { allDay, timed } = splitDay(events, key);
+  const { allDay, timed } = splitDay(events, key, true);
   const dayGoals = goalsOn(goals, key);
   const [slot, setSlot] = useState(() => Math.min(SLOTS - 1, Math.floor(nowMin / 30)));
   const [qa, setQa] = useState<{ a: number; b: number } | null>(null);
@@ -121,7 +121,7 @@ export default function DayView({ anchor, now, prefs, actions, onAnchor, say }: 
                 <span className="mono sec lbl">ALL DAY</span>
                 {allDay.length === 0 && <span style={{ fontSize: 13, color: "var(--subtle)" }}>Nothing all day</span>}
                 {allDay.map((a) => (
-                  <button key={a.id} type="button" className="ad1" style={{ ["--c" as string]: colorVar(a.color) }} onClick={() => setDetail(a.id)}>
+                  <button key={a.id} type="button" className="ad1" title={bandTooltip(a, key, C)} style={{ ["--c" as string]: colorVar(a.color) }} onClick={() => setDetail(a.id)}>
                     <span className="ee" aria-hidden="true" />{a.title}
                   </button>
                 ))}
@@ -190,7 +190,7 @@ export default function DayView({ anchor, now, prefs, actions, onAnchor, say }: 
               )}
               {detailEvent && (
                 <DetailPopover event={detailEvent} day={anchor} at={detailAt} viewportRef={scRef} slotBounds={{start:0,end:0}} clocks={C}
-                  style={{ ...popHoriz, top: Math.max(8, detailEvent.allDay ? 8 : (splitDay([detailEvent], key).timed[0].start / 60) * H - 12), width: 330 }}
+                  style={{ ...popHoriz, top: Math.max(8, allDay.some(e => e.id === detailEvent.id) ? 8 : (splitDay([detailEvent], key, true).timed[0].start / 60) * H - 12), width: 330 }}
                   onClose={() => { setDetail(null); focusGrid(); }}
                   onEdit={() => { setDetail(null); actions.editEvent(detailEvent); }}
                   onDelete={() => { setDetail(null); deleteEventWithUndo(detailEvent as CalendarEvent, deleteEvent); focusGrid(); }} />
@@ -231,7 +231,7 @@ export default function DayView({ anchor, now, prefs, actions, onAnchor, say }: 
               <li key={`${e.id}:${at}`} className="grow">
                 <span className="evdot" style={{ ["--c" as string]: colorVar(e.color) }} />
                 <button type="button" className="gt grow-btn" onClick={() => actions.editEvent(e)}>{e.title}</button>
-                <span className="em">{at < 0 ? "All day" : C.chip(at)}</span>
+                <span className="em">{at < 0 ? (e.allDay ? "All day" : "Spanning") : C.chip(at)}</span>
               </li>
             ))}
           </ul>

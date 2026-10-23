@@ -3,6 +3,7 @@ import {
   dayIndex,
   eventDayRanges,
   eventDurationMinutes,
+  eventInAllDayBand,
   eventOccurrencesOn,
   eventOccurrenceAt,
   eventOccursOn,
@@ -160,5 +161,20 @@ describe("recurring spans", () => {
         }
       }
     }
+  });
+});
+
+
+describe("24-hour spanning band threshold", () => {
+  it.each([
+    ["09:59", false], ["10:00", true], ["10:01", true],
+  ])("classifies a next-day %s end precisely", (endTime, expected) => {
+    const e = event({ startTime: "10:00", endDate: "2026-10-23", endTime });
+    expect(eventInAllDayBand(e)).toBe(expected);
+    expect(eventInAllDayBand({ ...e, repeat: "weekly" })).toBe(expected);
+  });
+  it("keeps shorter overnight events timed and all-day events in the band", () => {
+    expect(eventInAllDayBand(event({ startTime: "22:00", endDate: "2026-10-23", endTime: "02:00" }))).toBe(false);
+    expect(eventInAllDayBand(event({ allDay: true, endDate: undefined }))).toBe(true);
   });
 });
