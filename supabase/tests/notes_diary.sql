@@ -733,7 +733,7 @@ select pg_temp.expect_error($q$insert into public.notes(color) values ('red')$q$
 select pg_temp.expect_error($q$insert into public.notes(align) values ('diagonal')$q$,'23514');
 select pg_temp.expect_error($q$insert into public.notes(body) values ('{}')$q$,'23514');
 select pg_temp.expect_error($q$insert into public.notes(body) values (jsonb_build_array(jsonb_build_object('text',repeat('x',204801))))$q$,'23514');
-select pg_temp.expect_error($q$insert into public.notes(tags) values (array_fill('x',array[21]))$q$,'23514');
+select pg_temp.expect_error($q$insert into public.notes(tags) values (array_fill('x'::text,array[21]))$q$,'23514');
 select pg_temp.expect_error($q$insert into public.notes(tags) values (array[repeat('x',51)])$q$,'23514');
 select pg_temp.expect_error($q$insert into public.notes(tags) values (array[null]::text[])$q$,'23514');
 select pg_temp.expect_error($q$insert into public.diary_entries(date,one_line,mood) values ('2026-10-03','',3)$q$,'23514');

@@ -1,5 +1,17 @@
 # Handoff: feat/notes-diary (branch 2 of 3), step 1 for review
 
+## Step 1 local SQL review / step 2 authorization (23 October 2026)
+- Fixed the polymorphic array_fill tags fixture with an explicit text cast.
+  Other array_fill values already have uuid casts; other arrays resolve from
+  typed expressions, explicit casts, operators or declared text[] parameters.
+- Owner reports all SQL assertions pass with this correction on local Supabase,
+  and both migration apply and rerun succeed. This is owner-run verification;
+  no SQL was executed or Supabase project contacted by this session.
+- Step 2 (Notes page) is authorized after this test-fix commit. Steps 3–6 remain
+  later work. Native Quit runtime verification remains outstanding.
+- SQL test-fix checks passed: frozen install, three typechecks, 301 desktop /
+  152 calendar tests, both builds and both cargo check --offline on Windows.
+
 ## Step 1 review fixes (23 October 2026)
 - Fix 1: desktop Quit now emits a webview event and awaits every open store's
   flush (including account-change teardown) for up to two seconds before the
