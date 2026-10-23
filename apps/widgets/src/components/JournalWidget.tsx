@@ -70,12 +70,10 @@ export default function JournalWidget({
           const waiter = pending.current.get(result.id);
           if (!waiter) continue;
           pending.current.delete(result.id);
-          // Let the projection render before the card adopts its confirmed value.
-          requestAnimationFrame(() =>
-            result.error
-              ? waiter.reject(new Error(result.error))
-              : waiter.resolve(),
-          );
+          // A covered WebView2 window can suspend animation frames. A durable
+          // acknowledgement must settle independently of whether the card paints.
+          if (result.error) waiter.reject(new Error(result.error));
+          else waiter.resolve();
         }
         setStatus(
           !next.user_id
@@ -100,10 +98,10 @@ export default function JournalWidget({
       pending.current.clear();
     };
   }, [theme, translucent, type]);
-  const send = useCallback(async (draft: JournalDraft) => {
+  const send = useCallback(async (draft: JournalDraft, actionId?: string) => {
     const userId = source.current?.user_id;
     if (!userId) throw new Error("Sign in to Facta first.");
-    const id = crypto.randomUUID(),
+    const id = actionId ?? crypto.randomUUID(),
       action = { ...draft, id, user_id: userId };
     const { invoke } = await import("@tauri-apps/api/core");
     await invoke("write_action", { actionJson: JSON.stringify(action) });

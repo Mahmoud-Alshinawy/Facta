@@ -15,6 +15,12 @@ import {
   type WidgetNoteColor,
 } from "@facta/calendar";
 import "./journal-cards.css";
+import {
+  readStickyDraft,
+  sameStickyFields,
+  stickySaveAction,
+  type StickySave,
+} from "../lib/stickyDraft";
 
 type Edit = Omit<
   Extract<JournalAction, { type: "edit_note" }>,
@@ -33,7 +39,7 @@ interface Common {
   theme: string;
   translucent: boolean;
   journal: WidgetJournal;
-  onSend?: (action: JournalDraft) => Promise<void>;
+  onSend?: (action: JournalDraft, actionId?: string) => Promise<void>;
   onOpen?: (section: "notes" | "diary", id?: string) => void;
   status?: string;
   disabled?: boolean;
@@ -74,6 +80,9 @@ export function NotesCard(props: Common & { style?: "sticky" | "stack" }) {
   const pinned = journal.notes.filter((n) => n.pinned),
     [selected, setSelected] = useState<string | null>(null);
   const current = pinned.find((n) => n.id === selected) ?? pinned[0];
+  useEffect(() => {
+    if (current && selected !== current.id) setSelected(current.id);
+  }, [current?.id, selected]);
   const beforeLeave = useRef<(() => Promise<boolean>) | null>(null);
   async function navigate(delta: number) {
     if (beforeLeave.current && !(await beforeLeave.current())) return;
@@ -163,36 +172,14 @@ function StickyEditor({
     : null;
   const [initial] = useState(() => {
     try {
-      const saved = draftKey
-        ? JSON.parse(localStorage.getItem(draftKey) ?? "null")
-        : null;
-      if (
-        saved &&
-        saved.base?.id === note.id &&
-        typeof saved.title === "string" &&
-        saved.title.length <= 1000 &&
-        typeof saved.preview === "string" &&
-        saved.preview.length <= WIDGET_EDIT_CHARS * 2 &&
-        typeof saved.base.preview === "string" &&
-        saved.base.preview.length <= WIDGET_EDIT_CHARS * 2 &&
-        typeof saved.base.title === "string" &&
-        (saved.color === null || ["a", "b", "c", "d"].includes(saved.color))
-      )
-        return saved as {
-          title: string;
-          preview: string;
-          color: WidgetNoteColor | null;
-          base: WidgetNote;
-        };
+      return readStickyDraft(
+        draftKey ? localStorage.getItem(draftKey) : null,
+        note,
+      );
     } catch {
       /* Recovery is best effort; queued actions remain in the native file. */
     }
-    return {
-      title: note.title,
-      preview: note.preview,
-      color: note.color,
-      base: note,
-    };
+    return readStickyDraft(null, note);
   });
   const id = useId(),
     [title, setTitle] = useState(initial.title),
@@ -202,9 +189,15 @@ function StickyEditor({
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState(""),
     [failed, setFailed] = useState(false);
+  const attempt = useRef<StickySave | null>(initial.attempt);
   const dirty =
-    title !== base.title || preview !== base.preview || color !== base.color;
+    title !== base.title ||
+    preview !== base.preview ||
+    color !== base.color ||
+    attempt.current !== null;
   const saving = useRef(false);
+  const latest = useRef({ title, preview, color });
+  latest.current = { title, preview, color };
   useEffect(() => {
     if (!dirty && !busy) {
       setTitle(note.title);
@@ -219,7 +212,13 @@ function StickyEditor({
       if (dirty)
         localStorage.setItem(
           draftKey,
-          JSON.stringify({ title, preview, color, base }),
+          JSON.stringify({
+            title,
+            preview,
+            color,
+            base,
+            attempt: attempt.current,
+          }),
         );
       else localStorage.removeItem(draftKey);
     } catch {
@@ -234,23 +233,36 @@ function StickyEditor({
     saving.current = true;
     setBusy(true);
     setMessage("Queued · open Facta to finish saving.");
-    const patch: Edit["patch"] = {};
-    if (title !== base.title) patch.title = title;
-    if (preview !== base.preview) patch.preview = preview;
-    if (color !== base.color) patch.color = color;
+    const captured = attempt.current ?? {
+      id: crypto.randomUUID(),
+      base: { title: base.title, preview: base.preview, color: base.color },
+      values: { title, preview, color },
+    };
+    attempt.current = captured;
     try {
-      await onSend({
-        type: "edit_note",
-        note_id: note.id,
-        base: { title: base.title, preview: base.preview, color: base.color },
-        patch,
-      });
+      // Persist the identity before native delivery. A recovered draft must
+      // replay the same receipt even if Facta applied it while we were closed.
+      if (draftKey)
+        localStorage.setItem(
+          draftKey,
+          JSON.stringify({
+            title,
+            preview,
+            color,
+            base,
+            attempt: captured,
+          }),
+        );
+      await onSend(stickySaveAction(note.id, captured), captured.id);
       // Keep the exact acknowledged prefix while further typing is in flight.
       // Once idle, the effect above adopts the freshly exported bounded preview.
-      setBase({ ...base, title, preview, color });
+      setBase({ ...base, ...captured.values });
+      attempt.current = null;
       setFailed(false);
       setMessage("Saved");
-      return true;
+      // Typing while the acknowledgement was pending must not rotate away
+      // from a newer draft. Its own autosave will run next.
+      return sameStickyFields(latest.current, captured.values);
     } catch (error) {
       setFailed(true);
       setMessage(String(error instanceof Error ? error.message : error));
@@ -292,6 +304,10 @@ function StickyEditor({
           placeholder="Untitled"
           disabled={disabled}
           onChange={(e) => {
+            if (failed) {
+              attempt.current = null;
+              setMessage("");
+            }
             setTitle(e.target.value);
             setFailed(false);
           }}
@@ -308,6 +324,10 @@ function StickyEditor({
           placeholder="Write anything…"
           disabled={disabled}
           onChange={(e) => {
+            if (failed) {
+              attempt.current = null;
+              setMessage("");
+            }
             setPreview(e.target.value);
             setFailed(false);
           }}
@@ -330,6 +350,10 @@ function StickyEditor({
               style={{ background: noteColor(key) }}
               disabled={disabled}
               onClick={() => {
+                if (failed) {
+                  attempt.current = null;
+                  setMessage("");
+                }
                 setColor(key);
                 setFailed(false);
               }}

@@ -1,5 +1,34 @@
 # Handoff: feat/notes-diary (branch 2 of 3), step 5 implemented
 
+## Step 5 review + Windows native smoke (23 October 2026)
+- Reproduced/fixed two native issues: covered WebView2 windows stalled receipt
+  settlement on requestAnimationFrame; recovered Sticky drafts assigned a new
+  action ID and falsely conflicted after the desktop had applied the original.
+  Acknowledgements now settle directly. Recovery persists the original attempt
+  identity/fields before delivery, replays its durable receipt, and keeps newer
+  typing for a separate save. Rotation waits for newer drafts; pinned selection
+  remains stable when export order changes. Recovery-storage failures block
+  delivery visibly, rather than enqueueing an edit with no recoverable identity.
+- Added real-engine recovery/replay tests, including text deletion, continued
+  typing and invalid/old recovery records. No dependencies or SQL changes.
+- Native Tauri/WebView2 tests used invented fixtures, separate profiles/files and
+  blank Supabase configuration. Verified Sticky/Stack/Diary edits, rich-note tail
+  preservation, hidden desktop delivery, running-app note deep links, desktop and
+  companion restarts, account/signed-out export isolation, window movement and
+  resize persistence. The recovered edit reached Saved with one original receipt
+  and an empty native pending file. Detailed evidence, launcher incident and test
+  limitations: docs/notes-diary-native-smoke.md.
+- Temporary source overlays, test processes and the test-only URL handler were
+  removed; normal development executables restored. Production stacking, packaged
+  launch, cold-start/production URL handling, literal tray menu and multi-device
+  sync still need owner verification. Step 6 remains pending; no branch 3 work.
+- Final production-source checks all pass on Windows: frozen install; npx tsc
+  --noEmit in desktop/widgets/calendar; desktop Vitest 373/373 and calendar
+  184/184; both Vite builds; cargo check --offline in both native folders.
+  Existing main chunk warning remains. Bundle kB / gzip: main 689.68 / 202.26,
+  lazy Notes 362.54 / 111.71, lazy Diary 28.05 / 8.42, widgets main 229.15 /
+  72.60 plus lazy window API 15.21 / 3.85. No new dependency or CDN load.
+
 ## Step 5 Notes/Diary widgets + picker + sidebar (23 October 2026)
 - Implemented the NotesWidget Sticky and Stack cards and DiaryWidget one-line
   card, using NotesDesk/Settings as layout references. Shared presentational
@@ -65,9 +94,9 @@
   and detail, middle-day continuation and short overnight split segments.
   Temporary preview files/context exports, tab and server were removed. Proof:
   task visualization directory, notes-diary-widgets-step5.png.
-- Not verified: actual native companion launch/window drag/resize, file IPC while
-  desktop is hidden/closed/restarted, OS deep-link delivery and multi-device sync.
-  These need an owner native smoke run. No SQL changed/run; no live Supabase.
+- Native coverage has since been extended by the review above. Packaged launch,
+  production stacking, cold-start/production URL handling and multi-device sync
+  remain unverified. No SQL changed/run; fixture backend access was disabled.
 - STOP after step 5 for review. Step 6's full rendered-board comparison across
   all pages/themes/1440/1280/1100 is still pending; no branch 3 work started.
 
