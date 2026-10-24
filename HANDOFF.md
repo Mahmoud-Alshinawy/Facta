@@ -1,6 +1,64 @@
-# Handoff: branch 3 Step 1 — STOP for schema/security review
+# Handoff: branch 3 Step 2 — STOP for data-client review
 
-## Step 1 review fixes (24 October 2026)
+## Current decision and Step 2 checkpoint (24 October 2026)
+
+- Owner approved Step 1 at **223a044**, including both review fixes, and
+  authorized **Step 2 only** of the approved 5337807 plan. Implemented on
+  `feat/shared-goals`; no Step 3 screens, wizard, routing or native/widget work.
+  No new migration, schema/type changes or application dependencies.
+- Added typed shared contracts and strict snake/camel row/outcome codecs,
+  original-date/eligibility/DST helpers, history reconciliation and a bounded
+  server-score projection for the later Today/Progress handoff. Numeric field
+  `is_at_least_70` survives disk round trips; absent rounds never become zeroes.
+- Added independent `SharedSync`, finite Supabase RPC adapter and a versioned
+  single-record `planner_shared_<uid>` IndexedDB cache/outbox/draft/receipt store.
+  Existing database version, six personal keys and personal full-row queue stay
+  compatible. Local changes and atomic receipt/removal publish after flush.
+  Attempted UUID/body/date/epoch stay immutable across retries/reloads; only
+  unprepared same-key intents coalesce. New edits wait for own acknowledged
+  revisions; other-device conflicts require review and an explicit new UUID.
+  Negative receipts and rejected intent remain reloadable together.
+- Session tokens are pinned per request. Session/SDK resolution and HTTP work
+  share a bounded deadline; disposal aborts requests/listeners/timers and drops
+  old-account responses. Successful leave purges cached access immediately.
+  Online control commands require confirmation and a caller-retained immutable
+  packet for uncertain replies; they are not silently queued. Invite secrets
+  remain memory-only. Shared status/error recovery is available through the
+  auth-scoped hook/provider without blocking personal initialization or sync.
+- Real browser integration: **77 assertions** in fresh Chromium-based Edge
+  **156.0.4314.42**, native IndexedDB and two real page reloads. Actual SQL RPCs
+  exercised through the real Supabase SDK and a disposable loopback HTTP bridge.
+  Verified six-key migration/open failure, actual transaction rollback with
+  injected quota failure, retry saving, queue/draft reopen, lost reply after
+  commit, failed acknowledgement/process loss, byte-identical command retries,
+  captured-date retention, in-flight sequencing, SQL conflicts/explicit retry,
+  token-free durable state, malformed snapshot retention, late account replies,
+  pinned identity, immediate leave purge and revoked access. All four personal
+  collections wrote/read real PostgreSQL rows during a shared-only outage.
+  Pre-pause/gap/resumed captures, next-round joiners, archive receipt exceptions,
+  unsent archive failures and historical round keys eight weeks later passed.
+- Reran actual disposable PostgreSQL **17.5** regressions: **409 checked SQL
+  assertions** plus exception assertions, **21 independent-session concurrency
+  cases**, migration reruns, personal coexistence and authenticated historical
+  EXPLAIN ANALYZE all passed. No SQL/security property is inferred from Vitest.
+- Required checks passed: frozen install; npx offline tsc in desktop, widgets
+  and calendar; desktop **396** and calendar **184** Vitest tests; desktop build
+  with PORT=1420 BASE_PATH=/; widgets build; Windows cargo check --offline in
+  both native folders. Existing desktop main-chunk warning only.
+- Evidence/reproduction: `docs/shared-goals-client.md`,
+  `scripts/run-shared-client-tests.mjs`, `scripts/shared-client-fixture.py` and
+  the test-only `src/test/sharedIntegration.ts`. Ignored reports:
+  `tmp/shared-goals-runtime/client-result.json` and `step2-sql-result.json`.
+  Browser requests were loopback-only; tests create/drop their own random DBs.
+- **Limits:** synthetic auth claims/roles in the disposable bridge are not full
+  Supabase Auth, PostgREST, JWT signature/refresh or deployed HTTP verification.
+  That end-to-end gate remains outstanding. Quota/open denial were injected at
+  real IndexedDB boundaries, not physical disk exhaustion. No packaged Tauri UI
+  smoke test claimed for this data-only checkpoint. No live Supabase accessed.
+- Commit/push this checkpoint, then **STOP for owner review before Step 3**.
+  Unrelated untracked `.agents/` and `skills-lock.json` remain untouched.
+
+## Step 1 review fixes (24 October 2026; historical, approved at 223a044)
 
 - Addressed the two should-fixes from review of **87183cc**. No Step 2 client or
   UI work. The pending migration remains re-runnable; both embedded test copies
@@ -38,8 +96,9 @@
 - Same isolated loopback cluster/auth-role scaffold as the initial checkpoint;
   no live Supabase or application credentials used. Full Supabase Auth,
   PostgREST and HTTP/JWT integration remain unverified. No new dependencies.
-- Commit/push this follow-up, then **STOP for schema/security review**. Step 2
-  remains unauthorized. Untracked `.agents/` and `skills-lock.json` are untouched.
+- This follow-up stopped for schema/security review and was subsequently
+  approved at **223a044**, authorizing the Step 2 checkpoint above. Untracked
+  `.agents/` and `skills-lock.json` were untouched.
 
 ## Approved plan and initial Step 1 checkpoint (87183cc; historical)
 

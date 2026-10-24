@@ -1,0 +1,163 @@
+// Real Chromium IndexedDB + SDK requests + a disposable PostgreSQL SQL bridge.
+// The bridge does not implement Supabase Auth/JWT verification or PostgREST.
+import { spawn } from "node:child_process";
+import { createRequire } from "node:module";
+import { createInterface } from "node:readline";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const require = createRequire(import.meta.url);
+const { chromium } = require(
+  process.env.FACTA_PLAYWRIGHT_MODULE ?? "playwright",
+);
+const { createServer } = await import(
+  pathToFileURL(
+    path.join(root, "apps/desktop/node_modules/vite/dist/node/index.js"),
+  ).href
+);
+const pgPort = process.argv[2];
+if (!/^\d+$/.test(pgPort ?? ""))
+  throw new Error("Pass a disposable loopback PostgreSQL port");
+const child = spawn(
+  process.env.FACTA_TEST_PYTHON ?? "python",
+  [
+    path.join(root, "scripts/shared-client-fixture.py"),
+    "--postgres-port",
+    pgPort,
+  ],
+  {
+    cwd: root,
+    env: process.env,
+    windowsHide: true,
+    stdio: ["ignore", "pipe", "pipe"],
+  },
+);
+let stderr = "";
+child.stderr.on("data", (chunk) => {
+  stderr += chunk;
+});
+const ready = await new Promise((resolve, reject) => {
+  const reader = createInterface({ input: child.stdout });
+  const timer = setTimeout(
+    () => reject(new Error("Disposable SQL bridge startup timed out")),
+    30_000,
+  );
+  reader.once("line", (line) => {
+    clearTimeout(timer);
+    try {
+      resolve(JSON.parse(line));
+    } catch {
+      reject(new Error("Invalid fixture startup"));
+    }
+  });
+  child.once("exit", (code) => {
+    clearTimeout(timer);
+    if (code) reject(new Error("Disposable SQL bridge failed: " + stderr));
+  });
+});
+let vite, browser;
+try {
+  const envDir = path.join(root, "tmp/shared-client-empty-env");
+  await mkdir(envDir, { recursive: true });
+  vite = await createServer({
+    configFile: false,
+    root,
+    envDir,
+    envPrefix: "FACTA_TEST_UNUSED_",
+    resolve: { alias: { "@": path.join(root, "apps/desktop/src") } },
+    server: {
+      host: "127.0.0.1",
+      port: 0,
+      fs: { strict: true },
+      watch: { ignored: ["**/src-tauri/**", "**/tmp/**", "**/dist/**"] },
+    },
+    plugins: [
+      {
+        name: "shared-client-fixture",
+        configureServer(server) {
+          server.middlewares.use((req, res, next) => {
+            if (req.url !== "/__shared_integration") return next();
+            res.setHeader("Content-Type", "text/html");
+            res.end(
+              '<!doctype html><html><head><title>Disposable shared sync checks</title></head><body><script type="module" src="/apps/desktop/src/test/sharedIntegration.ts"></script></body></html>',
+            );
+          });
+        },
+      },
+    ],
+  });
+  await vite.listen();
+  const address = vite.httpServer.address();
+  const url = `http://127.0.0.1:${address.port}/__shared_integration`;
+  browser = await chromium.launch({
+    headless: true,
+    executablePath: process.env.FACTA_CHROMIUM_EXECUTABLE || undefined,
+  });
+  const context = await browser.newContext();
+  const external = [];
+  await context.route("**/*", (route) => {
+    const request = new URL(route.request().url());
+    if (!["127.0.0.1", "localhost", "[::1]"].includes(request.hostname)) {
+      external.push(request.origin);
+      return route.abort();
+    }
+    return route.continue();
+  });
+  const page = await context.newPage();
+  await page.goto(url);
+  await page.waitForFunction(
+    () => typeof window.runSharedIntegration === "function",
+  );
+  const results = [];
+  let checkpoint;
+  for (const phase of [1, 2, 3]) {
+    const result = await page.evaluate(
+      (args) => window.runSharedIntegration(args),
+      { fixtureUrl: ready.url, phase, checkpoint },
+    );
+    results.push({
+      phase,
+      assertions: result.assertions,
+      checks: result.checks,
+    });
+    checkpoint = result.checkpoint;
+    if (phase < 3) {
+      await page.reload();
+      await page.waitForFunction(
+        () => typeof window.runSharedIntegration === "function",
+      );
+    }
+  }
+  if (external.length)
+    throw new Error("Unexpected non-loopback browser request");
+  const report = {
+    ok: true,
+    browser: await browser.version(),
+    storage: "native Chromium IndexedDB with two page reloads",
+    database: ready.database,
+    transport:
+      "real Supabase SDK over loopback SQL bridge; not PostgREST/Auth/JWT verification",
+    externalRequests: external.length,
+    phases: results,
+  };
+  await mkdir(path.join(root, "tmp/shared-goals-runtime"), { recursive: true });
+  await writeFile(
+    path.join(root, "tmp/shared-goals-runtime/client-result.json"),
+    JSON.stringify(report, null, 2) + "\n",
+  );
+  console.log(JSON.stringify(report, null, 2));
+} finally {
+  await browser?.close();
+  await vite?.close();
+  await fetch(`${ready.url}/test/control`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "stop" }),
+  }).catch(() => {});
+  await new Promise((resolve) => {
+    if (child.exitCode !== null) resolve();
+    else child.once("exit", resolve);
+  });
+}
