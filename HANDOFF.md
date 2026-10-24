@@ -1,6 +1,34 @@
-# Handoff: branch 2 of 3 approved and squash-merged locally — awaiting owner push
+# Handoff: branch 3 plan prepared — STOP for plan review
 
-## Current review decision and next action (24 October 2026)
+## Current branch-3 decision and next action (24 October 2026)
+- Branch 2 is approved and squash-merged into main as aa7f69a. Fetched origin and
+  confirmed origin/main and local main at aa7f69afedf9943ba94590e578a0dde5e66ee028.
+  Created feat/shared-goals directly from origin/main; no feature re-merge.
+- Owner recovered the detailed branch-3 brief: 2–8-person shared Gym/Custom goals,
+  shared screens/invitations/link join, individual Gym targets, per-goal rounds,
+  server scoring view, member-only RLS, time zones, leaving and offline behavior.
+  Read GoalsShared, GoalsDetail and GoalsCreate separately, canvas board inventory,
+  and Main/Widget integration details; inspected current Today/Goals Mine,
+  sync/IndexedDB, deep links, widgets and schema. Public PostgreSQL/Supabase docs
+  checked for view/RPC security; no database connection or schema execution.
+- Wrote docs/shared-goals-plan.md. Established requirements/design evidence are
+  separated from proposed schema, RPC/RLS/token/scoring contracts, group dates,
+  membership lifecycle, offline command/cache behavior and integration choices.
+  Ordered implementation has a schema/RLS/scoring checkpoint before client/UI.
+- Review needed on waiting single-owner/link-only groups, capacity reservations,
+  group time zone/first start, invite preview privacy versus the join board,
+  username setup, offline replay grace/conflicts, leave/owner transfer/pause,
+  personal-goal completion coupling and literal green versus themed accents.
+  Proposed defaults are not approvals. STOP: no application code or migrations
+  authorized by this planning task; wait for owner plan review.
+- This checkpoint changes only the plan and HANDOFF. Required checks passed:
+  frozen install; npx (offline) tsc --noEmit in all three packages; desktop 375
+  and calendar 184 tests; both production builds; cargo check --offline in both
+  Windows native folders. Existing desktop main-chunk warning only. These are
+  baseline checks, not branch-3 SQL/RLS/concurrency or UI/native acceptance.
+
+## Previous branch-2 review decision (24 October 2026; historical)
+
 - Reviewer approved step 6 at `7b2f69c`; the Notes listbox Enter finding is
   resolved. No outstanding blocker, should-fix or nit in this focused follow-up.
 - Independently reran frozen install, TypeScript in desktop/widgets/calendar,
