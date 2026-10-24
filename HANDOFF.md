@@ -1,6 +1,55 @@
-# Handoff: branch 3 plan prepared — STOP for plan review
+# Handoff: branch 3 Step 1 — STOP for schema/security review
 
-## Current lifecycle-plan revision (24 October 2026)
+## Approved plan and Step 1 checkpoint (24 October 2026)
+
+- Owner approved the revised plan at **5337807**, including proposed defaults
+  and lifecycle contracts. Implemented Step 1 only on `feat/shared-goals`, based
+  on `origin/main` aa7f69a. No shared client, UI, routing or widget work begun.
+- Added `20261024160000_shared_goals.sql`: six RLS-protected public tables,
+  private token digests/receipts/rate budgets, constraints/immutable lifecycle
+  guards/deferred capacity and owner invariants, finite authenticated command
+  RPC, limited invitation reads, invoker snapshot and invoker scoring views.
+  Publication revalidates/finalizes its anchor under lock; scores reconstruct
+  eligible historical rosters, inactive gaps, pause/resume and terminal archive.
+  Receipts bind successful and rejected outcomes to immutable UUID/body pairs;
+  tokens are stripped. No raw shared upsert or personal sync rule changes.
+- Added self-contained rollback SQL tests and a loopback-only Python runner
+  with independent-session lock assertions; generated migration copies are
+  checked for drift. Public database types match disposable catalog metadata.
+  `docs/shared-goals-data.md` documents schema, RPC payloads/results, access,
+  exact lifecycle/cutoff/replay rules, test reproduction and remaining limits.
+- Actual database evidence: fresh disposable **PostgreSQL 17.5** Windows with
+  pgcrypto and real anon/authenticated roles (minimal auth.uid/users scaffold).
+  Standalone suite: **304 checked assertions**, plus exception assertions;
+  migration apply/rerun preserves memberships, check-ins, receipts and archived
+  scores. All five lifecycle scenarios and exact boundary/expiry/grace cutoffs
+  ran, alongside real RLS/RPC/private-helper/anonymous access denials, scoring,
+  target versions, epoch replay, capacity reservations, rate budgets and guards.
+- **17 independent-session concurrency cases passed**, each observing an actual
+  PostgreSQL lock wait: final seat, receipt same/different body, opposing stale
+  states, join/revoke/rotation, archive/check-in and leave/check-in in both orders,
+  future targets, ownership/leave, join/transfer, leave/next-round join and a
+  lock wait crossing a round boundary. These are SQL evidence, not mocked clients.
+- Also applied existing personal migrations in that disposable database, seeded
+  all four personal collections and reran shared migration: personal rows and
+  personal sync guard preserved. Inspected authenticated EXPLAIN ANALYZE for a
+  six-year synthetic group/history window, confirming membership/target
+  index use. This small fixture is not a production load test.
+- Docker Desktop did not expose its engine pipe; full local Supabase/Auth/
+  PostgREST/JWT/HTTP was **not** tested. Temporary native PostgreSQL/psycopg live
+  only under ignored `tmp/`; no application dependencies/lockfile changes.
+  Tests used no application credentials; no live Supabase connection or schema
+  execution occurred. Standalone SQL can still be run by the owner on fresh local
+  Supabase. Build/regression checks do not establish SQL security properties.
+- Required checks passed: frozen install; npx offline tsc in desktop/widgets/
+  calendar; desktop **378** and calendar **184** Vitest tests; desktop build with
+  PORT=1420 BASE_PATH=/; widgets build; Windows cargo check --offline in both
+  native folders. Existing desktop main-chunk warning only.
+- **STOP after commit/push.** Await owner schema/security review before Step 2
+  (shared client/storage/logic). No shared feature native/UI acceptance claimed.
+
+## Previous lifecycle-plan revision (24 October 2026; historical)
+
 - Revised docs/shared-goals-plan.md after review of 32e268b; all other proposed
   defaults retained. Still documentation only: no application code, migrations,
   schema execution or new feature acceptance has been performed.
