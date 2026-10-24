@@ -1,4 +1,556 @@
-# Handoff: feat/ui-redesign (branch 1 of 3), work in progress
+# Handoff: branch 2 of 3 approved and squash-merged locally — awaiting owner push
+
+## Current review decision and next action (24 October 2026)
+- Reviewer approved step 6 at `7b2f69c`; the Notes listbox Enter finding is
+  resolved. No outstanding blocker, should-fix or nit in this focused follow-up.
+- Independently reran frozen install, TypeScript in desktop/widgets/calendar,
+  desktop 375 + calendar 184 tests, both Vite builds and both Windows
+  `cargo check --offline` checks. All passed; existing main-chunk warning only.
+- Independently verified 24 real-browser grid/list keyboard opens across four
+  themes and 1440/1280/1100 at height 720. Tab reached the listbox, J changed
+  selection, and Enter opened the selected note with the panel collapsed and
+  title focused. Explicit List expansion, card opening and switcher opening
+  passed; browser warning/error log empty. Used invented local data with blank
+  Supabase configuration. No application source was edited by this review.
+- At the owner's request, squash-merged `feat/notes-diary` at `7b2f69c` onto
+  local `main`, including this review handoff. The squash commit is authored as
+  Mahmoud Alshinawy <2270009032@iau.edu.sa>. Application sources match the
+  reviewed feature tip; only this handoff adds merge-status documentation.
+- Next action: owner pushes local `main`. No push or migration application was
+  performed as part of the local merge.
+- Builder continuation: once branch 2 is on main, prepare the branch-3 plan from
+  the original approved brief, with scope, implementation steps and acceptance
+  checks, for owner review before coding. No branch-3 scope is recorded in this
+  repository; do not infer it from the historical "Next steps" sections below.
+- Earlier native-runtime, packaged-launch, production auth/backend, multi-device
+  sync and SQL verification limits remain as documented. The entries below are
+  historical checkpoints; their STOP-for-review language is superseded by this
+  current decision for step 6.
+
+## Step 6 Notes listbox Enter fix (24 October 2026)
+- Reproduced the review finding from a fresh grid: Tab from Fast capture focused
+  the Notes listbox; J selected another note; Enter left the panel expanded and
+  focus on BODY. The earlier verification pressed Enter on an option/button,
+  activating its click handler, and incorrectly claimed listbox Enter coverage.
+- Enter now calls shared openNote(selected.id). Shared opening requests title
+  focus in a post-commit effect, after the grid/list unmounts and editor mounts.
+  Explicit List still expands the panel and keeps focus on that button.
+- Real browser checks: four themes × 1440/1280/1100 at height 720. Tab reached the
+  listbox; grid J/K/J changed selection with listbox focus; Enter opened that
+  selected title, collapsed the panel and focused the input. Explicit List then
+  expanded; Tab/J/Enter from the expanded list did the same (24 opens total).
+  Card and switcher opening also collapsed/focused correctly. Console empty.
+  Evidence: visualization directory / facta-notes-keyboard-fix/ (focus/selection
+  JSON and screenshots). No native runtime, backend or SQL testing in this fix.
+- Temporary fixture/context exports, server and tab removed. No dependency,
+  schema, styling or unrelated behavior change. Visual-review document corrected.
+  Required Windows checks: frozen install, TypeScript ×3, desktop 375/calendar
+  184 tests, both builds and cargo check --offline ×2 passed. Existing main
+  chunk-size warning remains. STOP for review after commit/push.
+
+## Step 6 verification follow-up (23–24 October 2026)
+- Verified d762229 separately: required checks passed again (frozen install,
+  all three TypeScript checks, desktop 375 and calendar 184 tests, both production
+  builds, both Windows cargo check --offline). Existing main-chunk warning only.
+- Used real IndexedDB with an invented account in a separate database on the
+  localhost:1422 fixture origin, with backend configuration explicitly blank.
+  Notes title/Unicode body/Inbox and Diary line/mood survived browser reload.
+  Diary timeline and text/mood filters returned the expected entries/counts.
+- Exercised Notes movement and card activation, collapsed editor, explicit
+  List expansion, narrow tag/Trash selection, fast capture/autofocus, switcher,
+  bold/font selection, focus mode, Trash Undo, and keyboard checklist insertion.
+  Long content (32 KB unbroken paragraph, long title and ten tags) fit all four
+  themes at 1440/1280/1100 × 720 in grid/list/editor: 36 cases, no horizontal
+  overflow. Capture and slash-menu checks passed in all 12 combinations each.
+  Capture Escape returned focus; Tab/Shift Tab trapped correctly in the sampled
+  dialog. Browser warning/error log empty. Listbox Enter coverage was inaccurate:
+  button activation masked the regression subsequently fixed above.
+- Markdown download contents verified (bold/checklist); TXT action clicked but
+  no saved file was verified. Both serializers pass logic tests. Browser download
+  waiting stalled well beyond its requested timeout, so it was not repeated.
+  Native export dialogs, production auth/backend and packaged smoke remain owner
+  checks; no new native runtime or SQL testing was performed in this pass.
+- Temporary entry/context exports and server/tab removed; production builds
+  contain no fixture. Evidence: visualization directory / facta-step6-verification/.
+  The synthetic IndexedDB stays isolated to the fixture origin; an invented
+  Verification notebook.md download remains in Downloads. Full detail appended
+  to docs/notes-diary-visual-review.md. Documentation-only follow-up; STOP.
+
+## Step 6 final visual comparison (23 October 2026)
+- Completed a four-theme × 1440/1280/1100 comparison pass using local design
+  components and hosted spot references. Captured 18 core surfaces in all 12
+  combinations (216): Notes grid/editor/list; Diary Today/Timeline/Calendar/
+  Search; four Calendar views; EventDialog; Goals List/Board; Today; all three
+  Settings tabs. Visually inspected contact sheets/full-size samples and measured
+  page/header bounds. No page/header overflow; sidebar 240px wide / 64px rail.
+- Fixed Notes grid fast capture, count subtitle, four-block bounded Unicode
+  previews with list/checklist markers, metadata badges, default collapsed-list
+  editor, narrow controls in the list panel, widget label, slash-menu width/icons,
+  status/shortcut footers and singular word counts. Added two pure preview tests.
+  Today styling remains unchanged. No dependency, CDN, schema or native change.
+- Additional checks: 72 picker previews (Sticky/Stack/Diary, solid/transparent,
+  all themes/widths); 12 capture overlays with Ctrl Shift N/Escape; 24 empty
+  Notes/Diary views at 1100; sampled selection/fonts/slash/focus/export/switcher/
+  cheat/Trash Undo; fast-capture creation; 1210x720 header and 15:00–17:00 quick-add
+  popover clear of the footer; short-window dialogs. Final browser console empty.
+- Full coverage, intentional adaptations and remaining owner checks are recorded
+  in docs/notes-diary-visual-review.md. Not a claim of exhaustive 431-board QA.
+  Native/backend limits from step 5 remain; no new native runtime smoke or SQL.
+  Fixture backend access was disabled. Temporary entries/context exports, tab and
+  server removed. Local evidence: task visualization directory / facta-step6/.
+- Required Windows checks passed: frozen install; npx tsc --noEmit in all three
+  packages; desktop Vitest 375/375; calendar 184/184; both builds; cargo check
+  --offline in both native folders. Existing main chunk warning. Bundle kB/gzip:
+  main 689.68/202.26, lazy Notes 364.52/112.23 (was 362.54/111.71), Notes CSS
+  18.57/3.93, lazy Diary 28.05/8.42, widgets 229.15/72.60 + window API 15.21/3.85.
+- All six branch-2 steps are implemented. STOP for owner review. Do not start
+  branch 3 or any new scope without the owner's instruction.
+
+## Step 5 review + Windows native smoke (23 October 2026)
+- Reproduced/fixed two native issues: covered WebView2 windows stalled receipt
+  settlement on requestAnimationFrame; recovered Sticky drafts assigned a new
+  action ID and falsely conflicted after the desktop had applied the original.
+  Acknowledgements now settle directly. Recovery persists the original attempt
+  identity/fields before delivery, replays its durable receipt, and keeps newer
+  typing for a separate save. Rotation waits for newer drafts; pinned selection
+  remains stable when export order changes. Recovery-storage failures block
+  delivery visibly, rather than enqueueing an edit with no recoverable identity.
+- Added real-engine recovery/replay tests, including text deletion, continued
+  typing and invalid/old recovery records. No dependencies or SQL changes.
+- Native Tauri/WebView2 tests used invented fixtures, separate profiles/files and
+  blank Supabase configuration. Verified Sticky/Stack/Diary edits, rich-note tail
+  preservation, hidden desktop delivery, running-app note deep links, desktop and
+  companion restarts, account/signed-out export isolation, window movement and
+  resize persistence. The recovered edit reached Saved with one original receipt
+  and an empty native pending file. Detailed evidence, launcher incident and test
+  limitations: docs/notes-diary-native-smoke.md.
+- Temporary source overlays, test processes and the test-only URL handler were
+  removed; normal development executables restored. Production stacking, packaged
+  launch, cold-start/production URL handling, literal tray menu and multi-device
+  sync still need owner verification. Step 6 remains pending; no branch 3 work.
+- Final production-source checks all pass on Windows: frozen install; npx tsc
+  --noEmit in desktop/widgets/calendar; desktop Vitest 373/373 and calendar
+  184/184; both Vite builds; cargo check --offline in both native folders.
+  Existing main chunk warning remains. Bundle kB / gzip: main 689.68 / 202.26,
+  lazy Notes 362.54 / 111.71, lazy Diary 28.05 / 8.42, widgets main 229.15 /
+  72.60 plus lazy window API 15.21 / 3.85. No new dependency or CDN load.
+
+## Step 5 Notes/Diary widgets + picker + sidebar (23 October 2026)
+- Implemented the NotesWidget Sticky and Stack cards and DiaryWidget one-line
+  card, using NotesDesk/Settings as layout references. Shared presentational
+  JournalCards render the same cards in the companion and Settings previews.
+  All four theme tokens, solid/transparent plates, bundled Geist/Geist Mono,
+  labelled controls and visible keyboard focus; no dependency or CDN added.
+- Sticky rotates pinned-to-widget notes and edits title, text and colour.
+  It autosaves after 800 ms idle, supports Save/Ctrl Enter, and saves before
+  rotation. Text remains editable while waiting for Facta. Small recovery
+  drafts in companion localStorage are scoped by account/window/note; these
+  are bounded editing drafts, not collection caches. Recovery write failures
+  are visible. A stale edit keeps its draft and asks the user to review Notes.
+- Stack exports/displays the four most recently edited live notes and captures
+  a new title-only note with Enter. Rows open their note in Facta. Sticky/Open
+  and Diary/Open also use validated facta://focus section/note links; the main
+  app handles running/cold-start links and consumes note-open requests once.
+- Diary exports only today's line and three same-day-number recalls from prior
+  months, not full bodies, tags or moods. Enter creates/edits one line; new mood
+  is 3, while an existing entry keeps its id, mood, body, tags and creation time.
+  Queued lines retain their intended date after midnight. Stale/future dates and
+  invalid/oversized input fail visibly. A stale-day widget waits for fresh data.
+- widgetJournal projects only pinned-to-widget + four recent notes, title and
+  an 800-character Unicode-safe plain-text preview, colour and small metadata.
+  No full note body/tags/links. The complete journal projection is capped at
+  128 KiB; Stack slots are reserved first, and unusually large pinned sets get
+  a visible 'More pinned notes' notice. Counts and word counts use real data.
+- Preview edits replace only the changed prefix range of the canonical body,
+  preserving unseen text, unaffected marks, note links, heading/checklist state
+  and blocks. Subsequent autosaves may use the prior acknowledged prefix;
+  tests cover continued typing beyond the exported preview without duplication.
+- New actions are account-scoped and apply through the existing notes/diary
+  sync collections. Existing goal toggles now use the same consumer; Tasks/Day
+  attach the snapshot owner. Native pending actions remain under the existing
+  file lock until cache + queue + a bounded receipt ledger commit in one IDB
+  transaction. Explicit acknowledgements remove only committed action ids.
+  Restart replay does not toggle twice or duplicate quick notes. Failed storage
+  never acknowledges. Corrupt pending JSON is retained rather than overwritten.
+- Added the per-user receipt key to IndexedDbStore hydration; old cache/queue
+  migration remains compatible. Receipt metadata is local only (not synced).
+  Export includes bounded receipts for widget acknowledgement/status, is
+  serialized, and replaces widgets.json through a temporary snapshot. Signed-out
+  snapshots are empty; another account's actions remain queued for their owner.
+- Added Notes (Sticky/Stack) and Diary to config, native window sizing, Settings
+  type picker/style choices, live previews and per-widget style metadata.
+  Existing tasklist companion-status check and window placement policy remain.
+  Sidebar now exposes Notes and Diary; both pages remain lazy-loaded. Previews
+  use non-form containers so the New widget form has no nested forms.
+- Vitest exercises projection/privacy/size bounds, Unicode, safe rich-body edits,
+  validation, conflicts, Diary mood preservation, restart replay and real IDB
+  durability/failure. Frozen install, npx tsc --noEmit in desktop/widgets/calendar,
+  desktop Vitest 371/371, calendar 184/184, both Vite builds and cargo check
+  --offline in both native folders pass on Windows. Main chunk warning remains.
+- Bundle sizes (kB / gzip): main 688.75 / 201.88; lazy Notes 362.54 / 111.71
+  (before step 5: 363.08 / 111.91); lazy Diary 28.05 / 8.42; widgets main
+  228.20 / 72.32 plus lazy window API 15.21 / 3.85.
+- Browser QA used an isolated memory engine, invented fixtures and blank
+  Supabase configuration. Verified Sticky save/autosave/colour/rotation, Stack
+  capture, Diary creation/editing, picker style persistence, both sidebar pages,
+  and Settings geometry at 1440/1280/1100 (rail at 1100). All four themes passed
+  solid/transparent card overflow checks. Fresh final page had no console errors
+  or warnings; a nested preview-form issue found during QA was fixed.
+- Also browser-smoked the prior 24-hour fix: Week/Day bands, full-range tooltip
+  and detail, middle-day continuation and short overnight split segments.
+  Temporary preview files/context exports, tab and server were removed. Proof:
+  task visualization directory, notes-diary-widgets-step5.png.
+- Native coverage has since been extended by the review above. Packaged launch,
+  production stacking, cold-start/production URL handling and multi-device sync
+  remain unverified. No SQL changed/run; fixture backend access was disabled.
+- STOP after step 5 for review. Step 6's full rendered-board comparison across
+  all pages/themes/1440/1280/1100 is still pending; no branch 3 work started.
+
+## Step 4 review: 24-hour spanning bars (23 October 2026)
+- Week/Day/Month put timed events lasting >=24 hours in the spanning band;
+  they retain allDay=false and their original dates/times for editing, native
+  tooltips and the existing detail popover. Shorter overnight events stay split
+  in the timed grid. Today/Agenda and the Day widget retain timed semantics.
+- Shared eventInAllDayBand has exact 23h59m/24h/24h01m and repeating threshold
+  tests. Desktop tests verify canonical records, joined bars and short overnight
+  portions. All-day events remain in the band regardless of their clock fields.
+- Required Windows checks passed: frozen install; npx tsc --noEmit in all three
+  packages; desktop Vitest 352 and calendar 184; desktop and widgets builds;
+  cargo check --offline in both native folders. Existing main chunk warning.
+  This fix was unit/type/build checked; no new browser/native smoke run yet.
+- Step 5 is now authorized: Notes Sticky/Stack, Diary, compact export/pending
+  actions, Settings picker and sidebar unhide. No schema changes or live backend.
+
+## Step 4 event end dates + Diary nits (23 October 2026)
+- EventDialog New/Edit now expose start/end dates for both timed and all-day
+  events. The month grid edits the focused endpoint; native date input changes
+  also move the grid to that month. Equal dates save a null end_date through
+  the mapper. Invalid/reversed dates block submission, including all-day forms;
+  an overnight end time is valid only with a later end date. Empty native date
+  fields retain a valid calendar fallback. Reopening resets the complete form.
+- Native date/time input events update the controlled draft immediately, so
+  saving uses the displayed values. Existing initialEndTime, draft title/colour/
+  all-day state, title autofocus, focus trap, Escape and fixed footer remain.
+  The recurrence hint explains that the dates set EACH occurrence's length.
+- New packages/calendar/eventSchedule.ts supplies DST-independent date maths,
+  inclusive occurrence lookup, clipped day portions and overlap union. Repeats
+  apply to occurrence START dates and retain the original span length; weekday
+  spans can continue into weekends. A daily overnight rule can produce separate
+  morning/evening portions. Long spans inspect at most two starts per weekday;
+  exhaustive-start comparisons cover that bound. No per-day record is saved.
+  A timed midnight end has no zero-length block on its final date.
+- useEvents, Week/Day/Month/Agenda, MiniCalendar (through the getter), Today and
+  Diary context use range-aware lookup. All-day spans join across week/month/
+  year edges through existing spanLanes. Timed spans clip to each day (00:00
+  through 24:00 for an interior day). Layout keys distinguish separate portions;
+  all editing/deleting still uses the canonical event id and original dates.
+  TodayPanel changed only the row key and displayed clipped times; no restyle.
+- Details show the occurrence's full date range and respect clock preferences.
+  The selected day/time chooses the morning versus evening occurrence for
+  repeating overnight events (unit-tested). Detail popovers reuse the existing
+  visible-grid clamping used by quick add, including off-screen start times.
+- Multi-day timed moves/resizes use the full dialog, with a visible hint; a
+  pointer press opens details instead of shortening a clipped portion. Existing
+  single-day drag behavior remains, including moving a legacy explicit same-day
+  endDate along with date. Pointer drag/native WebView regression smoke remains
+  owner-run. No new now line in Week, Day or the Day widget; Today retains its.
+- Existing Day widget and its Settings preview share range-aware day selection/
+  clipping. No new widget type, pending action, picker option or sidebar unhide
+  was started. Notes/Diary widgets are step 5. Actual companion runtime was not
+  exercised; real widget selection logic is tested and both apps compile.
+- Folded the approved Diary nits into this commit: singular day labels (including
+  calendar/best/paused run), a distinct Try placeholder, and neutral week tiles
+  with 'Before your diary began' accessible labels before the first-ever entry.
+  Days after the diary began remain 'not written'; empty history is neutral.
+- The step-1 migration/database types already contain events.end_date. Mapper
+  round-trip/clear checks remain and invalid end dates now fail before local
+  mutation. No schema/migration change, SQL execution or live Supabase contact.
+- Browser QA used the actual App shell/engine with an isolated IndexedDB fixture
+  and blank Supabase configuration. Verified new/edit timed/all-day ranges,
+  reversed/empty date blocking, endpoint grid/native keyboard input, canonical
+  continuation editing, clearing/restoring ranges, persisted end dates after
+  reload, timed day portions, all four views and the three Diary nits. No
+  console errors/warnings. Final morning/evening selection fix is unit/type/
+  build verified; native runtime and live multi-device behavior are unverified.
+- Week + Month geometry passed all 4 themes at 1440/1280/1100 (24 combinations),
+  without page/header/grid horizontal overflow. EventDialog passed the same
+  12 theme/width combinations; at 1280x720 its body scrolls while the footer is
+  visible. Full rendered-board comparison remains step 6; local EventDialog
+  design read as reference, with the new date fields required by branch 2.
+- Preview files/private context exports, isolated database, tab and server were
+  removed. Screenshot outside the repo: task visualization directory,
+  events-step4.png. No new runtime dependency.
+- Final required Windows checks passed: pnpm install --frozen-lockfile; npx tsc
+  --noEmit in desktop/widgets/calendar; Vitest 350/350 desktop and 176/176
+  calendar (Riyadh/New York projects); PORT=1420 BASE_PATH=/ desktop build;
+  widgets build; cargo check --offline in both src-tauri folders. Existing main
+  chunk warning remains. Main JS 666.09 kB / 194.28 kB gzip; lazy Notes remains
+  363.08 / 111.91; lazy Diary 30.58 / 9.48; widgets JS 214.57 / 67.96.
+- STOP after step 4. Steps 5 (widgets/picker/sidebar) and 6 (final comparison)
+  have not started.
+
+## Step 3 Diary page (23 October 2026)
+- Implemented DiaryApp/DA-cheat in components/diary: Today with a one-line
+  composer, five moods, user-derived/custom tags, optional plain-text body,
+  yesterday backfill, paused/current/best streak information, a seven-day mood
+  strip, read-only goals/events context and On this day. No diary lock.
+- Timeline is bounded to the selected month, with gap rows, inline Today
+  capture, expandable bodies and historical edit dialogs. Calendar uses the
+  saved week-start preference, mood bars, previews, selected-day detail,
+  written/average statistics and an accessible mood trend. Search covers lines,
+  longer entries and tags; selected moods are OR, selected tags are AND.
+- New entries save the line and details together; default mood is 3. Editing
+  never removes the existing entry. Existing mood/tag changes save immediately;
+  longer text saves on blur. Line drafts remain explicit Enter/Save and survive
+  Diary view changes during this visit. All writes use useDiary/the existing
+  IndexedDB sync collection and date-based identity; no new persistence path.
+  At midnight, yesterday's unsaved backfill is cleared rather than relabeled
+  as a different day; Today/Search header dates follow the actual current day.
+- Streaks count unique days, retain yesterday's run until today ends and derive
+  best/last run from history. Future rows cannot inflate aggregates. Written
+  denominator is elapsed days this month, all days in a past month, zero in a
+  future month. On this day follows the board's same-day-number recalls from
+  earlier MONTHS, newest first (not only previous years). Future calendar days
+  are browsable; new entries are for today or earlier days.
+- W/T/L/C, /, ?, P, 1–5, Enter, Escape, Tab and [/] follow DA-cheat, scoped away
+  from typing and unrelated dialogs. Radio groups and the single-tab-stop
+  calendar support arrows; calendar also supports Home/End/PageUp/PageDown.
+  Dialogs trap/restore focus. Escape leaves the line for its visible Save
+  control; a subsequent Escape closes a historical editor. Empty saves announce
+  errors. Today goals/events remain read-only and Open Today navigates back.
+- App lazily mounts Diary. Sidebar Notes/Diary stay hidden until step 5; use
+  Ctrl+K, type Diary (or Notes), Enter to open the page for review now. The
+  shared search now has a focus trap and does not double-activate results when
+  Enter is pressed on an actual result button. TodayPanel is unchanged.
+- 15 pure logic tests cover unique/newer-wins history, timestamp ties/offsets,
+  current/paused/best runs, year/leap/DST day boundaries, written denominators,
+  invalid dates, monthly recalls, bounded gaps, search and week-start grids.
+  The same 15 tests also passed with TZ=America/New_York for the DST boundary.
+- Browser verification used the actual App shell and engine with two isolated
+  IndexedDB fixtures, blank Supabase configuration and locally bundled fonts.
+  Verified blocked empty saves, mood/tags/body, backfill, history editing with
+  mood preserved, search/highlighting/filters, shortcut focus trapping/restoring,
+  radio and calendar arrows, Escape focus, draft retention, reload durability,
+  empty state and timeline capture (default mood 3). No browser console errors.
+- Calendar geometry passed all four themes at 1440/1280/1100 with no horizontal
+  or header overflow; inspected Calendar and Today screenshots. Today also
+  checked at 1280 and 1100. Full rendered-board comparison remains step 6; the
+  hosted board URL could not be fetched with the web tool, so the local design
+  component was the reference. Native WebView keyboard/IME behavior, native
+  opener runtime and live multi-device sync have not been runtime-tested here.
+- Preview files/private context exports, test databases, tabs and server were
+  removed after QA. Screenshot: this task's visualization directory,
+  diary-step3.png (outside the repository). No new runtime dependency.
+- Required Windows checks passed: pnpm install --frozen-lockfile; npx tsc
+  --noEmit in desktop/widgets/calendar; Vitest 342/342 desktop and 152/152
+  calendar; PORT=1420 BASE_PATH=/ desktop build; widgets build; cargo check
+  --offline in both src-tauri folders. Existing main-chunk warning remains.
+- Lazy Diary JS 30.27 kB / 9.35 kB gzip; CSS 11.44 / 2.68. Notes remains lazy:
+  JS 363.08 / 111.91; CSS 18.04 / 3.81. Main 662.05 / 192.84.
+- STOP after this commit. Step 4 events end-date UI/calendar, step 5 widgets/
+  sidebar unhide and step 6 final board comparison have not started.
+
+## Step 2 review fixes (23 October 2026)
+- External editor links support Ctrl+click and an Open button in the link
+  dialog. Both TypeScript and the native open_note_link command revalidate
+  http/https/mailto immediately before opening through tauri-plugin-opener.
+  Automatic plugin click interception is disabled. This is the same MIT
+  opener plugin already used by widgets; no additional JS dependency.
+- Replaced the white title/body focus boxes with subtle token-based
+  focus-visible rings. Created/Edited both use locale short month + day.
+- Browser fixture verified Ctrl+click destination, invalid-scheme rejection,
+  Open control, computed focus styles and date labels. No live Supabase.
+  Native OS opener was not runtime-tested; its real Rust guard passed 1 test.
+- Required checks passed: frozen install, three typechecks, desktop 327/327
+  and calendar 152/152 tests, both builds, both cargo check --offline.
+  Notes JS 363.08 kB / 111.90 kB gzip; CSS 18.04 / 3.81. Main chunk warning
+  remains. Preview harness/private context export removed after verification.
+- Owner authorized step 3 Diary after these fixes. Steps 4–6 remain later.
+
+## Step 2 Notes page (23 October 2026)
+- Implemented NotesApp/NA-cheat in components/notes: masonry grid, grouped list,
+  editor, folder/tag/search filters, pinned/recent views, inline capture and a
+  real restorable Trash with Undo and explicit permanent-delete confirmation.
+  Week groups use the saved week-start preference; Recent means the last 7 days.
+- Lazy NotesPage uses MIT TipTap 3.32.0 core/react/pm/extensions (UndoRedo only).
+  Custom flat nodes preserve the exact seven-block storage schema and stable
+  IDs; no editor document wrapper is persisted. Slash menu and [[ UUID note
+  references work with keyboard suggestions. Backlinks are computed locally.
+  Selection-only toolbar supports bold/italic, token text colours, links,
+  note-level font and alignment. No permanent formatting toolbar or Pro code.
+- App-only Ctrl+Shift+N opens capture from any app page; Ctrl+N creates a note,
+  Ctrl+P switches, Ctrl+K in the editor opens a link dialog, Ctrl+. focuses,
+  Ctrl+Shift+E exports, and NA-cheat lists the exact scoped shortcuts.
+  Dialogs trap focus, restore it and close with Escape. Oversized body/link
+  edits are blocked before changing the stored note, with an error message.
+- Added local Source Serif 4 5.3.1 (OFL), Latin regular/italic/bold only, alongside
+  bundled Geist/Geist Mono. No CDN loads. Added the four note colour tokens to
+  the shared theme blocks. Markdown/TXT exports are per note; ZIP/PDF deferred.
+- Notes/Diary sidebar entries remain hidden until step 5 as ordered. To open
+  Notes now, use Ctrl+Shift+N inside Facta, then save or close capture. Widget
+  pinning saves pinned_to_widget and labels it as a pin for the future Notes
+  widget; actual widget export/rendering/actions remain step 5.
+- Logic tests cover all seven blocks through the real ProseMirror schema,
+  stable IDs/splits, marks/references, body limits, filters/order/capture/week
+  boundaries, and Markdown/TXT escaping/code fences/references/safe filenames.
+- Browser verification used an isolated IndexedDB account/database with no
+  Supabase configuration. Passed slash keyboard insertion, selection toolbar,
+  local fonts, Ctrl+K, [[ links, tags, focus mode, capture/focus trap, switcher,
+  title reset, Trash/Undo, reload persistence and an actual Markdown download.
+  Verified in the real App shell that Ctrl+Shift+N loads Notes lazily and that
+  Ctrl+K in capture cannot open the global search underneath it.
+- Inspected list/editor/grid/empty/no-results/cheat states; checked all four
+  themes at 1440/1280/1100 with no horizontal or action-toolbar overflow. Full
+  branch-wide rendered-board comparison remains step 6. Screenshot is outside
+  the repository in this task's visualization directory (notes-step2.png).
+- Temporary preview code, private-context exports, test databases, downloaded
+  fixture, tab and preview server were removed. TodayPanel is unchanged.
+  Native WebView export/keyboard behavior and live multi-device Notes sync
+  were not runtime-tested; native code remains compile-checked.
+- Step 3 Diary, step 4 event end-date UI and step 5 widgets have NOT started.
+- Final checks passed on Windows: pnpm install --frozen-lockfile; npx tsc
+  --noEmit in desktop/widgets/calendar; Vitest 312/312 desktop and 152/152
+  calendar; PORT=1420 BASE_PATH=/ desktop build; widgets build; cargo check
+  --offline in both src-tauri folders. Existing main-chunk warning remains.
+- Bundle before editor: no Notes chunk (0 KB), main 659.58 kB / 191.91 kB gzip.
+  After: lazy Notes JS 362.24 kB / 111.58 kB gzip; lazy Notes CSS 17.87 kB /
+  3.79 kB gzip; main 660.74 kB / 192.45 kB gzip. Source Serif assets are Latin
+  only and load through the lazy Notes stylesheet. No TipTap imports in App.
+
+## Step 1 local SQL review / step 2 authorization (23 October 2026)
+- Fixed the polymorphic array_fill tags fixture with an explicit text cast.
+  Other array_fill values already have uuid casts; other arrays resolve from
+  typed expressions, explicit casts, operators or declared text[] parameters.
+- Owner reports all SQL assertions pass with this correction on local Supabase,
+  and both migration apply and rerun succeed. This is owner-run verification;
+  no SQL was executed or Supabase project contacted by this session.
+- Step 2 (Notes page) is authorized after this test-fix commit. Steps 3–6 remain
+  later work. Native Quit runtime verification remains outstanding.
+- SQL test-fix checks passed: frozen install, three typechecks, 301 desktop /
+  152 calendar tests, both builds and both cargo check --offline on Windows.
+
+## Step 1 review-fix history (23 October 2026)
+- Fix 1: desktop Quit now emits a webview event and awaits every open store's
+  flush (including account-change teardown) for up to two seconds before the
+  native exit acknowledgement. Other desktop ExitRequested paths use the same
+  handler. Startup listener replay, repeated-request suppression and a 2.2 s
+  native fallback handle early/stalled webviews. Close-to-tray stays unchanged.
+  Widgets have no IndexedDB cache; their explicit exits save positions natively.
+- Fix 1 checks: frozen install, all three typechecks, desktop 296/296 and calendar
+  152/152 tests, both builds, both cargo check --offline passed on Windows.
+  Existing desktop bundle warning remains. Barrier tests cover real IndexedDB
+  persistence before acknowledgement, multiple stores/failure and the deadline.
+  Native tray handshake was compile-checked, not runtime-tested here.
+- Fix 2: added a re-runnable BEFORE UPDATE diary date trigger, ordered before
+  the sync guard. Direct date changes raise 23514, including stale writes and
+  tombstones; same-date edits remain allowed. SQL assertions cover those paths.
+  Full required checks passed again (296 desktop / 152 calendar tests).
+  SQL is written/read only; embedded migration refresh is recorded in fix 4.
+- Fix 3: re-runnable notes_font_check (nullable, <=50 characters) and
+  notes_links_check (<=500 array elements) use the pg_constraint existence
+  pattern. Matching client validation rejects >500 derived unique note IDs or
+  long fonts before mutating the cache/queue. Vitest covers Unicode boundaries,
+  null fonts, deduplicated references and rejection before local writes. SQL
+  assertions cover valid boundaries and INSERT/UPDATE violations.
+  Full required checks passed (298 desktop / 152 calendar tests); SQL has not
+  been executed; embedded migration synchronization is recorded in fix 4.
+- Fix 4: synchronized BOTH embedded branch migration copies (initial apply and
+  rerun) in supabase/tests/notes_diary.sql. An automated source-comparison test
+  now checks the base migration and both branch copies, excluding only their
+  outer BEGIN/COMMIT. The standalone scratch script retains its guard and final
+  rollback. This is copy verification, not SQL execution.
+- Final fix-4 checks: frozen install, npx tsc --noEmit in desktop/widgets/calendar,
+  Vitest desktop 301/301 and calendar 152/152, desktop build with PORT=1420
+  BASE_PATH=/, widgets build and cargo check --offline in both src-tauri folders
+  all passed on Windows. Main JS: 659.58 kB / 191.91 kB gzip; existing >500 kB
+  warning remains. No new dependencies or step-2 UI work in these fixes.
+- All four review fixes are implemented. STOP before step 2. SQL will be tested
+  against local Supabase by the owner before migration application; no Supabase
+  project was contacted. The native Quit handshake still needs a runtime check.
+
+## Step 1 implementation history (22 October 2026)
+- Branch created from origin/main at 48d1fc9. Step 1 only is implemented:
+  data, storage and sync. STOP after this commit/push for owner review.
+  Notes/Diary pages, editor, fonts, widget types and multi-day event UI have
+  not started. Sidebar entries remain hidden; TodayPanel is unchanged.
+- New re-runnable migration: 20261022140000_notes_diary.sql. Adds notes and
+  diary_entries with ownership RLS (UPDATE USING + WITH CHECK), indexes,
+  size/title/tag/enum constraints and the existing sticky-delete/newer-wins
+  guard. Adds inclusive events.end_date with its constraint.
+- Notes Trash is trashed_at (restorable edit); deleted_at is exclusively the
+  permanent sync tombstone. Body is an editor-independent typed block array.
+  Links are derived from UUID reference nodes; backlinks and Unicode word
+  count are client calculations. Full schema/body rules and sync protocol:
+  docs/notes-diary-data.md.
+- Diary writes use the security-invoker facta_write_diary RPC, serialized per
+  user/date with the partial live-date unique index as final guard. Newer
+  clamped updated_at wins one_line/mood/body/tags together; ties keep stored
+  fields and canonical ID/created_at. Covers offline duplicate UUIDs, sticky
+  deletes, lost-response replays and explicit newer re-creation. Client rekeys
+  queued identities without dropping newer in-flight edits. Entry dates are
+  immutable through the client/RPC and database trigger; new entries default mood 3.
+- All four collection caches AND the pending/failed write queue now use an
+  IndexedDB-backed KeyValueStore: async hydration, synchronous read view,
+  atomic coalesced cache/queue writes and async durability barriers. First-run
+  per-user migration commits legacy bytes and its marker before removing
+  unchanged localStorage values. Other accounts/prefs/auth are untouched.
+  Later opens use IndexedDB without needing localStorage reads. Corrupt JSON
+  is retained and surfaced rather than silently clearing saved data.
+- Storage failures retain pending snapshots in memory, stay visible in the
+  toast/sidebar, and offer retry; storage-open failures show an explicit retry
+  screen. Remote work waits for persistence and cannot report success over a
+  failed durability barrier. Actual disk exhaustion was not induced.
+- Existing widget export reads the hydrated store. Native toggle polling now
+  waits for a signed-in frontend readiness lease, preserving queued actions
+  while IndexedDB hydrates; old lease release cannot pause a newer consumer.
+  Native runtime delivery across hydration/account changes needs owner testing.
+- Added test-only fake-indexeddb 6.2.4 for real storage/migration code in Node;
+  no production dependency, TipTap or font package was added. Notes chunk is
+  absent (0 KB before editor integration); current main JS is 658.41 kB,
+  191.48 kB gzip. Record the lazy Notes chunk before/after TipTap in step 2.
+
+## Step 1 verification (Windows, 22 October 2026)
+- Passed frozen install; npx tsc --noEmit in desktop/widgets/calendar; Vitest
+  desktop 292/292 and calendar 152/152; desktop build with PORT=1420 BASE_PATH=/;
+  widgets build; cargo check --offline in both src-tauri folders. Native system
+  prerequisites exist. Existing >500 kB desktop bundle warning remains.
+- Tests cover mapping/end_date, typed bodies and limits, UUID link extraction,
+  Unicode word count/backlinks, Trash versus tombstones, canonical diary ID
+  adoption/in-flight edits/restart, migration isolation/restart/abort, >10 MiB
+  persistence, storage failure retention/status/toast and corruption handling.
+- Real-browser isolated IndexedDB harness passed: migrated legacy goals/events
+  and queue; saved all four collections; closed/reopened >10 MiB of valid note
+  bodies; cache and pending queue survived together; a closed database retained
+  an edit in memory with a persistent error status. Test database/tab/server
+  and temporary files were removed before final builds. No live Supabase calls.
+- supabase/tests/notes_diary.sql is self-contained for the Supabase SQL editor:
+  prerequisites + proposed migration + rerun + assertions, all in one rollback
+  transaction. Refuses projects with existing planner tables; use a FRESH SCRATCH
+  project. Embedded migrations were compared with their source files; no psql
+  directives. SQL was written/read, NOT executed here. The owner runs the
+  scratch tests before applying the migration to his project.
+- Native WebView persistence after OS crash, live Supabase/RPC concurrency and
+  native widget readiness delivery are not runtime-verified in this step.
+
+## Approved branch-2 sequence (step 2 complete; steps 3–6 pending)
+2. COMPLETE — NotesApp/NA-cheat: lazy MIT-only TipTap core/extensions, list/grid/editor,
+   slash menu, selection-only toolbar, tags/pin/Trash+Undo/backlinks/switcher/
+   app-only Ctrl+Shift+N capture/focus mode. Ctrl+K in editor means link.
+   Bundle Geist/Geist Mono plus Source Serif 4 Latin only. Export Markdown and
+   plain TXT with logic tests; ZIP/PDF deferred. Measure Notes chunk size.
+3. DiaryApp/DA-cheat: Today/timeline/On this day/calendar/search/streak/missed/
+   empty; test streak and written counts; no lock or stored aggregates.
+4. Event end-date UI and calendar selectors/spans, including multi-day tests.
+5. Notes Sticky/Stack + Diary widgets, Settings picker and sidebar unhide.
+   Export only pinned notes plus four most recent non-trashed notes, title and
+   plain preview (never bodies); diary only today's line and On this day lines.
+   Pending actions must edit the full desktop record, never overwrite from a
+   truncated preview; preserve existing diary mood, default new mood to 3.
+6. Compare all four themes at 1440/1280/1100, fix, record gaps and stop for review.
+Every finished step: all required checks including BOTH builds and cargo
+checks, HANDOFF in the same commit, required human author, commit and push.
+
+## Branch 1 history (merged into main at 48d1fc9)
 
 ## Review fixes (22 October 2026)
 - All seven requested review fixes are implemented as separate commits.

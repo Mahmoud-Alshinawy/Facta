@@ -3,7 +3,7 @@
 
 import { useSyncExternalStore, type ReactNode } from "react";
 import { toast } from "sonner";
-import { formatClock, formatRange, type CalendarPrefs } from "@facta/calendar";
+import { eventOccurrenceAt, parseClock, formatClock, formatRange, type CalendarPrefs } from "@facta/calendar";
 import { LetGoStore } from "@/lib/letGo";
 import type { CalendarEvent, EventColor } from "@/types/planner";
 import { IconCheck } from "@/components/shell/Icons";
@@ -70,6 +70,13 @@ export function clocks(prefs: Pick<CalendarPrefs, "timeFormat">) {
 }
 
 export type Clocks = ReturnType<typeof clocks>;
+
+/** Native tooltip retains the actual dates/times for a timed spanning bar. */
+export function bandTooltip(event: CalendarEvent, day: string, C: Clocks): string {
+  if (event.allDay) return `${event.title}, all day`;
+  const occurrence = eventOccurrenceAt(event, day);
+  return `${event.title}, ${occurrence?.date ?? event.date} ${C.full(parseClock(event.startTime) ?? 0)} – ${occurrence?.endDate ?? event.endDate ?? event.date} ${C.full(parseClock(event.endTime) ?? 0)}`;
+}
 
 const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const DOW_LONG = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];

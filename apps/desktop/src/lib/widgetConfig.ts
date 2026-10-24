@@ -6,6 +6,8 @@ export const WIDGET_TYPES = [
   "events",
   "calendar",
   "dayview",
+  "notes",
+  "diary",
 ] as const;
 export type WidgetType = (typeof WIDGET_TYPES)[number];
 export type WidgetTheme = ThemeId;
@@ -15,6 +17,7 @@ export interface WidgetConfig {
   enabled: boolean;
   translucent: boolean;
   theme: WidgetTheme;
+  noteStyle?: "sticky" | "stack";
 }
 export const WIDGET_CONFIG_KEY = "facta_widget_config";
 export const WIDGET_LABELS: Record<WidgetType, string> = {
@@ -23,6 +26,8 @@ export const WIDGET_LABELS: Record<WidgetType, string> = {
   events: "Events",
   calendar: "Calendar",
   dayview: "Day",
+  notes: "Notes",
+  diary: "Diary",
 };
 
 /** Keep the native companion's existing JSON fields and legacy defaults. */
@@ -49,6 +54,7 @@ export function parseWidgetConfig(raw: unknown): WidgetConfig[] {
       {
         id: w.id,
         type: w.type as WidgetType,
+        ...(w.type === "notes" ? {noteStyle: w.noteStyle === "stack" ? "stack" as const : "sticky" as const} : {}),
         enabled: w.enabled !== false,
         translucent: w.translucent !== false,
         theme: isThemeId(w.theme) ? w.theme : "midnight",

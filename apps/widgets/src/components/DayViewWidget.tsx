@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { buildDayTimeline, formatClock, formatRange, parsePrefs, type CalendarPrefs } from "@facta/calendar";
+import { buildDayTimeline, eventDayRanges, formatClock, formatRange, parsePrefs, type CalendarPrefs } from "@facta/calendar";
 import { readSharedDataFresh } from "@/lib/sharedData";
 import {
   eventsToday, goalsToday, isDoneToday, localDay, parseClock, prefsFrom,
@@ -41,6 +41,7 @@ export default function DayViewWidget({ theme, translucent }: { theme: string; t
   const [events, setEvents] = useState<WidgetEvent[]>([]);
   const [prefs, setPrefs] = useState<CalendarPrefs>(() => parsePrefs(undefined));
   const [loading, setLoading] = useState(true);
+  const ownerRef = useRef<string | null>(null);
   const goalsRef = useRef<WidgetGoal[]>([]);
   const pending = useRef(new Map<string, { expected: boolean; until: number }>());
   const now = useMinuteClock();
@@ -56,6 +57,8 @@ export default function DayViewWidget({ theme, translucent }: { theme: string; t
       const data = await readSharedDataFresh();
       if (!alive) return;
       if (data) {
+        if(ownerRef.current !== (data.user_id ?? null)) pending.current.clear();
+        ownerRef.current = data.user_id ?? null;
         const t = Date.now();
         commitGoals(((data.goals ?? []) as WidgetGoal[]).map((g) => {
           const p = pending.current.get(g.id);
@@ -81,7 +84,7 @@ export default function DayViewWidget({ theme, translucent }: { theme: string; t
     commitGoals(goalsRef.current.map((g) => (g.id === id ? next : g)));
     try {
       const { invoke } = await import("@tauri-apps/api/core");
-      await invoke("write_action", { actionJson: JSON.stringify({ type: "toggle_goal", goal_id: id, id: crypto.randomUUID() }) });
+      await invoke("write_action", { actionJson: JSON.stringify({ type: "toggle_goal", goal_id: id, ...(ownerRef.current ? {user_id:ownerRef.current} : {}), id: crypto.randomUUID() }) });
     } catch (e) {
       console.error("[DayWidget] write_action failed:", e);
     }
@@ -105,7 +108,7 @@ export default function DayViewWidget({ theme, translucent }: { theme: string; t
   const today = goalsToday(goals, now);
   const done = today.filter((g) => isDoneToday(g, now)).length;
   const goalById = new Map(today.map((g) => [g.id, g]));
-  const evToday = eventsToday(events, now).filter((e) => !e.allDay);
+  const evToday = eventsToday(events, now).filter((e) => !e.allDay).flatMap(e=>eventDayRanges(e,localDay(now)).map(range=>({...e,id:`${e.id}:${range.start}`,...range})));
   const evById = new Map(evToday.map((e) => [e.id, e]));
 
   const tasks = today.flatMap((g) => {
@@ -113,9 +116,7 @@ export default function DayViewWidget({ theme, translucent }: { theme: string; t
     return start === null ? [] : [{ id: g.id, start }];
   });
   const evs = evToday.flatMap((e) => {
-    const start = parseClock(e.startTime);
-    if (start === null) return [];
-    return [{ id: e.id, start, end: Math.max(start, parseClock(e.endTime) ?? start) }];
+    return [{ id: e.id, start:e.start, end:e.end }];
   });
   // Leave one task chip's height under the last hour, so an item that starts
   // near the end of the window isn't cut off.

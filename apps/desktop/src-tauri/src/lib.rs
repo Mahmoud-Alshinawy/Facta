@@ -4,6 +4,82 @@ use tauri::Emitter;
 use tauri::Manager;
 use tauri::RunEvent;
 use std::env;
+use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
+
+#[derive(Default)]
+struct QuitState {
+    requested: AtomicBool,
+    allowed: AtomicBool,
+    code: AtomicI32,
+}
+
+fn request_quit(app: &tauri::AppHandle, code: i32) {
+    let state = app.state::<QuitState>();
+    if state.requested.swap(true, Ordering::SeqCst) { return; }
+    state.code.store(code, Ordering::SeqCst);
+    let _ = app.emit("facta-request-quit", ());
+    // A hung/hidden webview must not make Quit hang forever. JS has two seconds
+    // to await IndexedDB; this native deadline also works when JS timers stall.
+    let handle = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(2200));
+        finish_quit(handle);
+    });
+}
+
+#[tauri::command]
+fn finish_quit(app: tauri::AppHandle) {
+    let state = app.state::<QuitState>();
+    if !state.requested.load(Ordering::SeqCst) { return; }
+    state.allowed.store(true, Ordering::SeqCst);
+    app.exit(state.code.load(Ordering::SeqCst));
+}
+
+#[tauri::command]
+fn quit_listener_ready(app: tauri::AppHandle) {
+    if app.state::<QuitState>().requested.load(Ordering::SeqCst) {
+        let _ = app.emit("facta-request-quit", ());
+    }
+}
+
+struct WidgetActionDelivery(Mutex<Option<String>>);
+
+fn external_note_url(value: &str) -> Result<String, String> {
+    if value.chars().any(char::is_control) { return Err("Use an https, http or mailto link".into()); }
+    let url = tauri::Url::parse(value.trim()).map_err(|_| "Invalid note link")?;
+    if !matches!(url.scheme(), "http" | "https" | "mailto") { return Err("Use an https, http or mailto link".into()); }
+    Ok(url.to_string())
+}
+
+#[tauri::command]
+fn open_note_link(app: tauri::AppHandle, url: String) -> Result<(), String> {
+    use tauri_plugin_opener::OpenerExt;
+    // Re-check in Rust immediately before passing a target to the OS opener.
+    app.opener().open_url(external_note_url(&url)?, None::<&str>).map_err(|error| error.to_string())
+}
+
+#[cfg(test)]
+mod note_link_tests {
+    use super::external_note_url;
+    #[test]
+    fn note_links_allow_only_web_and_mail() {
+        for url in ["https://example.com/", "http://example.com/", "mailto:a@example.com"] { assert!(external_note_url(url).is_ok()); }
+        for url in ["javascript:alert(1)", "file:///C:/private", "facta://focus", "https://", "https://example.com\n", ""] { assert!(external_note_url(url).is_err()); }
+    }
+}
+
+#[tauri::command]
+fn set_widget_action_delivery(consumer_id: String, ready: bool, state: tauri::State<'_, WidgetActionDelivery>) -> Result<(), String> {
+    let mut consumer = state.0.lock().map_err(|_| "Widget consumer lock failed")?;
+    if ready {
+        *consumer = Some(consumer_id);
+    } else if consumer.as_ref() == Some(&consumer_id) {
+        // A previous account's teardown must not pause a newer consumer.
+        *consumer = None;
+    }
+    Ok(())
+}
 
 fn tray_icon(theme: tauri::Theme) -> tauri::image::Image<'static> {
     match theme {
@@ -57,6 +133,9 @@ fn export_data_for_widgets(
     goals_json: String,
     events_json: String,
     config_json: String,
+    journal_json: String,
+    action_results_json: String,
+    user_id: Option<String>,
 ) -> Result<(), String> {
     let local_app_data = dirs::data_local_dir()
         .ok_or_else(|| {
@@ -77,6 +156,9 @@ fn export_data_for_widgets(
         "goals": serde_json::from_str::<serde_json::Value>(&goals_json).unwrap_or(serde_json::json!([])),
         "events": serde_json::from_str::<serde_json::Value>(&events_json).unwrap_or(serde_json::json!([])),
         "config": config,
+        "user_id": user_id,
+        "journal": serde_json::from_str::<serde_json::Value>(&journal_json).map_err(|e| e.to_string())?,
+        "action_results": serde_json::from_str::<serde_json::Value>(&action_results_json).map_err(|e| e.to_string())?,
         "exported_at": chrono::Utc::now().to_rfc3339(),
         "exported_at_ms": chrono::Utc::now().timestamp_millis(),
     });
@@ -86,7 +168,7 @@ fn export_data_for_widgets(
         String::new()
     });
     let bytes_written = json.len();
-    if let Err(e) = std::fs::write(&path, &json) {
+    if let Err(e) = std::fs::write(dir.join("widgets.json.tmp"), &json).and_then(|_| std::fs::rename(dir.join("widgets.json.tmp"), &path)) {
         eprintln!("[WidgetExport] write {:?} failed: {}", path, e);
         return Err(e.to_string());
     }
@@ -191,10 +273,17 @@ async fn launch_widget_app() -> Result<(), String> {
 
 #[tauri::command]
 fn read_pending_actions() -> Result<Vec<serde_json::Value>, String> {
-    drain_pending_actions()
+    pending_actions(None)
 }
 
-fn drain_pending_actions() -> Result<Vec<serde_json::Value>, String> {
+#[tauri::command]
+fn ack_widget_actions(ids: Vec<String>) -> Result<(), String> {
+    pending_actions(Some(&ids)).map(|_| ())
+}
+
+// Read under the same lock as widget appends. Leave actions on disk until the
+// webview acknowledges its cache, sync queue and receipt transaction committed.
+fn pending_actions(ack: Option<&[String]>) -> Result<Vec<serde_json::Value>, String> {
     let path = dirs::data_local_dir()
         .ok_or("Could not find local app data directory")?
         .join("Facta")
@@ -204,7 +293,7 @@ fn drain_pending_actions() -> Result<Vec<serde_json::Value>, String> {
         return Ok(Vec::new());
     }
 
-    // Hold an exclusive advisory lock across the whole read AND the clear so a
+    // Hold an exclusive advisory lock across the whole read/acknowledge so a
     // widget app's write_action append can never interleave between the two.
     use fs2::FileExt;
     let mut file = std::fs::OpenOptions::new()
@@ -230,24 +319,26 @@ fn drain_pending_actions() -> Result<Vec<serde_json::Value>, String> {
         use std::io::{Read, Seek};
         file.seek(std::io::SeekFrom::Start(0)).map_err(|e| e.to_string())?;
         let mut contents = String::new();
-        if file.read_to_string(&mut contents).is_err() {
-            contents = String::new();
-        }
-        let actions: Vec<serde_json::Value> =
-            serde_json::from_str(&contents).unwrap_or_default();
+        file.read_to_string(&mut contents).map_err(|e| e.to_string())?;
+        let actions: Vec<serde_json::Value> = if contents.trim().is_empty() { Vec::new() }
+            else { serde_json::from_str(&contents).map_err(|e| format!("Invalid widget queue; original retained: {}", e))? };
 
-        if actions.is_empty() {
-            return Ok(Vec::new());
+        if ack.is_none() || actions.is_empty() {
+            return Ok(actions);
         }
+        let remaining: Vec<_> = actions.into_iter().filter(|action| {
+            !action.get("id").and_then(|v| v.as_str()).map(|id| ack.unwrap().iter().any(|a| a == id)).unwrap_or(false)
+        }).collect();
 
-        // Clear the file (truncate) — still under the same lock.
+        // Rewrite the remaining actions — still under the same lock.
         file.seek(std::io::SeekFrom::Start(0)).map_err(|e| e.to_string())?;
         file.set_len(0).map_err(|e| e.to_string())?;
         use std::io::Write;
-        file.write_all(b"[]").map_err(|e| e.to_string())?;
+        file.write_all(serde_json::to_string(&remaining).map_err(|e| e.to_string())?.as_bytes()).map_err(|e| e.to_string())?;
         file.flush().map_err(|e| e.to_string())?;
 
-        Ok(actions)
+        file.sync_data().map_err(|e| e.to_string())?;
+        Ok(remaining)
     })();
 
     let _ = file.unlock();
@@ -278,6 +369,8 @@ pub fn run() {
     // facta://focus) hands its args to this instance and exits instead
     // of starting a duplicate; the deep-link feature forwards the URL too.
     let mut builder = tauri::Builder::default()
+        .manage(QuitState::default())
+        .manage(WidgetActionDelivery(Mutex::new(None)))
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.unminimize();
@@ -286,14 +379,20 @@ pub fn run() {
             }
         }))
         .plugin(tauri_plugin_deep_link::init())
+        .plugin(tauri_plugin_opener::Builder::new().open_js_links_on_click(false).build())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec!["--hidden"]),
         ))
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
+            finish_quit,
+            quit_listener_ready,
+            open_note_link,
             export_data_for_widgets,
             read_pending_actions,
+            ack_widget_actions,
+            set_widget_action_delivery,
             launch_widget_app,
             widget_app_running
         ]);
@@ -323,7 +422,7 @@ pub fn run() {
             .menu(&menu)
             .on_menu_event(move |app, event| match event.id().as_ref() {
                 "quit" => {
-                    app.exit(0);
+                    request_quit(app, 0);
                 }
                 "show" => {
                     if let Some(window) = app.get_webview_window("main") {
@@ -343,19 +442,24 @@ pub fn run() {
             })
             .build(app)?;
 
-        // Drain widget actions from a native thread. A hidden (close-to-tray)
+        // Deliver pending widget actions from a native thread. A hidden (close-to-tray)
         // webview throttles JS timers, so polling there delayed widget
         // check-offs until the window was shown again.
         {
+            // IndexedDB hydration can outlast the first polling interval.
+            // Leave actions on disk until a signed-in consumer is listening.
             let handle = app.handle().clone();
             std::thread::spawn(move || loop {
                 std::thread::sleep(std::time::Duration::from_millis(400));
-                match drain_pending_actions() {
+                if !handle.state::<WidgetActionDelivery>().0.lock().map(|consumer| consumer.is_some()).unwrap_or(false) {
+                    continue;
+                }
+                match pending_actions(None) {
                     Ok(actions) if !actions.is_empty() => {
                         let _ = handle.emit("widget-actions", actions);
                     }
                     Ok(_) => {}
-                    Err(e) => eprintln!("[Facta] drain_pending_actions failed: {}", e),
+                    Err(e) => eprintln!("[Facta] pending_actions failed: {}", e),
                 }
             });
         }
@@ -388,6 +492,12 @@ pub fn run() {
 
     app.run(|app_handle, event| {
         match event {
+            RunEvent::ExitRequested { api, code, .. } => {
+                if !app_handle.state::<QuitState>().allowed.load(Ordering::SeqCst) {
+                    api.prevent_exit();
+                    request_quit(app_handle, code.unwrap_or(0));
+                }
+            }
             RunEvent::WindowEvent { label, event: win_event, .. } => {
                 if label == "main" {
                     if let tauri::WindowEvent::ThemeChanged(theme) = &win_event {

@@ -22,7 +22,7 @@ describe("sidebar navigation", () => {
     expect(sidebarRootClass(nextSidebarMode("o", 1440))).toBe("sb-c");
   });
 
-  it("keeps the future pages out of branch 1 navigation", () => {
-    expect([...HIDDEN_SECTIONS]).toEqual(["notes", "diary"]);
+  it("exposes the implemented Notes and Diary pages", () => {
+    expect([...HIDDEN_SECTIONS]).toEqual([]);
   });
 });

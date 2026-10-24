@@ -3,6 +3,7 @@ import TaskWidget from "@/components/TaskWidget";
 import ProgressWidget from "@/components/ProgressWidget";
 import EventsWidget from "@/components/EventsWidget";
 import CalendarWidget from "@/components/CalendarWidget";
+import JournalWidget from "@/components/JournalWidget";
 import DayViewWidget from "@/components/DayViewWidget";
 
 export default function App() {
@@ -32,6 +33,10 @@ export default function App() {
   if (!urlWidget) {
     return <div className="w-full h-full bg-transparent" />;
   }
+
+  if (urlWidget === "notes" || urlWidget === "diary") return <JournalWidget
+    type={urlWidget} theme={theme} translucent={translucent}
+    noteStyle={new URLSearchParams(window.location.search).get("noteStyle") === "stack" ? "stack" : "sticky"} />;
 
   // The Day widget draws its own card (theme tokens, transparent plate) and
   // its header is the drag handle.

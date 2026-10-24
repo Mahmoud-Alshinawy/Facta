@@ -7,12 +7,20 @@
 // holds the snapshot that was sent (same updated_at), so edits made while a
 // request is in flight are never lost.
 
-import type { EventWrite, GoalWrite } from "@/lib/sync/mappers";
+import type {
+  EventWrite,
+  GoalWrite,
+  NoteWrite,
+  DiaryWrite,
+} from "@/lib/sync/mappers";
+import { compareTimestamps } from "./time";
 import { readJson, type KeyValueStore } from "@/lib/sync/storage";
 
 export interface QueueTables {
   goals: GoalWrite;
   events: EventWrite;
+  notes: NoteWrite;
+  diary_entries: DiaryWrite;
 }
 export type TableName = keyof QueueTables;
 
@@ -29,10 +37,18 @@ interface QueueData {
   failed: Failed;
 }
 
-const TABLES: readonly TableName[] = ["goals", "events"];
+export const TABLES: readonly TableName[] = [
+  "goals",
+  "events",
+  "notes",
+  "diary_entries",
+];
 
 function emptyData(): QueueData {
-  return { pending: { goals: {}, events: {} }, failed: { goals: {}, events: {} } };
+  return {
+    pending: { goals: {}, events: {}, notes: {}, diary_entries: {} },
+    failed: { goals: {}, events: {}, notes: {}, diary_entries: {} },
+  };
 }
 
 export function queueStorageKey(userId: string) {
@@ -48,8 +64,25 @@ export class WriteQueue {
     private readonly onStorageError: (error: unknown) => void = () => {},
   ) {
     const loaded = readJson<Partial<QueueData>>(store, key, {});
+    const isMap = (value: unknown) =>
+      typeof value === "object" && value !== null && !Array.isArray(value);
+    if (
+      !isMap(loaded) ||
+      (loaded.pending !== undefined && !isMap(loaded.pending)) ||
+      (loaded.failed !== undefined && !isMap(loaded.failed))
+    )
+      throw new Error(
+        "Saved sync queue is invalid; original data has been retained",
+      );
     const data = emptyData();
     for (const t of TABLES) {
+      if (
+        (loaded.pending?.[t] !== undefined && !isMap(loaded.pending[t])) ||
+        (loaded.failed?.[t] !== undefined && !isMap(loaded.failed[t]))
+      )
+        throw new Error(
+          "Saved sync queue is invalid; original data has been retained",
+        );
       Object.assign(data.pending[t], loaded.pending?.[t] ?? {});
       Object.assign(data.failed[t], loaded.failed?.[t] ?? {});
     }
@@ -61,7 +94,8 @@ export class WriteQueue {
     const pending: Record<string, QueueTables[K]> = this.data.pending[table];
     pending[row.id] = row;
     // A fresh local edit supersedes a write the server rejected earlier.
-    const failed: Record<string, FailedWrite<QueueTables[K]>> = this.data.failed[table];
+    const failed: Record<string, FailedWrite<QueueTables[K]>> = this.data
+      .failed[table];
     delete failed[row.id];
     this.persist();
   }
@@ -101,17 +135,47 @@ export class WriteQueue {
     this.persist();
   }
 
+  /** Adopt the server's canonical UUID without losing an in-flight local edit. */
+  remap(table: TableName, from: string, to: string): void {
+    if (from === to) return;
+    const incoming = this.data.pending[table][from];
+    const current = this.data.pending[table][to];
+    if (
+      incoming &&
+      (!current ||
+        (!current.deleted_at &&
+          (incoming.deleted_at ||
+            compareTimestamps(incoming.updated_at, current.updated_at) > 0)))
+    )
+      this.data.pending[table][to] = { ...incoming, id: to };
+    const failed = this.data.failed[table][from];
+    if (failed && !this.data.failed[table][to] && !this.data.pending[table][to])
+      this.data.failed[table][to] = {
+        ...failed,
+        row: { ...failed.row, id: to },
+      };
+    delete this.data.pending[table][from];
+    delete this.data.failed[table][from];
+    this.persist();
+  }
+
   /** Parks a write the server rejected, if it is still the latest snapshot. */
-  fail<K extends TableName>(table: K, row: QueueTables[K], error: string): boolean {
+  fail<K extends TableName>(
+    table: K,
+    row: QueueTables[K],
+    error: string,
+  ): boolean {
     if (!this.settle(table, row.id, row.updated_at)) return false;
-    const failed: Record<string, FailedWrite<QueueTables[K]>> = this.data.failed[table];
+    const failed: Record<string, FailedWrite<QueueTables[K]>> = this.data
+      .failed[table];
     failed[row.id] = { row, error };
     this.persist();
     return true;
   }
 
   failedEntries<K extends TableName>(table: K): FailedWrite<QueueTables[K]>[] {
-    const failed: Record<string, FailedWrite<QueueTables[K]>> = this.data.failed[table];
+    const failed: Record<string, FailedWrite<QueueTables[K]>> = this.data
+      .failed[table];
     return Object.values(failed);
   }
 
@@ -122,7 +186,8 @@ export class WriteQueue {
   }
 
   private retryFailedIn<K extends TableName>(table: K): void {
-    const failed: Record<string, FailedWrite<QueueTables[K]>> = this.data.failed[table];
+    const failed: Record<string, FailedWrite<QueueTables[K]>> = this.data
+      .failed[table];
     const pending: Record<string, QueueTables[K]> = this.data.pending[table];
     for (const [id, entry] of Object.entries(failed)) {
       pending[id] = entry.row;
@@ -132,18 +197,26 @@ export class WriteQueue {
 
   /** Forgets every rejected write; returns their ids per table. */
   discardFailed(): { [K in TableName]: string[] } {
-    const out = { goals: Object.keys(this.data.failed.goals), events: Object.keys(this.data.failed.events) };
-    this.data.failed = { goals: {}, events: {} };
+    const out = Object.fromEntries(
+      TABLES.map((table) => [table, Object.keys(this.data.failed[table])]),
+    ) as { [K in TableName]: string[] };
+    this.data.failed = emptyData().failed;
     this.persist();
     return out;
   }
 
   get pendingCount(): number {
-    return TABLES.reduce((n, t) => n + Object.keys(this.data.pending[t]).length, 0);
+    return TABLES.reduce(
+      (n, t) => n + Object.keys(this.data.pending[t]).length,
+      0,
+    );
   }
 
   get failedCount(): number {
-    return TABLES.reduce((n, t) => n + Object.keys(this.data.failed[t]).length, 0);
+    return TABLES.reduce(
+      (n, t) => n + Object.keys(this.data.failed[t]).length,
+      0,
+    );
   }
 
   private persist(): void {

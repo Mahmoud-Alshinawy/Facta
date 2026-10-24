@@ -1,0 +1,1144 @@
+/* NotesApp / NA boards. Shared shell and controls continue to use fx.css. */
+.notes-page {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+}
+.notes-heading {
+  min-width: 100px;
+}
+.notes-heading > .mono {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--subtle);
+}
+.notes-page .notes-header {
+  flex-wrap: nowrap;
+  gap: 12px;
+  padding-inline: 28px;
+}
+.notes-search {
+  min-width: 120px;
+  flex: 1 1 180px;
+  max-width: 360px;
+}
+.notes-search > svg {
+  position: absolute;
+  left: 11px;
+  top: 10px;
+  color: var(--subtle);
+}
+.notes-search > .kbd {
+  position: absolute;
+  right: 8px;
+  top: 9px;
+}
+.note-spacer {
+  flex: 1;
+}
+.note-compact-filters {
+  display: none;
+}
+.notes-page .nwrap {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+.notes-page .npa {
+  flex: 0 0 212px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 18px 12px;
+  border-right: 1px solid var(--border);
+  overflow: auto;
+}
+.notes-page .note-collections,
+.notes-page .note-tag-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.note-tag-filters > .sec {
+  padding: 0 10px 6px;
+}
+.note-tag-filters > p {
+  font-size: 12.5px;
+  padding-inline: 10px;
+  color: var(--subtle);
+}
+.notes-page .npi {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 13.5px;
+  color: var(--text-2);
+  text-align: left;
+  width: 100%;
+}
+.notes-page .npi > span:first-of-type {
+  overflow-wrap: anywhere;
+}
+.notes-page .npi:hover,
+.notes-page .npi[aria-current="true"] {
+  background: var(--raised);
+  color: var(--text);
+}
+.notes-page .npi .n {
+  margin-left: auto;
+  font:
+    11px "Geist Mono",
+    monospace;
+  color: var(--subtle);
+}
+.note-trash-filter {
+  margin-top: auto;
+}
+.notes-page .nlist {
+  flex: 0 0 336px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  min-width: 0;
+  min-height: 0;
+}
+.notes-page .nlh {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 16px 10px;
+}
+.note-list-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.note-list-label > .sec {
+  flex: 1;
+}
+.notes-page .ncap {
+  position: relative;
+}
+.notes-page .ncap input {
+  width: 100%;
+  height: 38px;
+  padding: 0 62px 0 12px;
+  border-radius: 10px;
+  border: 1px dashed var(--control-border);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+}
+.notes-page .ncap .kbd {
+  position: absolute;
+  right: 8px;
+  top: 11px;
+}
+.notes-page input::placeholder,
+.notes-page textarea::placeholder {
+  color: var(--subtle);
+}
+.notes-page .nitems {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 8px 16px;
+}
+.note-section {
+  padding: 12px 10px 6px;
+}
+.notes-page .nit {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  text-align: left;
+  color: var(--text);
+}
+.notes-page .nit:hover,
+.notes-page .nit.is-sel {
+  background: var(--raised);
+}
+.notes-page .nitems:focus .nit.is-sel {
+  box-shadow: inset 0 0 0 2px var(--text);
+}
+.notes-page .nit .bar {
+  width: 8px;
+  min-width: 8px;
+  padding: 0;
+  flex: 0 0 8px;
+  height: 8px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--c);
+}
+.notes-page .nit .tx {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.notes-page .nit .tl {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.notes-page .nit .pv {
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--text-2);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.notes-page .nit .dt {
+  font:
+    10.5px "Geist Mono",
+    monospace;
+  color: var(--subtle);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.notes-page .wgt {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: var(--raised-2);
+  color: var(--text-2);
+}
+.notes-page .ned {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.notes-page .nbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  min-height: 56px;
+  flex-shrink: 0;
+}
+.notes-page .nbody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  position: relative;
+}
+.notes-page .ndoc {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 28px 32px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+}
+.notes-page .ntitle {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  padding: 0;
+  text-align: inherit;
+}
+.notes-page .nmeta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font:
+    12px "Geist",
+    sans-serif;
+  color: var(--subtle);
+}
+.notes-page .tagc {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 24px;
+  padding: 0 9px;
+  border-radius: 7px;
+  background: var(--raised-2);
+  font:
+    12px "Geist",
+    sans-serif;
+  color: var(--text-2);
+}
+.note-tags {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.note-tags .tagc button {
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+  padding: 1px 3px;
+}
+.note-tags form {
+  display: flex;
+}
+.note-tags input {
+  width: 130px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--control-border);
+  border-radius: 6px;
+  padding: 4px 7px;
+  font:
+    13px "Geist",
+    sans-serif;
+}
+.note-colours {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.note-colours button,
+.note-text-colors button {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--c);
+  padding: 0;
+}
+.note-colours [aria-pressed="true"] {
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 3.5px var(--text);
+}
+.note-widget-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--accent-border);
+  background: var(--accent-soft);
+  border-radius: 12px;
+  font:
+    13px "Geist",
+    sans-serif;
+  text-align: left;
+}
+.note-widget-banner > span {
+  flex: 1;
+}
+.note-grid-scroll {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+}
+.note-grid-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 28px 14px;
+}
+.note-grid-top > .ncap {
+  width: 100%;
+  max-width: 504px;
+}
+.note-grid-top > .sec {
+  flex: 1;
+}
+.notes-page .ngrid {
+  column-count: 3;
+  column-gap: 16px;
+  padding: 6px 28px 40px;
+}
+.notes-page .nc {
+  break-inside: avoid;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin: 0 0 16px;
+  padding: 14px 16px 12px;
+  border: 0;
+  border-top: 4px solid var(--c);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--c) 14%, var(--surface));
+  text-align: left;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.notes-page .nc:hover {
+  background: color-mix(in srgb, var(--c) 22%, var(--surface));
+}
+.notes-page .nc .tl {
+  font-size: 15.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.notes-page .nc .pv {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-2);
+  white-space: pre-line;
+  max-height: 260px;
+  overflow: hidden;
+}
+.notes-page .nc .ft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font:
+    10.5px "Geist Mono",
+    monospace;
+  color: var(--subtle);
+  margin-top: 2px;
+}
+.note-card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.note-card-tags {
+  margin-left: auto;
+}
+.notes-page .note-status {
+  padding-inline: 24px;
+  gap: 12px;
+}
+.note-empty {
+  flex: 1;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 12px;
+  padding: 40px;
+  user-select: none;
+}
+.note-empty > svg {
+  color: var(--subtle);
+}
+.note-empty h2 {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.note-empty p {
+  max-width: 390px;
+  color: var(--text-2);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.note-no-match {
+  padding: 24px 12px;
+  font-size: 13.5px;
+  color: var(--text-2);
+}
+.notes-page .backl {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  font-family: "Geist", sans-serif;
+  text-align: left;
+}
+.notes-page .backl button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  margin: 0 -10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+}
+.notes-page .backl button:hover {
+  background: var(--raised);
+}
+.backl button > span:first-of-type {
+  flex: 1;
+  text-align: left;
+}
+.backl button > .mono {
+  color: var(--subtle);
+  font-size: 11px;
+}
+.notes-page .note-editor-input {
+  position: relative;
+  min-height: 180px;
+  font-size: 15.5px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.note-editor-input .tiptap {
+  min-height: 180px;
+  padding-block: 4px 40px;
+  white-space: pre-wrap;
+}
+.notes-page .ntitle:focus,
+.note-editor-input .tiptap:focus {
+  outline: none;
+  box-shadow: none;
+}
+.notes-page .ntitle:focus-visible,
+.note-editor-input .tiptap:focus-visible {
+  outline: 1px solid var(--control-border);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 2px var(--accent-soft);
+  border-radius: 4px;
+}
+.note-editor-input .tiptap > p {
+  margin: 0 0 12px;
+}
+.note-editor-input .tiptap h1,
+.note-editor-input .tiptap h2,
+.note-editor-input .tiptap h3 {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  margin: 14px 0 10px;
+}
+.note-editor-input .tiptap h1 {
+  font-size: 26px;
+}
+.note-editor-input .tiptap h3 {
+  font-size: 18px;
+}
+.note-editor-input [data-block="bullet"] {
+  position: relative;
+  padding-left: 18px;
+  margin-bottom: 6px;
+}
+.note-editor-input [data-block="bullet"]:before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: var(--text-2);
+}
+.note-editor-input [data-block="checklist"] {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 30px;
+}
+.note-editor-input [data-block="checklist"] > button {
+  flex: 0 0 18px;
+  height: 18px;
+  margin-top: 5px;
+  padding: 0;
+  border-radius: 5px;
+  border: 1.5px solid var(--control-border);
+  background: transparent;
+  color: var(--accent-text);
+  font:
+    13px "Geist",
+    sans-serif;
+}
+.note-editor-input [data-checked="true"] > button {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.note-editor-input [data-block="checklist"] > span {
+  min-width: 0;
+  flex: 1;
+}
+.note-editor-input [data-checked="true"] > span {
+  text-decoration: line-through;
+  color: var(--text-2);
+}
+.note-editor-input pre {
+  margin: 10px 0;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  font:
+    13px/1.55 "Geist Mono",
+    monospace;
+  overflow: auto;
+  color: var(--text);
+  text-align: left;
+}
+.note-editor-input blockquote {
+  margin: 10px 0;
+  padding: 2px 0 2px 16px;
+  border-left: 3px solid var(--border-strong);
+  color: var(--text-2);
+  font-style: italic;
+}
+.note-editor-input hr {
+  border: 0;
+  height: 1px;
+  background: var(--border-strong);
+  margin: 14px 0;
+}
+.note-editor-input a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  color: var(--text);
+}
+.note-editor-input .note-reference {
+  text-decoration-style: dotted;
+  font-weight: 500;
+}
+.note-editor-input strong {
+  font-weight: 700;
+}
+.note-editor-input em {
+  font-style: italic;
+}
+.notes-page [data-text-color="a"] {
+  color: var(--note-a);
+}
+.notes-page [data-text-color="b"] {
+  color: var(--note-b);
+}
+.notes-page [data-text-color="c"] {
+  color: var(--note-c);
+}
+.notes-page [data-text-color="d"] {
+  color: var(--note-d);
+}
+.note-editor-placeholder {
+  position: absolute;
+  left: 0;
+  top: 4px;
+  color: var(--subtle);
+  pointer-events: none;
+}
+.note-selection {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: wrap;
+  padding: 4px;
+  background: var(--text);
+  border-radius: 10px;
+  box-shadow: 0 10px 26px color-mix(in srgb, var(--shadow-ink) 40%, transparent);
+  font-family: "Geist", sans-serif;
+  text-align: left;
+}
+.note-selection button {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.note-selection button:hover,
+.note-selection [aria-pressed="true"] {
+  box-shadow: inset 0 0 0 1px var(--bg);
+}
+.note-selection select {
+  width: 140px;
+  height: 30px;
+  border: 0;
+  background: transparent;
+  color: var(--bg);
+  font-size: 13px;
+  padding: 0 6px;
+}
+.note-selection select option {
+  background: var(--raised);
+  color: var(--text);
+}
+.note-font-picker {
+  position: relative;
+}
+.note-selection .note-font-button {
+  width: 140px;
+  justify-content: space-between;
+  padding-inline: 8px;
+  font-size: 13px;
+}
+.note-font-menu {
+  position: absolute;
+  top: 38px;
+  left: 0;
+  width: 260px;
+  padding: 6px;
+  background: var(--raised);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  box-shadow: 0 18px 40px color-mix(in srgb, var(--shadow-ink) 45%, transparent);
+}
+.note-selection .note-font-menu > button {
+  width: 100%;
+  height: 38px;
+  padding-inline: 10px;
+  justify-content: flex-start;
+  color: var(--text);
+  font-size: 15px;
+}
+.note-selection .note-font-menu > button:hover {
+  background: var(--raised-2);
+}
+.note-selection .note-font-menu > [aria-selected="true"] {
+  background: var(--text);
+  color: var(--bg);
+}
+.note-selection .note-font-menu > button:focus-visible {
+  outline-color: var(--text);
+}
+.note-text-colors {
+  display: flex;
+  gap: 5px;
+  padding-inline: 6px;
+}
+.note-selection .note-text-colors button {
+  width: 18px;
+  height: 18px;
+  background: var(--c);
+  border: 1px solid var(--bg);
+}
+.note-selection button:focus-visible,
+.note-selection select:focus-visible {
+  outline-color: var(--bg);
+}
+.note-insert-menu {
+  position: absolute;
+  left: 0;
+  z-index: 26;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 280px;
+  max-width: 100%;
+  max-height: 290px;
+  overflow-y: auto;
+  padding: 6px;
+  background: var(--raised);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  box-shadow: 0 18px 40px color-mix(in srgb, var(--shadow-ink) 45%, transparent);
+  font:
+    13.5px "Geist",
+    sans-serif;
+  text-align: left;
+}
+.note-insert-menu > .sec {
+  padding: 6px 8px 4px;
+}
+.note-insert-menu button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 38px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+.note-insert-menu .note-block-name {
+  flex: 1;
+}
+.note-block-icon {
+  flex: 0 0 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+  border-radius: 6px;
+  background: var(--raised-2);
+}
+.note-insert-menu button[aria-selected="true"] .note-block-icon {
+  background: color-mix(in srgb, var(--bg) 20%, transparent);
+}
+.note-insert-menu button[aria-selected="true"] {
+  background: var(--text);
+  color: var(--bg);
+}
+.note-insert-menu button .mono {
+  font-size: 11px;
+  opacity: 0.7;
+}
+.note-insert-menu p {
+  padding: 8px;
+  color: var(--subtle);
+}
+.notes-focus {
+  position: absolute;
+  inset: 0;
+  z-index: 35;
+}
+.fx:has(.notes-focus) > .sb {
+  display: none;
+}
+.notes-page .foot {
+  flex-shrink: 0;
+  gap: 14px;
+}
+.notes-page .foot > .b-quiet {
+  font-size: 12px;
+  height: 28px;
+}
+.note-undo {
+  position: absolute;
+  bottom: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100% - 32px);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  z-index: 36;
+  padding: 6px 8px 6px 16px;
+  border-radius: 12px;
+  background: var(--text);
+  color: var(--bg);
+  box-shadow: 0 12px 30px color-mix(in srgb, var(--shadow-ink) 40%, transparent);
+  font-size: 13.5px;
+  white-space: nowrap;
+}
+.note-undo > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.note-undo button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  color: var(--bg);
+  padding: 6px;
+  border: 1px solid var(--bg);
+  border-radius: 8px;
+}
+.note-undo .kbd {
+  color: var(--bg);
+  background: transparent;
+  border-color: var(--bg);
+}
+.notes-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+}
+.notes-dialog {
+  overflow-y: auto;
+  width: 600px;
+  max-width: calc(100% - 40px);
+  max-height: calc(100% - 40px);
+}
+.notes-dialog-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.notes-dialog-head h2 {
+  flex: 1;
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+.notes-dialog > textarea {
+  width: 100%;
+  min-height: 150px;
+  resize: vertical;
+  padding: 16px 18px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font:
+    17px/1.55 "Geist",
+    sans-serif;
+}
+.notes-dialog-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+.note-dialog-help {
+  padding: 12px 18px;
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.notes-dialog form > label {
+  display: block;
+  padding: 12px 18px 6px;
+  font-size: 13px;
+}
+.notes-dialog form > input,
+.note-switch-query {
+  width: calc(100% - 36px);
+  margin: 4px 18px 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--control-border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font:
+    15px "Geist",
+    sans-serif;
+}
+.note-switch-results {
+  max-height: 420px;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.note-switch-results > button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 50px;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+.note-switch-results > button[aria-selected="true"] {
+  background: var(--text);
+  color: var(--bg);
+}
+.note-switch-results > button > span:not(.evdot):not(.kbd) {
+  min-width: 0;
+  flex: 1;
+}
+.note-switch-results b {
+  font-size: 14px;
+  font-weight: 600;
+  display: block;
+}
+.note-switch-results small {
+  font-size: 12px;
+  opacity: 0.7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+.note-switch-results > p {
+  padding: 14px;
+  font-size: 14px;
+  color: var(--subtle);
+}
+.note-cheat-dialog {
+  width: 760px;
+}
+.note-cheat-groups {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+  padding: 18px 22px 22px;
+  overflow: auto;
+}
+.note-cheat-groups section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.note-cheat-groups section > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.note-cheat-groups section > div > span:first-child {
+  flex: 1;
+}
+.note-export-menu {
+  position: absolute;
+  right: 24px;
+  top: 130px;
+  z-index: 35;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 248px;
+  padding: 6px;
+  background: var(--raised);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  box-shadow: 0 18px 40px color-mix(in srgb, var(--shadow-ink) 45%, transparent);
+}
+.note-export-menu > .sec {
+  padding: 8px 10px 4px;
+}
+.note-export-menu > button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 40px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  font-size: 13px;
+}
+.note-export-menu > button:hover {
+  background: var(--raised-2);
+}
+.note-export-menu b {
+  width: 48px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.note-error,
+.note-page-error {
+  padding: 10px 16px;
+  background: var(--danger-soft);
+  color: var(--danger);
+  font:
+    13px/1.5 "Geist",
+    sans-serif;
+}
+.note-page-error {
+  margin: 0;
+  flex-shrink: 0;
+}
+@container app (max-width:1380px) {
+  .notes-page .notes-header {
+    gap: 10px;
+    padding-inline: 20px;
+  }
+  .notes-header .note-switch {
+    display: none;
+  }
+  .notes-page .nbar {
+    padding-inline: 16px;
+    gap: 8px;
+  }
+  .note-widget-toggle > span {
+    display: none;
+  }
+  .note-status .note-status-meta {
+    display: none;
+  }
+  .notes-page:not(:has(.nlist)) .note-widget-toggle > span {
+    display: inline;
+  }
+  .notes-page .nlist {
+    flex-basis: 304px;
+  }
+  .notes-header .b-commit .key {
+    display: none;
+  }
+}
+@container app (max-width:1200px) {
+  .notes-page .npa {
+    display: none;
+  }
+  .note-compact-filters {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0;
+  }
+  .note-compact-filters label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--subtle);
+  }
+  .note-compact-filters select {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--control-border);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+  .notes-page .ngrid {
+    column-count: 2;
+  }
+  .notes-page .ndoc {
+    padding: 24px 24px 60px;
+  }
+  .notes-header .note-capture {
+    display: none;
+  }
+}
+@container app (max-width:850px) {
+  .notes-page .nlist {
+    flex-basis: 250px;
+  }
+  .notes-header .notes-search {
+    max-width: none;
+  }
+  .notes-header .seg button {
+    padding-inline: 7px;
+  }
+  .notes-page .nbar {
+    padding: 8px;
+  }
+  .note-selection {
+    gap: 1px;
+  }
+  .note-selection select {
+    width: 110px;
+  }
+  .note-colours {
+    gap: 6px;
+  }
+  .note-colours button {
+    width: 18px;
+    height: 18px;
+  }
+}
