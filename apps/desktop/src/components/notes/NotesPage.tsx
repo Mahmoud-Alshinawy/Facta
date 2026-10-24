@@ -165,6 +165,7 @@ export default function NotesPage({
     [switchIndex, setSwitchIndex] = useState(0);
   const [url, setUrl] = useState("");
   const [titleDraft, setTitleDraft] = useState("");
+  const [titleFocusRequest, setTitleFocusRequest] = useState(0);
   const titleId = useRef<string | null>(null);
   const linkEditor = useRef<Editor | null>(null);
   const exportOpener = useRef<HTMLElement | null>(null);
@@ -174,6 +175,10 @@ export default function NotesPage({
     pageRef = useRef<HTMLDivElement>(null),
     exportRef = useRef<HTMLDivElement>(null);
   useDialogFocus(pageRef, focus && !overlay);
+  useEffect(() => {
+    // The grid/list may unmount on open; focus the committed editor instead.
+    if (titleFocusRequest) titleRef.current?.focus({ preventScroll: true });
+  }, [titleFocusRequest]);
   const live = useMemo(() => notes.filter((note) => !note.trashedAt), [notes]);
   const visible = useMemo(
     () => selectNotes(notes, filter, query, now.getTime()),
@@ -296,6 +301,7 @@ export default function NotesPage({
       setCollapsed(true);
       setOverlay(null);
       setError("");
+      setTitleFocusRequest((request) => request + 1);
     },
     [notes],
   );
@@ -430,8 +436,7 @@ export default function NotesPage({
           trash();
         } else if (key === "enter" && target === listRef.current && selected) {
           e.preventDefault();
-          setView("list");
-          titleRef.current?.focus();
+          openNote(selected.id);
         }
       }
     };
@@ -442,6 +447,7 @@ export default function NotesPage({
     overlay,
     selected,
     create,
+    openNote,
     openOverlay,
     move,
     change,

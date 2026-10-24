@@ -1,5 +1,26 @@
 # Handoff: feat/notes-diary (branch 2 of 3), step 6 complete — STOP for review
 
+## Step 6 Notes listbox Enter fix (24 October 2026)
+- Reproduced the review finding from a fresh grid: Tab from Fast capture focused
+  the Notes listbox; J selected another note; Enter left the panel expanded and
+  focus on BODY. The earlier verification pressed Enter on an option/button,
+  activating its click handler, and incorrectly claimed listbox Enter coverage.
+- Enter now calls shared openNote(selected.id). Shared opening requests title
+  focus in a post-commit effect, after the grid/list unmounts and editor mounts.
+  Explicit List still expands the panel and keeps focus on that button.
+- Real browser checks: four themes × 1440/1280/1100 at height 720. Tab reached the
+  listbox; grid J/K/J changed selection with listbox focus; Enter opened that
+  selected title, collapsed the panel and focused the input. Explicit List then
+  expanded; Tab/J/Enter from the expanded list did the same (24 opens total).
+  Card and switcher opening also collapsed/focused correctly. Console empty.
+  Evidence: visualization directory / facta-notes-keyboard-fix/ (focus/selection
+  JSON and screenshots). No native runtime, backend or SQL testing in this fix.
+- Temporary fixture/context exports, server and tab removed. No dependency,
+  schema, styling or unrelated behavior change. Visual-review document corrected.
+  Required Windows checks: frozen install, TypeScript ×3, desktop 375/calendar
+  184 tests, both builds and cargo check --offline ×2 passed. Existing main
+  chunk-size warning remains. STOP for review after commit/push.
+
 ## Step 6 verification follow-up (23–24 October 2026)
 - Verified d762229 separately: required checks passed again (frozen install,
   all three TypeScript checks, desktop 375 and calendar 184 tests, both production
@@ -8,14 +29,15 @@
   localhost:1422 fixture origin, with backend configuration explicitly blank.
   Notes title/Unicode body/Inbox and Diary line/mood survived browser reload.
   Diary timeline and text/mood filters returned the expected entries/counts.
-- Exercised Notes keyboard movement/open, default collapsed editor, explicit
+- Exercised Notes movement and card activation, collapsed editor, explicit
   List expansion, narrow tag/Trash selection, fast capture/autofocus, switcher,
   bold/font selection, focus mode, Trash Undo, and keyboard checklist insertion.
   Long content (32 KB unbroken paragraph, long title and ten tags) fit all four
   themes at 1440/1280/1100 × 720 in grid/list/editor: 36 cases, no horizontal
   overflow. Capture and slash-menu checks passed in all 12 combinations each.
   Capture Escape returned focus; Tab/Shift Tab trapped correctly in the sampled
-  dialog. Browser warning/error log empty. No application defect found.
+  dialog. Browser warning/error log empty. Listbox Enter coverage was inaccurate:
+  button activation masked the regression subsequently fixed above.
 - Markdown download contents verified (bold/checklist); TXT action clicked but
   no saved file was verified. Both serializers pass logic tests. Browser download
   waiting stalled well beyond its requested timeout, so it was not repeated.

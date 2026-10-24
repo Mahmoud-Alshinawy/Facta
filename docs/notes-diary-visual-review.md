@@ -123,7 +123,8 @@ Bundle kB / gzip: main **689.68 / 202.26**; lazy Notes **364.52 / 112.23**
 ## Independent verification of d762229 (23–24 October 2026)
 
 This follow-up reran the required checks and exercised the final Notes changes.
-It found no application defect and makes no production-code changes. It adds
+It missed the listbox Enter regression described below and made no production-code
+changes. It adds
 behavioral and long-content coverage to the visual pass above, rather than
 claiming that every design-board state was exercised.
 
@@ -135,7 +136,9 @@ cache input. No production data, live backend or SQL was accessed.
 
 Verified behavior:
 
-- J/K changed the selected grid note; Enter opened its collapsed editor. List
+- J/K changed the selected grid note, but Enter was sent to an option/button,
+  which activated the card click handler. This did not verify Enter with focus
+  on the listbox; the original collapsed-editor claim was inaccurate. List
   explicitly reopened the panel. At 1100, the collection selector returned ten
   research notes and the single seeded Trash note correctly.
 - Grid fast capture created a note with Inbox and focused its title. Editing its
@@ -179,3 +182,40 @@ focus-mode and Diary screenshots.
 Required Windows checks passed again: frozen install; all three TypeScript
 checks; **375 desktop + 184 calendar tests**; both production builds; both
 `cargo check --offline` runs. No fixture source is included in the builds.
+
+## Review correction: genuine listbox Enter (24 October 2026)
+
+Reproduced on the reviewed code from a fresh Notes grid: Tab from Fast capture
+placed focus on the listbox itself. J selected a different note. Enter switched
+to the list view but left the panel expanded and document.activeElement on BODY.
+The original test's Enter on a card button invoked its click handler instead;
+it did not establish the claimed keyboard behavior.
+
+Enter now calls the same openNote behavior as cards, switcher results and note
+links. Shared opening increments a focus request; an effect focuses the title
+after React commits the editor, including when opening a different note in an
+already mounted editor. Explicit List still expands the panel.
+
+Actual browser regression checks used the real app with an invented memory-store
+account and backend access explicitly disabled. In every combination of four
+themes and 1440/1280/1100 × 720:
+
+- Tab from Fast capture focused the grid listbox. J/K/J moved the selected note
+  while retaining listbox focus. Enter opened the selected note, removed the
+  expanded panel and focused the title input.
+- Explicit List expanded the panel and kept button focus. Tab reached the
+  expanded listbox; J moved selection without moving focus. Enter collapsed the
+  panel and focused that selected note's title.
+
+All 24 keyboard opens passed assertions on selected title, panel presence and
+document.activeElement. Card click and keyboard switcher opening also focused
+the title after mounting; no console warnings/errors. Temporary fixture files,
+context exports, server and tab were removed, and the viewport reset. Local
+evidence: `facta-notes-keyboard-fix/` in the task visualization directory contains
+keyboard/shared-opening JSON and twelve screenshots. No native runtime, auth,
+backend or SQL verification was added; earlier limitations remain.
+
+Required Windows checks passed: frozen install; TypeScript in all three packages;
+375 desktop and 184 calendar tests; both production builds; cargo check --offline
+in both native folders. Existing desktop main-chunk size warning only. This is a
+focused UI event/focus fix verified in the browser; no mock UI tests were added.
