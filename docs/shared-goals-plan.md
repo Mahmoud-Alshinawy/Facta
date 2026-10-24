@@ -4,6 +4,9 @@ Status: **proposed; stop for owner review before application code or migrations*
 Prepared 24 October 2026. Base: `origin/main` at `aa7f69a`
 (`aa7f69afedf9943ba94590e578a0dde5e66ee028`). Branch: `feat/shared-goals`.
 Branch 2 was squash-merged; do not merge `feat/notes-diary` again.
+Lifecycle revision: 24 October 2026, after owner review of `32e268b`. Publication
+now fixes the first start, and the exact scored-round set is defined below.
+All other proposed defaults remain unchanged and subject to plan review.
 
 ## 1. Established requirements
 
@@ -20,6 +23,10 @@ The owner's recovered branch-3 brief establishes:
 - Each goal has its own round start, selected on creation and defaulted from
   the creator's week-start preference. Changing that preference later must not
   change an existing goal's round.
+- Owner's lifecycle review requires first_round_date to be calculated/revalidated
+  at final publication, with renewed confirmation if the displayed date expired,
+  then frozen. Scoring must exclude pre-activation/inactive periods and all new
+  rounds after archival; accepted next-round joiners cannot activate/resume early.
 - Leaderboard bars are green at adherence >=70%, grey below 70%.
 - Authoritative scoring is computed in a Postgres view. RLS limits group data
   to its members. Invite tokens work through `facta://` deep links.
@@ -66,7 +73,8 @@ Conflicts/decisions needing approval:
    This follows the written product rule but differs from themed board accents.
 3. People displays an HTTPS sample link before Create. No hosting service is in
    scope. Proposed: a real `facta://join/<token>` link, issued only against a
-   server-side waiting draft. Copy explains that activation awaits creation.
+   server-side draft. Copy explains that the link awaits publication and scoring
+   awaits an eligible boundary; the displayed draft start is provisional.
    Never copy a locally invented/unredeemable token as though it were usable.
 4. Link-only creation conflicts with the design's “add at least 1 more person”
    gate. Proposed: permit publishing a one-owner **waiting** group for a link;
@@ -92,20 +100,37 @@ Everything in sections 3–8 is a proposal unless explicitly established above.
 - Store an **IANA group time zone**, defaulting to the creator's device zone and
   visibly confirmed at creation. All members share this calendar. Travel and
   individual calendar preferences only affect presentation, not check-in dates.
-- Store weekday 0–6 and a first-round local `date`. A round is seven calendar
-  dates starting at midnight in the group zone, with an exclusive next-start.
+- Store weekday 0–6 and, **only on publication**, a first-round local `date`.
+  A draft can display a proposed date, not a frozen scoring anchor. A round is
+  seven calendar dates starting at midnight in the group zone, with an exclusive
+  next-start.
   Derive UTC boundary instants on the server; never add 168 hours across DST.
-- Default the first round to the next chosen weekday, strictly after creation's
-  group-local date. The selected weekday repeats every seven calendar dates.
-  Display first date, zone and range on Review/Join. Do not infer rounds from
-  ISO week numbers. Freeze zone/anchor/schedule after publish in this branch;
-  Custom schedule editing is outside the recovered scope.
+- At final publication, the server locks/revalidates the draft and computes the
+  next chosen weekday strictly after the **publication attempt's group-local
+  date**, not the draft creation date. The request carries the draft revision
+  and displayed first date. If either changed, return confirmation-required with
+  the updated date/zone/range; do not publish or initialize eligibility/targets.
+  The wizard shows the change and requires an explicit confirmation/resubmission.
+  That confirmation uses a new command UUID for the changed request body.
+  Recompute under lock on every attempt, including a midnight-crossing retry.
+  Only an exact confirmed match atomically writes published_at, first_round_date,
+  creator eligibility/initial target and the publication receipt. A retry of an
+  already-committed publication returns that receipt and frozen anchor, even
+  weeks later; it must not create another publication or move the start.
+- The selected weekday repeats every seven calendar dates from the frozen first
+  date. Display proposed versus confirmed dates accurately on Review/Join; an
+  unpublished invite preview says its start is provisional. Do not infer rounds
+  from ISO week numbers. Freeze zone/anchor/schedule after publication in this
+  branch; Custom schedule editing is outside the recovered scope.
 - Creator and members joined before first start are eligible from first start.
   Later joiners become eligible at the next boundary, even on boundary day after
   midnight. They can see group data once joined, but cannot score/check in early.
   Show “Starts …” rather than 0%/missed days before eligibility.
-- A waiting group starts scoring only at a boundary with >=2 eligible members.
-  Never score a shortened first round. Pending invitations have no denominator.
+- A waiting group starts scoring only at a boundary with >=2 eligible members
+  **at that boundary**. A published anchor is not activation. Keep the anchor
+  fixed while waiting; do not generate zero-score rounds or a shortened first
+  round. Pending invitations and accepted-but-not-eligible people never satisfy
+  the activation/resumption threshold. The precise set is defined next.
 - Gym/N-per-week allows a check-in on any eligible day, including after reaching
   target; distinct days beyond target remain visible but adherence caps at 100%.
   Custom specific-day goals reject off-schedule check-ins; every-day target=7,
@@ -113,6 +138,80 @@ Everything in sections 3–8 is a proposal unless explicitly established above.
 - A member can revise/cancel their pending Gym target; only the latest confirmed
   choice for the next round applies. The current round and history keep their
   effective targets. No per-person override for Custom.
+
+### Exact scored-round set and lifecycle facts
+
+These definitions replace any interpretation of “all weeks since first start”
+or “two accepted members means active.” All boundary instants are server-derived
+from local dates in the frozen group zone. Intervals are half-open.
+
+**Persisted facts:** draft created_at; published_at and first_round_date (both
+null before publication, written together exactly once); archived_at (nullable,
+write-once, terminal); frozen weekday/zone/schedule; each membership epoch's
+joined_at, eligible_round and left_at; and effective target versions. Preserve
+epochs/leave facts instead of deleting them. Assign lifecycle timestamps on the
+server after acquiring the group lock, with a monotonic group revision; clients
+cannot backdate publication, acceptance, eligibility, leave or archive. The
+creator's eligible_round is null in a draft and initialized at publication.
+An unpublished draft may be archived without ever obtaining a scoring anchor.
+
+For read time `t`, let `F` be the published first date and `A` archived_at (or
+infinity if absent). Candidate slot `n >= 0` has local start `F + 7*n` calendar
+dates, UTC start `B_n` and next-start `E_n`. A date slot is not itself a scored
+round. There are no candidates for an unpublished group.
+
+- **Accepted count at time u:** joined epochs with joined_at <= u and no leave
+  at/before u, including people not yet eligible. This count plus unexpired
+  targeted reservations enforces capacity only. Invite reservations are not
+  accepted members and neither count is a scoring denominator.
+- **Boundary roster R_n:** epochs joined before B_n, eligible_round <= that
+  slot's start date, and with left_at absent or > B_n. An epoch joining exactly
+  at B_n is assigned the next boundary, per the existing join-next-round rule.
+  An epoch leaving exactly at B_n is excluded. Count distinct users; no person
+  may have overlapping epochs. R_n is frozen for that round, including members
+  who later leave, and contains no pending/next-round members.
+- **Mid-round pause P_n:** the earliest instant in [B_n,E_n) when fewer than two
+  people in R_n remain joined, derived from their leave facts; otherwise infinity.
+  New acceptances cannot add to R_n. Thus a round paused mid-slot never resumes
+  in that same slot, even if accepted count returns to two or more.
+- **Activity cutoff C_n:** min(E_n, P_n, A). The round's permitted check-in
+  interval is [B_n,C_n). A scored round retains its full scheduled seven-date
+  range and unprorated target, plus this explicit activity cutoff/end reason.
+  If C_n=E_n it completed its scheduled interval; otherwise archive takes
+  precedence if the earlier pause/archive cutoffs tie.
+
+The exact scored-round set at t is **only** the slots where published_at exists,
+B_n <= t, B_n < A, and |R_n| >= 2. First activation is the earliest such B_n;
+resumption is a later qualifying boundary after a gap/pause. This set includes
+a round that started with two and later ended early, but no slot that started
+with fewer than two. Scores count only validated check-ins within its activity
+interval; the roster/denominator is not reduced when somebody leaves.
+
+Publication/archival and epoch facts are sufficient to reconstruct this set and
+its cutoffs on every read; do not infer historical activity from today's member
+count, today's publication flag alone, or a mutable active boolean. No cron job
+or client visit is required to activate a qualifying boundary. Any cached
+activation/resume timestamps are derived, never independent sources of truth.
+
+Current phase is draft or archived when those facts apply; otherwise active
+only while t lies inside a qualifying round's activity interval. Outside such
+an interval it is waiting if no round has ever activated, or paused if one has.
+No qualifying boundary during a gap means no new score/rank/average row, not a
+0% round. History may label inactive slots with no score; exclude them from
+scored-round/group-average aggregates. Mark an interrupted round “Paused early”
+or “Archived early” with cutoff time, while retaining its original target.
+The Shared active-round count and check-ins-left summary exclude waiting/paused
+groups. Any previous round shown on those cards is explicitly historical.
+Check-in table dates outside the activity interval are labelled inactive, not
+missed; a partially active cutoff day identifies its time limit. Do not render
+the pre-activation period as failed personal adherence.
+
+Archival is terminal: no new round starts at or after A. An active round at A
+remains historical and closes at min(its existing cutoff,A); archival during
+a waiting/paused gap adds no round. Reading weeks later yields the same scored
+round keys/rosters/cutoffs, never synthetic post-archive zeroes. If A equals a
+boundary, that boundary is excluded. Concurrent boundary-time leave/archive/
+join mutations use their locked server facts and the comparisons above.
 
 ### Membership, invitations and leaving
 
@@ -139,8 +238,11 @@ Everything in sections 3–8 is a proposal unless explicitly established above.
   Keep their already-accepted check-ins in peer-visible round history with a
   “Left” label. Future rounds exclude them. Current round roster/targets remain
   fixed; do not rewrite earlier denominators or prorate.
-- If accepted membership falls below two, pause new check-ins and show a waiting
-  state. Resume at a boundary with two eligible people; keep historical scores.
+- If fewer than two members of the active round's boundary roster remain joined,
+  pause live check-ins immediately, even if accepted count is still >=2 because
+  another member is waiting for next-round eligibility. Resume only at a later
+  boundary whose R_n has >=2 eligible members; keep historical scores. Before
+  first activation show waiting; after activation show paused during gaps.
   If an owner leaves, require an atomic ownership transfer to an accepted member
   or archive the group. A sole remaining owner may archive then leave. Archive
   is read-only for remaining members, not a hard deletion. Rejoining requires a
@@ -154,7 +256,7 @@ Everything in sections 3–8 is a proposal unless explicitly established above.
   be saved locally; it is not a created group and has no fake “Invite sent”.
 - Check-ins can be queued offline after a previously confirmed eligible join.
   Queue **desired checked state**, not “toggle”. Keep group-local date, actor,
-  membership epoch, base row revision, command UUID and captured time. Never
+  membership epoch, base row revision, command UUID and captured_at. Never
   change an old queued day into today's date on replay.
 - Proposed replay grace: today plus the previous seven group-local dates.
   No future dates; membership must have been eligible that date and still permit
@@ -162,6 +264,26 @@ Everything in sections 3–8 is a proposal unless explicitly established above.
   is labelled awaiting late sync. Too-old/revoked/off-schedule commands become
   visible failures with review/discard, not silent success or endless retries.
   Offline dates are self-reported within this window; it is not anti-cheat proof.
+- Replay validates the original captured_at against the original membership's
+  scored round/activity interval and schedule, as well as the unchanged grace,
+  original epoch still being joined/current access, and revision rules. Its
+  group-local date must equal checkin_date; future instants are rejected. Store
+  the validated captured time with accepted state; server receipt/revision
+  remains the ordering authority.
+  Do not accept a command merely because the group is active at replay time.
+- While paused (and not archived), a still-authorized member's unseen command
+  captured before the pause may settle within grace and update that historical
+  round. A command captured in a waiting/pause gap is rejected, including after
+  resumption. A command captured in a new resumed round counts only there.
+  A replay never activates a group, creates an inactive round, moves eligibility
+  or extends a cutoff. Return a visible inactive-period rejection for a gap.
+- After archival, reject **all previously uncommitted check-in writes**, including
+  pre-archive captures still within grace; the archive is read-only and its
+  accepted scores stay frozen. First look up the caller's matching committed
+  receipt: replaying an already-committed command may return its minimal original
+  outcome without a mutation, even after pause/archive/leave. A new command UUID
+  or changed payload is not that exception. This is the explicit archive limit
+  on the general late-sync grace, not an implicit reopening of history.
 - Server serializes the natural-key row. Same desired state is idempotent;
   opposing states with a stale base revision return a conflict/current state.
   Keep the unsent intent visible; offer an explicit new attempt, never auto-
@@ -184,12 +306,12 @@ database, not just the UI. Do not change personal goals/events/notes/diary rules
 | Table | Important fields and constraints |
 | --- | --- |
 | `shared_profiles` | `user_id` FK to auth; case-normalized unique handle (proposed ASCII letters/digits/underscore, 3–24), display_name 1–80; timestamps. No email/password/public auth metadata. Own updates only; handles immutable for this branch. |
-| `shared_groups` | id, owner_id, name 1–120, allowlisted icon, template gym/custom, schedule kind, weekday array or N, IANA zone, round weekday, first_round_date, publication draft/published/archived, timestamps/revision/deleted_at. Derive waiting/active/paused from publication, group-local time and current eligible membership; do not require a cron job to flip a flag at midnight. CHECK the mutually exclusive schedule shapes; distinct weekday values 0–6/nonempty; N 1–7. Trigger validates zone, anchor weekday, immutable published rules, owner membership and lifecycle. |
-| `shared_memberships` | id (membership epoch), group_id, user_id, joined_at, eligible_round, left_at, timestamps/revision/deleted_at; partial UNIQUE(group_id,user_id) for an open membership. Group/user/epoch immutable; eligible_round on a group boundary. Active owner must be a joined member. Capacity and last-owner invariants require locked RPC/trigger checks, not a cross-row CHECK. |
+| `shared_groups` | id, owner_id, name 1–120, allowlisted icon, template gym/custom, schedule kind, weekday array or N, IANA zone, round weekday, nullable first_round_date/published_at, nullable archived_at, publication draft/published/archived, timestamps/revision/deleted_at. Draft proposal is not first_round_date. Publication writes confirmed first_round_date and published_at once; archived_at is write-once/terminal and may exist for an unpublished discarded draft. Enforce paired publication facts, archive >= publication when present, and immutable confirmed anchor/zone/schedule. Derive scored slots/cutoffs and waiting/active/paused from historical facts as in section 3, not today's count or a cron flag. CHECK the mutually exclusive schedule shapes; distinct weekday values 0–6/nonempty; N 1–7. Trigger validates zone, anchor weekday, owner membership and lifecycle. |
+| `shared_memberships` | id (membership epoch), group_id, user_id, joined_at, eligible_round, left_at, initial_gym_target (2–7 for Gym; null for Custom), timestamps/revision/deleted_at; partial UNIQUE(group_id,user_id) for an open membership. The draft creator alone may have null eligible_round; publication sets it once and materializes the initial Gym target at the confirmed first round. Accepted published joins get boundary eligibility and initial target atomically. Group/user/epoch/join time immutable; published eligibility immutable; leave timestamp write-once and server-assigned. Preserve epochs to reconstruct old rosters/pauses. Active owner must be a joined member. Capacity and last-owner invariants require locked RPC/trigger checks, not a cross-row CHECK. |
 | `shared_targets` | id, membership_id, effective_round, target smallint 2–7, timestamps/revision/deleted_at; UNIQUE(membership_id,effective_round). Gym only, own target only; initialize on join, changes restricted to next round. Custom target derives from the fixed shared schedule. Old effective records survive subsequent changes. |
 | `shared_invites` | id, group_id, inviter_id, recipient_id nullable, kind direct/link, state pending/accepted/declined/revoked, expires_at, timestamps/revision; one live direct invite per group/recipient. “Live” expiry is checked transactionally; do not put volatile now() into an index predicate. Recipient cannot be owner/already joined; targeted reservation release and acceptance are atomic. |
 | `private.shared_invite_tokens` | invite_id FK, unique token digest, token version; no API schema exposure, SELECT or raw-token persistence. A direct invite has a recipient; a generic token is capacity-limited and reusable until expiry/revocation. Proposed TTL seven days; issuer can rotate/revoke. |
-| `shared_checkins` | id, group_id, user_id, membership_id, checkin_date, completed boolean, created_at/updated_at, revision; UNIQUE(group_id,user_id,checkin_date), including false states. Compound FK/trigger ensures membership belongs to that same group/user. Changing group/user/day forbidden. Uncheck sets completed=false; never use sync tombstone undelete for undo. |
+| `shared_checkins` | id, group_id, user_id, membership_id, checkin_date, completed boolean, validated captured_at of the latest accepted state, created_at/updated_at, revision; UNIQUE(group_id,user_id,checkin_date), including false states. Compound FK/trigger ensures membership belongs to that same group/user; RPC validates captured_at's group-local day and membership in the original scored-round activity interval. Changing group/user/day forbidden. Uncheck sets completed=false; never use sync tombstone undelete for undo. |
 | `private.shared_command_receipts` | actor_id + command_id primary/unique, operation, request digest, minimal outcome, committed time. Bounded payloads; no invite token bodies. Required for replay after lost replies. Retention must exceed the replay window; server date/age validation must reject expired commands before any eventual receipt cleanup can allow reapplication. |
 | `private.shared_rate_limits` | actor/scope/operation/window key, count and expiry; transactional bounded counters for invite issue, exact-handle lookup and failed redemption. No client read/write grants; generic invalid tokens are not retained as raw keys. |
 
@@ -209,6 +331,11 @@ identity always comes from auth.uid(); never trust an actor/user supplied by the
 client. RPCs validate every field and role even when executed with elevated
 table privileges. Network failures return retryable outcomes; full/expired,
 ineligible, conflict and forbidden are distinct product outcomes.
+Publication additionally returns confirmation-required if the expected date or
+draft revision is stale; this outcome is not a successful publication. Lifecycle
+and check-in writes share the group lock so an archive/leave cannot race a new
+write past its cutoff. After a committed-receipt lookup, apply current archival
+and membership rules before any unseen command can mutate data.
 
 ## 5. RLS, tokens and scoring
 
@@ -265,14 +392,23 @@ granting approved entry points ([Supabase database functions](https://supabase.c
 
 Propose `shared_goal_round_scores`, keyed by group, round_start and membership
 epoch, returning user display identity, round start/end, effective target,
-completed_days, numeric adherence_pct, is_at_least_70, rank and status. Generate
-bounded rounds from first start through current round, not indefinitely into the
-future. The app requests current plus a paginated history range; inspect plans
-and index use for long-lived groups before accepting the query.
+completed_days, numeric adherence_pct, is_at_least_70, rank and status, plus
+activity_start/activity_end and end reason. Build candidate slots only through
+the earlier of read time and archival, then include **only the exact scored-round
+set in section 3**. In particular, the first published date alone does not create
+a score row, an inactive gap contributes no zeroes, and archival cannot add later
+rounds on future reads. Use historical epoch facts to form each boundary roster
+and its cutoff, not current open-member filters. The app requests current plus a
+paginated history range; inspect plans and index use for long-lived groups before
+accepting the query.
 
 For each eligible member/round, count unique completed check-in dates in the
 seven-date interval, respecting schedule and membership eligibility. Start from
-the round roster and LEFT JOIN check-ins so zero completions are included.
+that scored round's fixed boundary roster and LEFT JOIN check-ins so legitimate
+zero completions are included. Validate/count captured instants only inside
+[activity_start,activity_end); a check-in's date alone cannot prove that a
+mid-day pause/archive allowed it. An interrupted round keeps its original full
+target and is labelled ended early; no prorated or synthetic inactive-day score.
 Find the latest Gym target effective <= that round, never the current target
 applied backwards. Custom derives its common denominator from schedule.
 
@@ -285,6 +421,8 @@ Competition ranks share ties by adherence; stable display ordering may use done
 count then user ID, but does not give extra rank credit above 100%. History names
 all tied leaders. Do not penalize pre-join days or erase a leaver from past
 rosters. Late accepted check-ins recompute the affected round within replay grace.
+That correction applies only before archival and to a historically active
+interval. Receipt-only acknowledgement after archival never recomputes scores.
 
 ## 6. Client, persistence and integration
 
@@ -345,6 +483,8 @@ approved:
    multi-session concurrency test runner/instructions, matching manual types in
    `lib/database.types.ts`, and `docs/shared-goals-data.md`. No shared UI yet.
    Include all constraints, RPCs, RLS, scoring view and rate/receipt rules above.
+   Prove publication-date confirmation, persisted lifecycle facts and the exact
+   scored-round set/cutoffs with the five review scenarios below.
    SQL tests are self-contained for owner-run local/scratch Supabase, with
    isolated fixtures/rollback and no destructive historical cleanup migration.
    Embedded migration copies, if used for SQL-editor portability, get a byte-
@@ -361,8 +501,9 @@ approved:
    four-step wizard, Copy/link paste, signed-out deferral, pending/declined/full/
    expired/revoked states and strict routing. Gate: two local test accounts create
    and join Gym/Custom, target bounds/weekday validation, idempotent retry, no
-   accidental join, keyboard options/Back/Enter/Escape and title focus after
-   route mount. No unauthenticated group-data preview.
+   accidental join, expired proposal → updated date → explicit publication
+   confirmation, keyboard options/Back/Enter/Escape and title focus after route
+   mount. No unauthenticated group-data preview.
 4. **Shared overview/detail.** Add Shared summary/cards and all detail panels,
    current check-in and undo, Gym pending split, membership state, history,
    leave/owner-transfer/archive. Gate: server score parity across all surfaces,
@@ -388,8 +529,8 @@ approved:
 | Schema/RLS | Apply/re-run without losing new or existing records. Real authenticated roles for member, pending recipient, stranger, former member and anon; cross-group ID guessing, arbitrary actor, direct DML, profile enumeration and view/nested-view access denied. Definer authorization tested directly; direct table policy checks alone do not prove RPC safety. |
 | Capacity/transactions | 2 and 8 accepted/reserved people; ninth rejected; duplicate invite/join; owner cannot disappear. Race two joins for final seat and join against revoke/leave/transfer in separate local sessions; exactly one legal outcome, no partial membership/target. |
 | Check-ins/conflicts | Same group/person/day stays one row across devices/retries/uncheck/recheck; different group/day/person independent. Immutable identity; stale opposite-state conflict; repeated same-state command idempotent; timeout-after-commit replay, body mismatch, older intent cannot overwrite newer confirmed revision; no tombstone resurrection. |
-| Dates/targets | Every weekday anchor, Sunday/Monday/Saturday preference defaults, month/year/leap boundaries, UTC-midnight mismatch, DST gap/fold, traveler in another zone, joins immediately before/at/after a boundary. Next-round Gym change leaves current/history unchanged; late join never counts earlier missed days. |
-| Scoring SQL | Gym 0/2=0, 1/2=50, 2/2=100, 3/2 capped; 2/3 grey, 5/7 green; exact 70 predicate; Custom every/specific/N; denominator snapshots; zeros not dropped by joins; pending excluded; all ties and group average of capped personal ratios; no client-injected score. |
+| Dates/targets | Every weekday anchor, Sunday/Monday/Saturday preference defaults, month/year/leap boundaries, UTC-midnight mismatch, DST gap/fold, traveler in another zone, joins immediately before/at/after a boundary. Final publication revalidates the displayed first date; stale/midnight-crossing proposals cannot silently publish. Next-round Gym change leaves current/history unchanged; late join never counts earlier missed days. |
+| Scoring SQL | Gym 0/2=0, 1/2=50, 2/2=100, 3/2 capped; 2/3 grey, 5/7 green; exact 70 predicate; Custom every/specific/N; denominator snapshots; zeros not dropped for an activated roster; no rows for pre-activation/pause gaps or post-archive starts; pending/next-round members excluded; all ties and group average of capped personal ratios; no client-injected score. |
 | Offline/storage | Real IndexedDB reload and cache upgrade preserve four personal collections and outbox; failed open/quota/flush stays visible; persist-before-success; quit barrier; signed-out/account-switch responses ignored. Replay across midnight/round change, past grace, lost membership, archived group and missing migration. Never move captured check-in date. |
 | Links | Strict parse rejects extra hosts/paths, malformed/oversized token, duplicate/unknown query fields and embedded auth-token tricks; valid warm/cold link → auth if needed → preview → explicit join. Existing auth/Notes/Diary links still work. Full/revoked/expired/wrong-recipient links cannot expose roster/check-ins. |
 | UI/accessibility | Every approved GS/GD/GC state plus loading/error/queued/paused cases; true keyboard focus on list/radio/control, not click-through substitutes; visible focus, correct name/role/state, focus after mount/back/close, no shortcut under modal/text input, live blocked-submit message. No header/footer/popover clipping at all widths. |
@@ -399,6 +540,28 @@ Logic tests cover mappers, date/eligibility helpers, snapshot reconciliation,
 outbox state transitions and widget projections with real values/stores. SQL
 and local RPC integration cover server scoring/security/concurrency. Do not
 write mock-behavior tests or substitute mocked Supabase for RLS verification.
+
+### Lifecycle acceptance scenarios added by plan review
+
+These are required future SQL/local integration and UI checks, not tests already
+run. Use fixed server times in Asia/Riyadh and Monday boundaries, and assert the
+exact round-key set, eligibility, cutoffs, score rows and RPC outcomes. Other
+zones/DST cases in the main matrix still apply.
+
+| Scenario | Required result |
+| --- | --- |
+| **Sunday draft; Wednesday publication after the proposed start.** Draft on Sunday 18 October 2026 displays Monday 19 October. Publish is attempted Wednesday 21 October using that displayed date. | Server returns confirmation-required with Monday 26 October; published_at/first_round_date remain null and no eligibility/target/scored round is initialized. User sees/reconfirms 26 October. Successful publication freezes 26 October and initializes the creator's eligibility/target there, never 19 October. Another date/revision change before confirmation requires confirmation again. Lost-reply retry after success returns the same committed publication without recalculating it. |
+| **Waiting across multiple boundaries.** Published Wednesday 14 October with first anchor 19 October and only A joined. Boundaries 19 October, 26 October and 2 November pass. B accepts Wednesday 4 November, eligible 9 November. | No scored rounds, ranks, zero-percent history or group averages for 19/26 October or 2 November; still waiting, including after B accepts on 4 November. First activation/score roster is A+B on 9 November. Anchor stays 19 October; no retrospective scoring or mid-slot activation. |
+| **Archive, then read weeks later.** A+B activate 19 October; group archived Wednesday 21 October at 12:00. Read again Monday 16 November. | Only the 19 October round exists, with A+B's original targets and activity cutoff 21 October 12:00, marked archived early. No rounds for 26 October or 2/9/16 November; scores/keys/cutoff unchanged by later reads. An archive exactly at 26 October 00:00 excludes the 26 October round; archiving a never-activated waiting group yields no scored rows. |
+| **Two eligible; one leaves; third accepted but not eligible.** R_19Oct={A,B}; C accepts Tuesday 20 October with eligibility 26 October. B leaves Wednesday 21 October at 12:00. | Accepted count after leave is two (A+C), but remaining current-round eligible count is one: pause at 21 October 12:00. Keep the 19 October history roster A+B and their full targets. C neither activates the group nor enters that roster. No live check-ins for A/C during the gap. Resume only at 26 October 00:00 with roster A+C if both still joined. If C leaves before then, no 26 October score round. |
+| **Offline replay across pause/resume/archive.** Using the preceding lifecycle, A retains access. A's uncommitted 20 October active-interval check-in arrives 22 October while paused; another command was captured 22 October in the gap. Reconnect again on 26 October after resumption, then archive 27 October. | Accept the 20 October command while paused if within grace/version rules; it updates only the existing 19 October round and does not resume anything. Reject the 22 October gap command both during pause and after resumption. Accept a 26 October capture only in the new resumed round. After 27 October archive, reject every unseen queued mutation even if captured before archive and within grace. An already-committed command's exact receipt retry returns its original minimal outcome without changing any score, roster or cutoff. A former epoch cannot replay through a later rejoin. |
+
+Also test captured instants exactly at pause/archive/next-boundary cutoffs:
+the preceding interval excludes its end. A new boundary belongs only to its
+qualifying new round; midnight acceptance cannot make itself eligible there.
+Assert zero-completion rows for a legitimately activated roster, distinguishing
+them from completely absent rows for inactive slots. Snapshot/Today/widget
+projections must preserve these distinctions, not fabricate a current 0% rank.
 
 Required Windows checks before each commit, including this plan commit:
 
@@ -414,7 +577,9 @@ Required Windows checks before each commit, including this plan commit:
 **Checkpoint now:** approve/amend this document before any application code or
 migration. Please resolve the proposed defaults, especially:
 
-1. Fixed creator-zone rounds and strictly-next first start; join-next-round rule.
+1. Fixed creator-zone rounds and strictly-next first start revalidated/confirmed
+   at publication; exact eligibility-based scored-round set and cutoffs above.
+   Join-next-round, inactive gaps and archival must not create phantom scores.
 2. Waiting one-owner drafts/link-only publish versus the 2–8 minimum; targeted
    reservations counting toward capacity, no reservation for generic links.
 3. Seven-day token TTL, membership-only roster/target visibility, and the reduced
@@ -424,8 +589,9 @@ migration. Please resolve the proposed defaults, especially:
    redeems/minute/actor, plus per-group invitation caps; durable server limits).
 5. Seven-day offline replay grace, stale opposing-intent conflicts and provisional
    history, instead of silently dropping offline check-ins at midnight.
-6. Immediate leave/revoked access, frozen round history, pause below two and owner
-   transfer/archive; no member-removal feature in this branch.
+6. Immediate leave/revoked access, frozen historical rosters, pause below two
+   **eligible** members of the current roster, boundary-only resume and terminal
+   archive; owner transfer/archive and no member-removal feature in this branch.
 7. Personal completion remains independent unless explicit linking is approved;
    read-only shared rows in existing Progress widgets, not a new widget type.
 8. Literal green token across themes rather than the design's accent colors.
@@ -436,7 +602,7 @@ checkpoint** is step 1's local-tested schema/RLS/scoring contract, reviewed befo
 client/UI work. The current task stops with this plan; no migrations, schema
 execution, application changes, native launch or visual acceptance are claimed.
 
-## Planning checkpoint verification
+## Planning checkpoint verification (initial plan at 32e268b)
 
 Only this document and HANDOFF were changed. Baseline Windows checks passed:
 frozen install; npx in offline mode running tsc --noEmit in desktop/widgets/
@@ -444,3 +610,11 @@ calendar; desktop 375 and calendar 184 tests; both production builds; both
 cargo check --offline runs. Existing desktop main-chunk warning remains. No
 branch-3 logic, SQL/RLS, local Supabase, native runtime or visual test was run:
 those are acceptance work proposed above, not evidence already obtained.
+
+Lifecycle documentation revision verification (24 October 2026): only this plan
+and HANDOFF changed. Reran frozen install, all three TypeScript checks (npx
+offline), desktop 375 + calendar 184 tests, both production builds, and both
+Windows cargo check --offline runs; all passed, with the existing desktop chunk
+warning. Reviewed the lifecycle definitions and verified the scenario weekday
+dates. No lifecycle implementation, SQL, native/UI or backend test was run; the
+new scenario matrix remains a requirement for the first implementation checkpoint.

@@ -1,6 +1,33 @@
 # Handoff: branch 3 plan prepared — STOP for plan review
 
-## Current branch-3 decision and next action (24 October 2026)
+## Current lifecycle-plan revision (24 October 2026)
+- Revised docs/shared-goals-plan.md after review of 32e268b; all other proposed
+  defaults retained. Still documentation only: no application code, migrations,
+  schema execution or new feature acceptance has been performed.
+- Draft start dates are provisional. Final publication recomputes under the
+  group lock against server group-local time and compares the displayed date/
+  draft revision; stale proposals require visible renewed confirmation before
+  published_at/first_round_date and initial eligibility/targets are frozen.
+- Defined candidate slots versus scored rounds, boundary rosters, earliest pause
+  cutoff and terminal archive cutoff. Persist publication/archive timestamps and
+  immutable membership join/eligibility/leave epochs to reconstruct history.
+  Capacity counts accepted members/reservations; activation/resume counts only
+  eligible boundary members. Next-round joiners cannot fill a current eligibility
+  gap. No score rows for waiting/paused slots, and none start at/after archive.
+- Already-started rounds keep historical rosters/full targets and end early on
+  pause/archive. Offline replay may settle a pre-pause active-interval intent
+  within existing grace while the original epoch still has access; gap intents
+  stay rejected after resume. Archive rejects unseen writes; exact committed
+  receipt retries only acknowledge prior results without mutation.
+- Added the five requested acceptance scenarios plus exact cutoff cases, and
+  aligned the schema/view/client acceptance contracts. These scenarios are
+  planned evidence for the first implementation checkpoint, not tests run now.
+- Required baseline checks rerun and passed: frozen install; TypeScript in all
+  three packages (npx offline); desktop 375 + calendar 184 tests; both production
+  builds; both Windows cargo check --offline checks. Existing desktop chunk-size
+  warning only. STOP for plan review after the documentation commit/push.
+
+## Initial branch-3 planning checkpoint (24 October 2026; historical)
 - Branch 2 is approved and squash-merged into main as aa7f69a. Fetched origin and
   confirmed origin/main and local main at aa7f69afedf9943ba94590e578a0dde5e66ee028.
   Created feat/shared-goals directly from origin/main; no feature re-merge.
