@@ -12,7 +12,10 @@ describe("WriteQueue", () => {
   it("holds one latest snapshot per id", () => {
     const q = new WriteQueue(memoryStore(), KEY);
     q.put("goals", snap("a", "2026-10-16T09:00:00.000Z"));
-    q.put("goals", snap("a", "2026-10-16T09:00:01.000Z", "2026-10-16T09:00:01.000Z"));
+    q.put(
+      "goals",
+      snap("a", "2026-10-16T09:00:01.000Z", "2026-10-16T09:00:01.000Z"),
+    );
     expect(q.entries("goals")).toHaveLength(1);
     expect(q.get("goals", "a")?.deleted_at).toBe("2026-10-16T09:00:01.000Z");
   });
@@ -30,7 +33,12 @@ describe("WriteQueue", () => {
   it("survives a restart", () => {
     const store = memoryStore();
     new WriteQueue(store, KEY).put("events", {
-      id: "e", user_id: USER, title: "x", date: "2026-10-16", start_time: "09:00", end_time: "10:00",
+      id: "e",
+      user_id: USER,
+      title: "x",
+      date: "2026-10-16",
+      start_time: "09:00",
+      end_time: "10:00",
       updated_at: "2026-10-16T09:00:00.000Z",
     });
     const reloaded = new WriteQueue(store, KEY);
@@ -50,7 +58,12 @@ describe("WriteQueue", () => {
     q.retryFailed();
     expect(q.pendingCount).toBe(1);
     q.fail("goals", s, "bad");
-    expect(q.discardFailed()).toEqual({ goals: ["a"], events: [] });
+    expect(q.discardFailed()).toEqual({
+      goals: ["a"],
+      events: [],
+      notes: [],
+      diary_entries: [],
+    });
     expect(q.isHeld("goals", "a")).toBe(false);
   });
 
@@ -74,8 +87,9 @@ describe("WriteQueue", () => {
     expect(q.pendingCount).toBe(1);
   });
 
-  it("starts empty from corrupt storage", () => {
-    const q = new WriteQueue(memoryStore({ [KEY]: "{not json" }), KEY);
-    expect(q.pendingCount).toBe(0);
+  it("refuses corrupt storage without erasing the original queue", () => {
+    const store = memoryStore({ [KEY]: "{not json" });
+    expect(() => new WriteQueue(store, KEY)).toThrow("retained");
+    expect(store.get(KEY)).toBe("{not json");
   });
 });

@@ -1,13 +1,24 @@
-import { createContext, useContext, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { PlannerSync, type SyncStatus } from "@/lib/sync/engine";
-import { browserStore } from "@/lib/sync/storage";
+import { IndexedDbStore, storageErrorMessage } from "@/lib/sync/indexedDbStore";
 import { SYNC_TOAST_IDS, decideSyncToast } from "@/lib/sync/toastPolicy";
 import { createSupabaseRemotes } from "@/lib/sync/supabaseRemote";
-import { requestWidgetExport } from "@/lib/widgetExportBus";
+import {
+  requestWidgetExport,
+  setWidgetExportStore,
+  setWidgetExportUser,
+} from "@/lib/widgetExportBus";
 
 // The signed-in user as of right now. Flushes and pulls check it after every
 // request and drop their results if it changed underneath them.
@@ -21,38 +32,107 @@ const SyncContext = createContext<PlannerSync | null>(null);
  */
 export function SyncProvider({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
-  const userId = loading ? null : user?.id ?? null;
+  const userId = loading ? null : (user?.id ?? null);
   const [engine, setEngine] = useState<PlannerSync | null>(null);
+  const [openError, setOpenError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     activeUserId = userId;
+    setEngine(null);
+    setOpenError(null);
+    setWidgetExportStore(userId, null);
+    setWidgetExportUser(userId);
     if (!userId) {
       setEngine(null);
       return;
     }
-    const next = new PlannerSync({
-      userId,
-      store: browserStore,
-      remotes: isSupabaseConfigured ? createSupabaseRemotes(userId) : null,
-      currentUserId: () => activeUserId,
-      onCacheWrite: requestWidgetExport,
-      // One toast per burst: sonner replaces a toast that has the same id.
-      onServerWon: (table, outcome) => {
-        const what = table === "goals" ? "A goal" : "An event";
-        toast.info(
-          outcome === "deleted" ? `${what} was deleted on another device` : `${what} was changed on another device`,
-          { id: "sync-server-won", description: "That version was newer, so it replaced your edit here." },
-        );
-      },
-    });
-    next.load();
-    next.start();
-    setEngine(next);
+    let cancelled = false;
+    let next: PlannerSync | null = null;
+    let store: IndexedDbStore | null = null;
+    void (async () => {
+      try {
+        store = await IndexedDbStore.create(userId);
+        if (cancelled) {
+          await store.close();
+          return;
+        }
+        next = new PlannerSync({
+          userId,
+          store,
+          remotes: isSupabaseConfigured ? createSupabaseRemotes(userId) : null,
+          currentUserId: () => activeUserId,
+          onCacheWrite: requestWidgetExport,
+          // One toast per burst: sonner replaces a toast that has the same id.
+          onServerWon: (table, outcome) => {
+            const what =
+              table === "goals"
+                ? "A goal"
+                : table === "events"
+                  ? "An event"
+                  : table === "notes"
+                    ? "A note"
+                    : "A diary entry";
+            toast.info(
+              outcome === "deleted"
+                ? `${what} was deleted on another device`
+                : `${what} was changed on another device`,
+              {
+                id: "sync-server-won",
+                description:
+                  "That version was newer, so it replaced your edit here.",
+              },
+            );
+          },
+        });
+        next.load();
+        await store.flush();
+        if (cancelled) {
+          next.dispose();
+          await store.close();
+          return;
+        }
+        setWidgetExportStore(userId, store);
+        next.start();
+        setEngine(next);
+      } catch (error) {
+        next?.dispose();
+        if (!cancelled) setOpenError(storageErrorMessage(error));
+        // Failed writes remain in the store's pending batch. Do not claim
+        // success or remove the legacy cache when opening fails.
+      }
+    })();
     return () => {
+      cancelled = true;
       if (activeUserId === userId) activeUserId = null;
-      next.dispose();
+      setWidgetExportStore(null, null);
+      next?.dispose();
+      if (store) void store.close().catch(() => {});
     };
-  }, [userId]);
+  }, [userId, attempt]);
+
+  if (userId && (!engine || engine.userId !== userId))
+    return (
+      <main
+        className="min-h-screen flex items-center justify-center p-6"
+        aria-busy={!openError}
+      >
+        {openError ? (
+          <div role="alert" className="max-w-lg space-y-3">
+            <p>{openError}</p>
+            <button
+              type="button"
+              className="rounded border p-2 focus-visible:outline-2"
+              onClick={() => setAttempt((value) => value + 1)}
+            >
+              Retry opening local storage
+            </button>
+          </div>
+        ) : (
+          <p role="status">Opening your saved planner…</p>
+        )}
+      </main>
+    );
 
   return (
     <SyncContext.Provider value={engine}>
@@ -67,7 +147,13 @@ export function useSyncEngine(): PlannerSync | null {
   return useContext(SyncContext);
 }
 
-const NO_ENGINE_STATUS: SyncStatus = { state: "idle", pending: 0, failed: 0, lastError: null, lastSyncedAt: null };
+const NO_ENGINE_STATUS: SyncStatus = {
+  state: "idle",
+  pending: 0,
+  failed: 0,
+  lastError: null,
+  lastSyncedAt: null,
+};
 const noopSubscribe = () => () => {};
 
 export function useSyncStatus(): SyncStatus {
@@ -93,7 +179,19 @@ function SyncErrorToasts({ engine }: { engine: PlannerSync }) {
     if (!t) return;
     // Only one kind of sync toast at a time.
     for (const id of SYNC_TOAST_IDS) if (id !== t.id) toast.dismiss(id);
-    if (t.id === "sync-offline") {
+    if (t.id === "sync-storage") {
+      toast.error("Recent edits could not be saved on this device", {
+        id: t.id,
+        description: t.message,
+        duration: Infinity,
+        action: {
+          label: "Retry saving",
+          onClick: () => {
+            void engine.flush();
+          },
+        },
+      });
+    } else if (t.id === "sync-offline") {
       toast.warning("Sync paused", {
         id: t.id,
         description: `${t.message}. Your changes are saved on this device and will sync when the connection is back.`,
@@ -110,8 +208,18 @@ function SyncErrorToasts({ engine }: { engine: PlannerSync }) {
         id: t.id,
         description: `${t.message}. They are still on this device. Retry, or delete ${n === 1 ? "it" : "them"} from this device (anything never uploaded is lost).`,
         duration: Infinity,
-        action: { label: "Retry", onClick: () => { void engine.retryFailed(); } },
-        cancel: { label: `Delete ${items} from this device`, onClick: () => { void engine.discardFailed(); } },
+        action: {
+          label: "Retry",
+          onClick: () => {
+            void engine.retryFailed();
+          },
+        },
+        cancel: {
+          label: `Delete ${items} from this device`,
+          onClick: () => {
+            void engine.discardFailed();
+          },
+        },
       });
     }
   }, [engine, status]);

@@ -17,18 +17,22 @@ import { WIDGET_LABELS, type WidgetConfig } from "@/lib/widgetConfig";
 import { IconCheck } from "../shell/Icons";
 import { Calendar, Clock, LayoutGrid, Sun, Target } from "lucide-react";
 
+import JournalPreview from "./JournalPreview";
+
 const PREVIEW_ICONS = {
   tasks: LayoutGrid,
   events: Clock,
   progress: Target,
   calendar: Calendar,
   dayview: Sun,
+  notes: LayoutGrid,
+  diary: Calendar,
 };
 
 export default function WidgetPreview({
   widget,
 }: {
-  widget: Pick<WidgetConfig, "theme" | "type" | "translucent">;
+  widget: Pick<WidgetConfig, "theme" | "type" | "translucent" | "noteStyle">;
 }) {
   const now = useNow(),
     prefs = usePrefs(),
@@ -36,7 +40,7 @@ export default function WidgetPreview({
     { getEventsForDate } = useEvents();
   const today = format(now, "yyyy-MM-dd"),
     due = goalsForDay(goals, now);
-  const dayEvents = splitDay(getEventsForDate(today));
+  const dayEvents = splitDay(getEventsForDate(today), today);
   const events = [
     ...dayEvents.allDay,
     ...dayEvents.timed.map((item) => item.event),
@@ -51,16 +55,11 @@ export default function WidgetPreview({
       const start = parseClock(goal.time);
       return start === null ? [] : [{ id: goal.id, start }];
     }),
-    events
-      .filter((event) => !event.allDay)
-      .map((event) => ({
-        id: event.id,
-        start: parseClock(event.startTime) ?? 0,
-        end: parseClock(event.endTime) ?? 0,
-      })),
+    dayEvents.timed.map(({id,start,end}) => ({id,start,end})),
     nowMin,
     { height: 280, taskHeight: 28 },
   );
+  if(widget.type === "notes" || widget.type === "diary") return <JournalPreview widget={widget}/>;
   return (
     <div
       className="widget-preview-stage"
@@ -250,7 +249,7 @@ export default function WidgetPreview({
             ))}
             {timeline.items.map((item) => {
               const goal = due.find((goal) => goal.id === item.id),
-                event = events.find((event) => event.id === item.id);
+                event = dayEvents.timed.find((event) => event.id === item.id)?.event;
               return (
                 <div
                   key={`${item.kind}:${item.id}`}

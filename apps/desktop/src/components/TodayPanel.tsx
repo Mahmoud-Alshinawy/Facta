@@ -203,11 +203,11 @@ export default function TodayPanel({ onNewEvent, onEditEvent }: TodayPanelProps)
                   <EventRow key={e.id} event={e} times={["All day"]} meta={e.description} onClick={() => onEditEvent(e)} />
                 ))}
                 {timeline.timed.map((t, i) => (
-                  <Fragment key={t.event.id}>
+                  <Fragment key={t.id}>
                     {i === timeline.nowIndex && <NowMarker now={now} />}
                     <EventRow
                       event={t.event}
-                      times={[t.event.startTime, t.event.endTime]}
+                      times={[t.startTime, t.endTime]}
                       dimmed={t.status === "ended"}
                       meta={[
                         formatDuration(t.minutes),

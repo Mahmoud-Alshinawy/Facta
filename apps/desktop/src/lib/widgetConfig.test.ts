@@ -46,8 +46,8 @@ describe("widget configuration compatibility", () => {
         widgets: [
           null,
           1,
-          { id: "notes", type: "notes" },
-          { id: "diary", type: "diary" },
+          { id: "future", type: "future" },
+          { id: "lock", type: "lock" },
           { id: "", type: "tasks" },
           { id: "same", type: "tasks" },
           { id: "same", type: "events" },
@@ -58,3 +58,9 @@ describe("widget configuration compatibility", () => {
     expect(parseWidgetConfig({ widgets: "bad" })).toEqual([]);
   });
 });
+
+ it("round-trips Sticky/Stack and Diary while defaulting old Notes configurations",()=>{
+   const widgets=parseWidgetConfig({widgets:[{id:"s",type:"notes",noteStyle:"stack"},{id:"p",type:"notes"},{id:"d",type:"diary"}]});
+   expect(widgets.map(w=>w.noteStyle)).toEqual(["stack","sticky",undefined]);
+   expect(parseWidgetConfig(JSON.parse(widgetConfigJson(widgets)))).toEqual(widgets);
+ });

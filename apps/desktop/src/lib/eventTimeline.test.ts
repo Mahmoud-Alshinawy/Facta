@@ -8,6 +8,12 @@ const ev = (title: string, startTime: string, endTime: string, over: Partial<Cal
 const at = (hh: number, mm: number) => new Date(2026, 9, 17, hh, mm);
 
 describe("buildTimeline", () => {
+  it("uses today's clipped times and leaves the editable record intact",()=>{
+    const e=ev("Trip","20:00","09:00",{date:"2026-10-16",endDate:"2026-10-18"});
+    const timeline=buildTimeline([e],at(13,0));
+    expect(timeline.timed[0]).toMatchObject({event:e,startTime:"00:00",endTime:"24:00",status:"now",minutes:1440,minutesAway:660});
+    expect(e.startTime).toBe("20:00");
+  });
   const events = [
     ev("meeting", "16:00", "17:00"),
     ev("lecture", "10:00", "11:30"),

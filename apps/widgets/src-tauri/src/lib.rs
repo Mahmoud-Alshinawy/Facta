@@ -270,9 +270,16 @@ fn quit_app(app: tauri::AppHandle, state: tauri::State<WidgetState>) {
 }
 
 #[tauri::command]
-fn open_main_app(app: tauri::AppHandle) -> Result<(), String> {
+fn open_main_app(app: tauri::AppHandle, section: Option<String>, note_id: Option<String>) -> Result<(), String> {
+    let mut url = "facta://focus".to_string();
+    if let Some(section) = section.filter(|s| s == "notes" || s == "diary") {
+        url.push_str(&format!("?section={}", section));
+        if let Some(id) = note_id.filter(|id| id.len() == 36 && id.chars().all(|c| c.is_ascii_hexdigit() || c == '-')) {
+            url.push_str(&format!("&note={}", id));
+        }
+    }
     app.opener()
-        .open_url("facta://focus", None::<&str>)
+        .open_url(url, None::<&str>)
         .map_err(|e| e.to_string())
 }
 
@@ -348,15 +355,15 @@ fn write_action(action_json: String) -> Result<(), String> {
             return Err(msg);
         }
         let mut contents = String::new();
-        // Read may fail on a fresh empty file; treat as empty queue.
+        // Preserve the existing file if reading fails. A fresh empty file parses below.
         if let Err(e) = file.read_to_string(&mut contents) {
-            let msg = format!("read_to_string failed (treating as empty queue): {}", e);
+            let msg = format!("read_to_string failed (queue retained): {}", e);
             log(&msg);
             eprintln!("[WidgetAction] {}", msg);
-            contents = String::new();
+            return Err(msg);
         }
-        let mut actions: Vec<serde_json::Value> =
-            serde_json::from_str(&contents).unwrap_or_default();
+        let mut actions: Vec<serde_json::Value> = if contents.trim().is_empty() { Vec::new() }
+            else { serde_json::from_str(&contents).map_err(|e| format!("Invalid widget queue; original retained: {}", e))? };
 
         // De-dup: skip if the same action id is already queued.
         if let Some(id) = action.get("id").and_then(|v| v.as_str()) {
@@ -399,7 +406,8 @@ fn write_action(action_json: String) -> Result<(), String> {
             log(&msg);
             eprintln!("[WidgetAction] {}", msg);
         }
-        write_result
+        write_result?;
+        file.sync_data().map_err(|e| e.to_string())
     })();
 
     let _ = file.unlock();
@@ -494,6 +502,7 @@ fn spawn_or_update_widgets(app: &tauri::AppHandle, state: &tauri::State<WidgetSt
         let enabled = w.get("enabled").and_then(|v| v.as_bool()).unwrap_or(true);
         let widget_type = w.get("type").and_then(|v| v.as_str()).unwrap_or("tasks").to_string();
         let translucent = w.get("translucent").and_then(|v| v.as_bool()).unwrap_or(true);
+        let note_style = if w.get("noteStyle").and_then(|v| v.as_str()) == Some("stack") { "stack" } else { "sticky" };
         let theme = w.get("theme").and_then(|v| v.as_str()).unwrap_or("midnight").to_string();
         
         if !enabled || id.is_empty() {
@@ -568,6 +577,7 @@ fn spawn_or_update_widgets(app: &tauri::AppHandle, state: &tauri::State<WidgetSt
             "events" => (280.0, 300.0),
             "calendar" => (260.0, 280.0),
             "dayview" => (300.0, 400.0),
+            "notes" | "diary" => (300.0, 360.0),
             _ => (280.0, 360.0),
         };
         let width = saved_pos.map(|p| p.width).unwrap_or(default_w);
@@ -576,7 +586,7 @@ fn spawn_or_update_widgets(app: &tauri::AppHandle, state: &tauri::State<WidgetSt
         // Clamp position to ensure it's visible on screen
         let (clamped_x, clamped_y) = clamp_to_monitors(x, y, width, height, &monitors);
         
-        let url = format!("/?widget={}&theme={}&translucent={}", widget_type, theme, translucent);
+        let url = format!("/?widget={}&theme={}&translucent={}&noteStyle={}", widget_type, theme, translucent, note_style);
         
         log(&format!("Creating window {} at logical ({:.1}, {:.1}) size {:.1}x{:.1}", 
             label, clamped_x, clamped_y, width, height));

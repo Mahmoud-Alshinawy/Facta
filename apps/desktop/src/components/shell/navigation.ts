@@ -3,7 +3,7 @@ export type Section = "today" | "calendar" | "goals" | "notes" | "diary" | "sett
 /** Empty follows the viewport; c/o are the user's collapsed/open overrides. */
 export type SidebarMode = "" | "c" | "o";
 export const RAIL_BREAKPOINT = 1200;
-export const HIDDEN_SECTIONS: ReadonlySet<Section> = new Set(["notes", "diary"]);
+export const HIDDEN_SECTIONS: ReadonlySet<Section> = new Set();
 
 export function nextSidebarMode(mode: SidebarMode, width: number): SidebarMode {
   const narrow = width <= RAIL_BREAKPOINT;

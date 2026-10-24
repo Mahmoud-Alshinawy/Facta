@@ -5,46 +5,38 @@ export interface KeyValueStore {
   get(key: string): string | null;
   set(key: string, value: string): void;
   remove(key: string): void;
+  /** Async durability barrier for hydrated stores; memory stores are immediate. */
+  flush?(): Promise<void>;
+  subscribeErrors?(listener: (error: unknown) => void): () => void;
 }
 
-export const browserStore: KeyValueStore = {
-  get(key) {
-    try {
-      return localStorage.getItem(key);
-    } catch {
-      return null;
-    }
-  },
-  set(key, value) {
-    localStorage.setItem(key, value);
-  },
-  remove(key) {
-    try {
-      localStorage.removeItem(key);
-    } catch {
-      // nothing to clean up if storage is unavailable
-    }
-  },
-};
-
-export function memoryStore(initial: Record<string, string> = {}): KeyValueStore & { data: Map<string, string> } {
+export function memoryStore(
+  initial: Record<string, string> = {},
+): KeyValueStore & { data: Map<string, string> } {
   const data = new Map(Object.entries(initial));
   return {
     data,
     get: (key) => data.get(key) ?? null,
-    set: (key, value) => { data.set(key, value); },
-    remove: (key) => { data.delete(key); },
+    set: (key, value) => {
+      data.set(key, value);
+    },
+    remove: (key) => {
+      data.delete(key);
+    },
   };
 }
 
-/** Parses JSON, returning the fallback on missing or corrupt data. */
+/** Missing keys use the default. Corruption must never silently erase a queue. */
 export function readJson<T>(store: KeyValueStore, key: string, fallback: T): T {
   const raw = store.get(key);
-  if (!raw) return fallback;
+  if (raw === null) return fallback;
   try {
     const parsed: T = JSON.parse(raw);
-    return parsed ?? fallback;
+    if (parsed === null) throw new Error("Invalid saved planner value");
+    return parsed;
   } catch {
-    return fallback;
+    throw new Error(
+      "Saved planner data is not valid JSON. The original data has been retained.",
+    );
   }
 }

@@ -1,10 +1,8 @@
 import type { ReactNode } from "react";
 import { createContext, createElement, useContext, useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import { toast } from "sonner";
-import { useAuth } from "@/hooks/useAuth";
 import { useSyncEngine } from "@/hooks/useSync";
 import { isExpiredOverdueGoal, toggleGoalCompletion } from "@/lib/goalDates";
-import { setWidgetExportUser } from "@/lib/widgetExportBus";
 import type { Goal, GoalCategory, GoalRepeat } from "@/types/planner";
 
 export type { Goal, GoalCategory, GoalRepeat } from "@/types/planner";
@@ -96,9 +94,6 @@ function useGoalsState() {
 const GoalsContext = createContext<ReturnType<typeof useGoalsState> | null>(null);
 
 export function GoalsProvider({ children }: { children: ReactNode }) {
-  const { user, loading } = useAuth();
-  const userId = loading ? null : user?.id ?? null;
-  useEffect(() => { setWidgetExportUser(userId); }, [userId]);
   return createElement(GoalsContext.Provider, { value: useGoalsState() }, children);
 }
 

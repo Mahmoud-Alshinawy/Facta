@@ -1,0 +1,415 @@
+.journal-widget {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  font-family: Geist, system-ui, sans-serif;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  box-shadow: 0 18px 40px color-mix(in srgb, var(--shadow-ink) 35%, transparent);
+}
+.journal-widget * {
+  box-sizing: border-box;
+}
+.journal-widget button,
+.journal-widget input,
+.journal-widget textarea {
+  font: inherit;
+  color: inherit;
+}
+.journal-widget button {
+  cursor: pointer;
+}
+.journal-widget button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.journal-widget :is(button, input, textarea):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.journal-widget.is-trans {
+  background: color-mix(in srgb, var(--surface) 48%, transparent);
+  border-color: color-mix(in srgb, var(--text) 14%, transparent);
+  box-shadow: none;
+  text-shadow: 0 1px 2px color-mix(in srgb, var(--shadow-ink) 55%, transparent);
+}
+.journal-widget.is-trans[data-theme="default"] {
+  background: color-mix(in srgb, var(--surface) 46%, transparent);
+}
+.journal-widget.is-trans[data-theme="light"] {
+  background: color-mix(in srgb, var(--surface) 74%, transparent);
+  text-shadow: none;
+}
+.journal-widget.is-trans .jw-paper {
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+}
+.jw-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font:
+    500 11px "Geist Mono",
+    monospace;
+  letter-spacing: 0.08em;
+  color: var(--subtle);
+}
+.jw-head > span:not(.jw-drag),
+.jw-head > time {
+  color: var(--text);
+  letter-spacing: 0;
+}
+.jw-drag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  cursor: grab;
+  user-select: none;
+}
+.jw-drag svg {
+  flex-shrink: 0;
+  pointer-events: none;
+}
+.jw-nav {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--subtle);
+}
+.jw-nav:hover {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--text);
+}
+.jw-sticky-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.jw-paper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 196px;
+  padding: 14px 16px 12px;
+  border-radius: 12px;
+  border-top: 4px solid var(--note-color);
+  background: var(--raised);
+}
+.jw-fold {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 20px 20px 0;
+  border-color: transparent var(--surface) transparent transparent;
+}
+.is-trans .jw-fold {
+  display: none;
+}
+.jw-field {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  resize: vertical;
+}
+.jw-field::placeholder,
+.jw-quick::placeholder,
+.jw-oneline::placeholder {
+  color: var(--subtle);
+}
+.jw-field:focus:not(:focus-visible) {
+  outline: none;
+}
+.jw-title {
+  font-size: 17px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.02em;
+}
+.jw-body {
+  flex: 1;
+  font-size: 14px !important;
+  line-height: 1.55 !important;
+  color: var(--text-2) !important;
+  min-height: 130px;
+  max-height: 40vh;
+}
+.jw-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.jw-colors {
+  display: flex;
+  gap: 6px;
+}
+.jw-dot {
+  width: 14px;
+  height: 14px;
+  border: 0;
+  border-radius: 50%;
+  padding: 0;
+}
+.jw-dot[aria-pressed="true"] {
+  box-shadow:
+    0 0 0 2px var(--surface),
+    0 0 0 3.5px var(--text);
+}
+.jw-count {
+  margin-left: auto;
+  font:
+    11px "Geist Mono",
+    monospace;
+  color: var(--subtle);
+}
+.jw-save {
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  transform: skewX(-10deg);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--control-border);
+  font-size: 11px !important;
+  font-weight: 600 !important;
+}
+.jw-save > span {
+  display: inline-flex;
+  padding: 0 9px;
+  transform: skewX(10deg);
+}
+.jw-save:hover {
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.jw-quick-form {
+  position: relative;
+}
+.jw-quick,
+.jw-oneline {
+  width: 100%;
+  height: 38px;
+  padding: 0 60px 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--control-border);
+  background: transparent;
+  color: var(--text);
+  font-size: 13px !important;
+}
+.jw-quick:focus,
+.jw-oneline:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.jw-enter {
+  position: absolute;
+  right: 8px;
+  top: 10px;
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 2px 4px;
+  background: var(--raised);
+  font:
+    10px "Geist Mono",
+    monospace !important;
+  color: var(--subtle) !important;
+}
+.jw-stack,
+.jw-past {
+  list-style: none;
+  margin: 0 -6px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.jw-note-row {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 6px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  text-align: left;
+}
+.jw-note-row:hover,
+.jw-past li:hover {
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+}
+.jw-note-stripe {
+  width: 3px;
+  flex: 0 0 auto;
+  border-radius: 2px;
+  transform: skewX(-10deg);
+}
+.jw-note-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.jw-note-copy strong {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.jw-note-copy > span {
+  font-size: 12px;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.jw-when {
+  max-width: 65px;
+  flex-shrink: 0;
+  font:
+    10px "Geist Mono",
+    monospace;
+  color: var(--subtle);
+  padding-top: 2px;
+}
+.jw-line-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.jw-oneline {
+  height: 44px;
+  padding: 0 12px;
+  font-size: 14px !important;
+}
+.jw-line-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  font:
+    10px "Geist Mono",
+    monospace;
+  color: var(--subtle);
+}
+.jw-line-footer button {
+  background: transparent;
+  border: 0;
+  border-radius: 3px;
+  padding: 3px;
+}
+.jw-section {
+  font:
+    10px "Geist Mono",
+    monospace;
+  letter-spacing: 0.08em;
+  color: var(--subtle);
+}
+.jw-past {
+  gap: 2px;
+}
+.jw-past li {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 10px;
+  padding: 8px 6px;
+  border-radius: 9px;
+}
+.jw-past li > time,
+.jw-past li > span:first-child {
+  font:
+    11px "Geist Mono",
+    monospace;
+  color: var(--subtle);
+  padding-top: 1px;
+}
+.jw-past li > span:last-child,
+.jw-past li > button {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+.jw-past li > button {
+  text-align: left;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.jw-past .is-today > span:first-child {
+  color: var(--accent);
+}
+.jw-past .is-today > button {
+  color: var(--text);
+}
+.jw-empty {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+.jw-status {
+  margin: 0;
+  font:
+    10px/1.5 "Geist Mono",
+    monospace;
+  color: var(--subtle);
+  overflow-wrap: anywhere;
+}
+.jw-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+@media (max-width: 260px) {
+  .journal-widget {
+    padding: 12px;
+  }
+  .jw-head {
+    gap: 4px;
+    letter-spacing: 0;
+  }
+  .jw-count {
+    font-size: 10px;
+  }
+  .jw-paper {
+    padding: 10px;
+  }
+  .jw-when {
+    display: none;
+  }
+}
+
+.journal-window {
+  width: 100%;
+  height: 100vh;
+  overflow: auto;
+  padding: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--control-border) transparent;
+}
+.journal-window > .journal-widget {
+  min-height: 100%;
+}

@@ -6,6 +6,7 @@ export type CalendarView = "day" | "week" | "month" | "agenda";
 export interface EventDraft {
   title?: string;
   date?: string;
+  endDate?: string;
   startTime?: string;
   endTime?: string;
   allDay?: boolean;

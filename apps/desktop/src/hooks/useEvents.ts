@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { createContext, createElement, useContext, useCallback, useMemo, useSyncExternalStore } from "react";
-import { getDay, parseISO } from "date-fns";
+import { eventOccursOn } from "@facta/calendar";
 import { useSyncEngine } from "@/hooks/useSync";
 import type { CalendarEvent, EventColor, EventRepeat } from "@/types/planner";
 
@@ -43,18 +43,7 @@ function useEventsState() {
   }, [engine]);
 
   const getEventsForDate = useCallback(
-    (dateStr: string) => events.filter((e) => {
-      const repeat = e.repeat ?? "none";
-      if (repeat === "none") return e.date === dateStr;
-      // Only show recurring events on/after start date
-      if (dateStr < e.date) return false;
-      const dow = getDay(parseISO(dateStr));
-      if (repeat === "daily")    return true;
-      if (repeat === "weekdays") return dow >= 1 && dow <= 5;
-      if (repeat === "weekly")   return getDay(parseISO(e.date)) === dow;
-      if (repeat === "custom")   return (e.repeatDays ?? []).includes(dow);
-      return false;
-    }),
+    (dateStr: string) => events.filter((event) => eventOccursOn(event, dateStr)),
     [events]
   );
 

@@ -4,6 +4,8 @@ import {
   Clock,
   LayoutGrid,
   Monitor,
+  StickyNote,
+  BookOpen,
   Plus,
   RotateCcw,
   Sun,
@@ -34,6 +36,8 @@ const TYPE_ICONS = {
   events: Clock,
   calendar: Calendar,
   dayview: Sun,
+  notes: StickyNote,
+  diary: BookOpen,
 };
 const isDesktop = () =>
   typeof window !== "undefined" &&
@@ -55,8 +59,8 @@ export default function WidgetManager({
   const [adding, setAdding] = useState(false),
     [confirmReset, setConfirmReset] = useState(false);
   const [draft, setDraft] = useState<
-    Pick<WidgetConfig, "type" | "theme" | "translucent">
-  >({ type: "tasks", theme, translucent: true });
+    Pick<WidgetConfig, "type" | "theme" | "translucent" | "noteStyle">
+  >({ type: "tasks", theme, translucent: true, noteStyle: "sticky" });
   const autoLaunched = useRef(false),
     mounted = useRef(true);
   const addButton = useRef<HTMLButtonElement>(null),
@@ -194,7 +198,7 @@ export default function WidgetManager({
               type="button"
               className="b b-sec"
               onClick={() => {
-                setDraft({ type: "tasks", theme, translucent: true });
+                setDraft({ type: "tasks", theme, translucent: true, noteStyle: "sticky" });
                 setAdding(true);
               }}
             >
@@ -221,6 +225,7 @@ export default function WidgetManager({
                 <div className="settings-grow">
                   <h3>{WIDGET_LABELS[widget.type]}</h3>
                   <p>
+                    {widget.type === "notes" && `${widget.noteStyle === "stack" ? "Stack" : "Sticky"} · `}
                     {THEMES.find((item) => item.id === widget.theme)?.name} ·{" "}
                     {widget.translucent ? "Transparent" : "Solid"}
                   </p>
@@ -328,6 +333,10 @@ export default function WidgetManager({
                   onChange={(type) => setDraft({ ...draft, type })}
                 />
               </div>
+              {draft.type === "notes" && <ChoiceGroup<"sticky" | "stack">
+                label="Notes style" value={draft.noteStyle ?? "sticky"}
+                options={[{value:"sticky",label:"Sticky"},{value:"stack",label:"Stack"}]}
+                onChange={noteStyle=>setDraft({...draft,noteStyle})} />}
               <div className="settings-field">
                 <span className="sec-h">Theme</span>
                 <ThemeCards

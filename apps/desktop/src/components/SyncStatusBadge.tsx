@@ -34,7 +34,11 @@ export default function SyncStatusBadge() {
     detail = status.pending > 0 ? `${status.pending} pending` : null;
   } else if (status.state === "error") {
     dot = "bg-danger";
-    label = status.failed > 0 ? `${status.failed} not synced` : "Sync error";
+    label = status.storageError
+      ? "Not saved on this device"
+      : status.failed > 0
+        ? `${status.failed} not synced`
+        : "Sync error";
     detail = null;
   } else if (status.lastSyncedAt === null) {
     // Idle but never synced yet (just started): nothing to claim.
@@ -44,18 +48,23 @@ export default function SyncStatusBadge() {
   const title =
     status.state === "local-only"
       ? "Supabase isn't configured in this build, so data stays on this device."
-      : status.lastError ?? "Sync now";
+      : (status.lastError ?? "Sync now");
 
   return (
     <button
       type="button"
-      onClick={() => { void engine.syncNow(); }}
+      onClick={() => {
+        void engine.syncNow();
+      }}
       disabled={status.state === "local-only"}
       title={title}
       aria-label={detail ? `${label}, ${detail}` : label}
       className="flex w-full items-center gap-2 rounded-md px-2 pt-2.5 text-left text-xs text-subtle hover:text-text-2 disabled:cursor-default"
     >
-      <span aria-hidden="true" className={`h-[7px] w-[7px] shrink-0 rounded-full ${dot}`} />
+      <span
+        aria-hidden="true"
+        className={`h-[7px] w-[7px] shrink-0 rounded-full ${dot}`}
+      />
       <span className="sync-t min-w-0 items-center gap-1">
         <span className="text-text-2">{label}</span>
         {detail && <span className="truncate">· {detail}</span>}

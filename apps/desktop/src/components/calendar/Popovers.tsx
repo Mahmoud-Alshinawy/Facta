@@ -4,10 +4,11 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import { parseQuickEvent } from "@facta/calendar";
+import { eventDurationMinutes, eventOccurrenceAt, eventSpanDays, parseClock, parseQuickEvent } from "@facta/calendar";
+import { format } from "date-fns";
 import type { CalendarEvent, EventColor } from "@/types/planner";
 import { EVENT_COLORS, EVENT_COLOR_NAMES } from "@/lib/eventColors";
-import { clockValue, durationText, eventMinutes, keyOf } from "@/lib/calendarData";
+import { clockValue, durationText, eventMinutes, keyOf, noonOf } from "@/lib/calendarData";
 import { useDialogFocus } from "@/hooks/useDialogFocus";
 import { IconCalendar, IconClock, IconClose, IconEdit, IconRepeat, IconTrash } from "@/components/shell/Icons";
 import { Commit, Kbd, colorVar, dayLabel, type Clocks } from "./common";
@@ -25,28 +26,12 @@ function useOutside(ref: React.RefObject<HTMLElement | null>, onOutside: () => v
   }, [ref, onOutside]);
 }
 
-const REPEAT_TEXT: Record<string, string> = {
-  none: "Does not repeat", daily: "Every day", weekdays: "Every weekday", weekly: "Every week", custom: "On chosen days",
-};
-
-export function QuickAddPopover({ style, day, start, end, now, clocks: C, onClose, onAdd, onMore, viewportRef, stickyRef, slotBounds }: {
-  style: CSSProperties;
-  day: Date;
-  start: number;
-  end: number;
-  now: Date;
-  clocks: Clocks;
-  onClose: () => void;
-  onAdd: (event: Omit<CalendarEvent, "id" | "updatedAt">) => void;
-  onMore: (draft: EventDraft) => void;
+interface GridPopoverBounds {
   viewportRef?: React.RefObject<HTMLDivElement | null>;
   stickyRef?: React.RefObject<HTMLDivElement | null>;
-  slotBounds?: { start: number; end: number };
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [text, setText] = useState("");
-  const [color, setColor] = useState<EventColor>("blue");
-  const [blocked, setBlocked] = useState("");
+  slotBounds?: {start:number;end:number};
+}
+function useGridPopover(ref: React.RefObject<HTMLDivElement | null>, {viewportRef,stickyRef,slotBounds}:GridPopoverBounds):CSSProperties {
   const [placement, setPlacement] = useState<CSSProperties>({});
   const slotStart = slotBounds?.start, slotEnd = slotBounds?.end;
   useLayoutEffect(() => {
@@ -71,6 +56,32 @@ export function QuickAddPopover({ style, day, start, end, now, clocks: C, onClos
     viewport.addEventListener("scroll", place);
     return () => { observer.disconnect(); viewport.removeEventListener("scroll", place); };
   }, [viewportRef, stickyRef, slotStart, slotEnd]);
+  return placement;
+}
+
+const REPEAT_TEXT: Record<string, string> = {
+  none: "Does not repeat", daily: "Every day", weekdays: "Every weekday", weekly: "Every week", custom: "On chosen days",
+};
+
+export function QuickAddPopover({ style, day, start, end, now, clocks: C, onClose, onAdd, onMore, viewportRef, stickyRef, slotBounds }: {
+  style: CSSProperties;
+  day: Date;
+  start: number;
+  end: number;
+  now: Date;
+  clocks: Clocks;
+  onClose: () => void;
+  onAdd: (event: Omit<CalendarEvent, "id" | "updatedAt">) => void;
+  onMore: (draft: EventDraft) => void;
+  viewportRef?: React.RefObject<HTMLDivElement | null>;
+  stickyRef?: React.RefObject<HTMLDivElement | null>;
+  slotBounds?: { start: number; end: number };
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [text, setText] = useState("");
+  const [color, setColor] = useState<EventColor>("blue");
+  const [blocked, setBlocked] = useState("");
+  const placement = useGridPopover(ref,{viewportRef,stickyRef,slotBounds});
   useDialogFocus(ref, true);
   useOutside(ref, onClose);
 
@@ -124,9 +135,10 @@ export function QuickAddPopover({ style, day, start, end, now, clocks: C, onClos
   );
 }
 
-export function DetailPopover({ event, day, style, clocks: C, onClose, onEdit, onDelete }: {
+export function DetailPopover({ event, day, at, style, clocks: C, onClose, onEdit, onDelete, viewportRef, stickyRef, slotBounds }: GridPopoverBounds & {
   event: CalendarEvent;
   day: Date;
+  at?: number;
   style: CSSProperties;
   clocks: Clocks;
   onClose: () => void;
@@ -134,11 +146,19 @@ export function DetailPopover({ event, day, style, clocks: C, onClose, onEdit, o
   onDelete: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const placement = useGridPopover(ref,{viewportRef,stickyRef,slotBounds});
   useDialogFocus(ref, true);
   useOutside(ref, onClose);
   const t = eventMinutes(event);
+  const occurrence = eventOccurrenceAt(event,keyOf(day),at);
+  const first = occurrence?.date ?? event.date;
+  const last = occurrence?.endDate ?? event.endDate ?? event.date;
+  const multi = eventSpanDays(event) > 0;
+  const dateLabel = multi ? `${format(noonOf(first),"d MMM yyyy")} – ${format(noonOf(last),"d MMM yyyy")}` : dayLabel(day);
+  const start = multi ? parseClock(event.startTime) ?? 0 : t.start;
+  const end = multi ? event.endTime === "23:59" ? 1440 : parseClock(event.endTime) ?? 0 : t.end;
   return (
-    <div ref={ref} className="pop" role="dialog" aria-label={`Event details: ${event.title}`} tabIndex={-1} style={style}
+    <div ref={ref} className="pop" role="dialog" aria-label={`Event details: ${event.title}`} tabIndex={-1} style={{...style,...placement}}
       onMouseDown={(ev) => ev.stopPropagation()}
       onKeyDown={(ev) => {
         if (ev.key === "Escape") { ev.preventDefault(); ev.stopPropagation(); onClose(); }
@@ -153,8 +173,9 @@ export function DetailPopover({ event, day, style, clocks: C, onClose, onEdit, o
       <div style={{ display: "flex", flexDirection: "column", gap: 2, padding: "2px 16px 12px 36px" }}>
         <div className="chrow">
           <IconClock size={14} />
-          <span>{dayLabel(day)} · {event.allDay ? "All day" : C.range(t.start, t.end)}</span>
-          {!event.allDay && <span className="mono" style={{ color: "var(--subtle)", fontSize: 12 }}>{durationText(t.end - t.start)}</span>}
+          <span>{dateLabel} · {event.allDay ? "All day" : C.range(start, end)}</span>
+          {!event.allDay && <span className="mono" style={{ color: "var(--subtle)", fontSize: 12 }}>{durationText(multi ? eventDurationMinutes(event) : t.end - t.start)}</span>}
+          {multi && !event.allDay && <span className="dialog-note">Edit dates and times in the dialog.</span>}
         </div>
         <div className="chrow"><IconRepeat size={14} /><span>{REPEAT_TEXT[event.repeat ?? "none"]}</span></div>
         <div className="chrow"><span className="evdot" style={{ ["--c" as string]: colorVar(event.color) }} /><span>{EVENT_COLOR_NAMES[event.color]}</span></div>

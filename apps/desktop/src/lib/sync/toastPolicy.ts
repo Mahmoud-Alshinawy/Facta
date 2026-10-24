@@ -8,8 +8,14 @@
 
 import type { SyncStatus } from "@/lib/sync/engine";
 
-export type SyncToastId = "sync-offline" | "sync-error" | "sync-failed";
-export const SYNC_TOAST_IDS: readonly SyncToastId[] = ["sync-offline", "sync-error", "sync-failed"];
+export type SyncToastId =
+  "sync-offline" | "sync-error" | "sync-failed" | "sync-storage";
+export const SYNC_TOAST_IDS: readonly SyncToastId[] = [
+  "sync-offline",
+  "sync-error",
+  "sync-failed",
+  "sync-storage",
+];
 
 export interface SyncToast {
   id: SyncToastId;
@@ -26,15 +32,34 @@ export interface ToastDecision {
   clear: boolean;
 }
 
-export function decideSyncToast(shown: string | null, status: SyncStatus): ToastDecision {
-  if (status.state === "idle") return { shown: null, show: null, clear: shown !== null };
-  if ((status.state !== "error" && status.state !== "offline") || !status.lastError) {
+export function decideSyncToast(
+  shown: string | null,
+  status: SyncStatus,
+): ToastDecision {
+  if (
+    status.state === "idle" ||
+    (status.state === "local-only" && !status.lastError)
+  )
+    return { shown: null, show: null, clear: shown !== null };
+  if (
+    (status.state !== "error" && status.state !== "offline") ||
+    !status.lastError
+  ) {
     // syncing, local-only, or no message: keep whatever is showing.
     return { shown, show: null, clear: false };
   }
-  const id: SyncToastId =
-    status.state === "offline" ? "sync-offline" : status.failed > 0 ? "sync-failed" : "sync-error";
+  const id: SyncToastId = status.storageError
+    ? "sync-storage"
+    : status.state === "offline"
+      ? "sync-offline"
+      : status.failed > 0
+        ? "sync-failed"
+        : "sync-error";
   const key = `${id}|${status.failed}|${status.lastError}`;
   if (key === shown) return { shown, show: null, clear: false };
-  return { shown: key, show: { id, message: status.lastError, failed: status.failed }, clear: false };
+  return {
+    shown: key,
+    show: { id, message: status.lastError, failed: status.failed },
+    clear: false,
+  };
 }

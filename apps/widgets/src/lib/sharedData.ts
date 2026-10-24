@@ -1,9 +1,13 @@
+import type { WidgetJournal, WidgetActionResult } from "@facta/calendar";
 // read_shared_data is polymorphic-safe: returns null when the file on disk is
 // not strictly newer than the last snapshot applied here, so late/out-of-order
 // reads can never revert widget state (e.g. resurrect deleted tasks).
 
 /** Shape of widgets.json as written by the planner's export_data_for_widgets. */
 export interface SharedData {
+  user_id?: string | null;
+  journal?: WidgetJournal;
+  action_results?: WidgetActionResult[];
   goals?: unknown[];
   events?: unknown[];
   config?: { widgets?: unknown[] };

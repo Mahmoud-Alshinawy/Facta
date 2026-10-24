@@ -2,8 +2,23 @@
 // rules as the facta_sync_guard trigger in supabase/migrations. Requests can
 // be held open (to simulate in-flight writes) or made to fail.
 
-import { classifyError, type PostgrestErrorLike, type RemoteResult, type SyncError, type TableRemote } from "@/lib/sync/remote";
-import type { EventRow, EventWrite, GoalRow, GoalWrite } from "@/lib/sync/mappers";
+import {
+  classifyError,
+  type PostgrestErrorLike,
+  type RemoteResult,
+  type SyncError,
+  type TableRemote,
+} from "@/lib/sync/remote";
+import type {
+  EventRow,
+  EventWrite,
+  GoalRow,
+  GoalWrite,
+  NoteRow,
+  NoteWrite,
+  DiaryRow,
+  DiaryWrite,
+} from "@/lib/sync/mappers";
 import type { PlannerRemotes } from "@/lib/sync/engine";
 
 interface ServerRowMeta {
@@ -18,11 +33,21 @@ type Gate = { promise: Promise<void>; release: () => void };
 
 function gate(): Gate {
   let release = () => {};
-  const promise = new Promise<void>((r) => { release = r; });
+  const promise = new Promise<void>((r) => {
+    release = r;
+  });
   return { promise, release };
 }
 
-export class FakeTable<W extends { id: string; updated_at: string; user_id: string; deleted_at?: string | null }, R extends ServerRowMeta> {
+export class FakeTable<
+  W extends {
+    id: string;
+    updated_at: string;
+    user_id: string;
+    deleted_at?: string | null;
+  },
+  R extends ServerRowMeta,
+> {
   readonly rows = new Map<string, R>();
   /** Every upsert batch received, in order. */
   readonly upserts: W[][] = [];
@@ -35,7 +60,10 @@ export class FakeTable<W extends { id: string; updated_at: string; user_id: stri
   private held: Gate | null = null;
   private arrived: Gate | null = null;
 
-  constructor(private readonly toRow: (w: W, prev: R | undefined, now: string) => R, private readonly now: () => number) {}
+  constructor(
+    private readonly toRow: (w: W, prev: R | undefined, now: string) => R,
+    private readonly now: () => number,
+  ) {}
 
   /** The next upsert waits until release() is called. */
   hold(): { arrived: Promise<void>; release: () => void } {
@@ -54,8 +82,12 @@ export class FakeTable<W extends { id: string; updated_at: string; user_id: stri
     if (prev) {
       if (prev.deleted_at !== null) return null;
       const isDelete = w.deleted_at != null;
-      if (!isDelete && Date.parse(clamped) <= Date.parse(prev.updated_at)) return null;
-      const updated_at = isDelete && Date.parse(prev.updated_at) > Date.parse(clamped) ? prev.updated_at : clamped;
+      if (!isDelete && Date.parse(clamped) <= Date.parse(prev.updated_at))
+        return null;
+      const updated_at =
+        isDelete && Date.parse(prev.updated_at) > Date.parse(clamped)
+          ? prev.updated_at
+          : clamped;
       const row = this.toRow({ ...w, updated_at }, prev, nowIso);
       this.rows.set(w.id, row);
       return row;
@@ -80,7 +112,14 @@ export class FakeTable<W extends { id: string; updated_at: string; user_id: stri
         if (rows.some((r) => this.rejectIds.has(r.id))) {
           return {
             ok: false,
-            error: classifyError({ code: "23514", message: 'new row for relation "goals" violates check constraint' }, 400),
+            error: classifyError(
+              {
+                code: "23514",
+                message:
+                  'new row for relation "goals" violates check constraint',
+              },
+              400,
+            ),
           };
         }
         const written: R[] = [];
@@ -91,12 +130,20 @@ export class FakeTable<W extends { id: string; updated_at: string; user_id: stri
         if (this.loseNextResponse) {
           // The write landed, but the reply never made it back.
           this.loseNextResponse = false;
-          return { ok: false, error: { kind: "offline", message: "Can't reach the server" } };
+          return {
+            ok: false,
+            error: { kind: "offline", message: "Can't reach the server" },
+          };
         }
         return { ok: true, data: written };
       },
-      fetchByIds: async (ids) => this.takeError() ?? { ok: true, data: ids.flatMap((id) => this.rows.get(id) ?? []) },
-      fetchAll: async () => this.takeError() ?? { ok: true, data: [...this.rows.values()] },
+      fetchByIds: async (ids) =>
+        this.takeError() ?? {
+          ok: true,
+          data: ids.flatMap((id) => this.rows.get(id) ?? []),
+        },
+      fetchAll: async () =>
+        this.takeError() ?? { ok: true, data: [...this.rows.values()] },
     };
   }
 
@@ -117,39 +164,86 @@ function pgTime(t: string | null | undefined): string | null {
 }
 
 export function createFakeServer(now: () => number) {
-  const goals = new FakeTable<GoalWrite, GoalRow>((w, prev, nowIso) => ({
-    id: w.id,
-    user_id: w.user_id,
-    title: w.title,
-    category: w.category,
-    date: w.date,
-    time: pgTime(w.time),
-    completed: w.completed ?? false,
-    completed_dates: w.completed_dates ?? [],
-    repeat: w.repeat ?? "none",
-    repeat_days: w.repeat_days ?? [],
-    notifications_enabled: w.notifications_enabled ?? false,
-    notification_message: w.notification_message ?? "",
-    created_at: prev?.created_at ?? nowIso,
-    updated_at: w.updated_at,
-    deleted_at: w.deleted_at ?? null,
-  }), now);
-  const events = new FakeTable<EventWrite, EventRow>((w, prev, nowIso) => ({
-    id: w.id,
-    user_id: w.user_id,
-    title: w.title,
-    date: w.date,
-    start_time: pgTime(w.start_time) ?? "00:00:00",
-    end_time: pgTime(w.end_time) ?? "00:00:00",
-    color: w.color ?? "blue",
-    description: w.description ?? null,
-    all_day: w.all_day ?? false,
-    repeat: w.repeat ?? "none",
-    repeat_days: w.repeat_days ?? [],
-    created_at: prev?.created_at ?? nowIso,
-    updated_at: w.updated_at,
-    deleted_at: w.deleted_at ?? null,
-  }), now);
-  const remotes: PlannerRemotes = { goals: goals.remote(), events: events.remote() };
-  return { goals, events, remotes };
+  const goals = new FakeTable<GoalWrite, GoalRow>(
+    (w, prev, nowIso) => ({
+      id: w.id,
+      user_id: w.user_id,
+      title: w.title,
+      category: w.category,
+      date: w.date,
+      time: pgTime(w.time),
+      completed: w.completed ?? false,
+      completed_dates: w.completed_dates ?? [],
+      repeat: w.repeat ?? "none",
+      repeat_days: w.repeat_days ?? [],
+      notifications_enabled: w.notifications_enabled ?? false,
+      notification_message: w.notification_message ?? "",
+      created_at: prev?.created_at ?? nowIso,
+      updated_at: w.updated_at,
+      deleted_at: w.deleted_at ?? null,
+    }),
+    now,
+  );
+  const events = new FakeTable<EventWrite, EventRow>(
+    (w, prev, nowIso) => ({
+      id: w.id,
+      user_id: w.user_id,
+      title: w.title,
+      date: w.date,
+      end_date: w.end_date ?? null,
+      start_time: pgTime(w.start_time) ?? "00:00:00",
+      end_time: pgTime(w.end_time) ?? "00:00:00",
+      color: w.color ?? "blue",
+      description: w.description ?? null,
+      all_day: w.all_day ?? false,
+      repeat: w.repeat ?? "none",
+      repeat_days: w.repeat_days ?? [],
+      created_at: prev?.created_at ?? nowIso,
+      updated_at: w.updated_at,
+      deleted_at: w.deleted_at ?? null,
+    }),
+    now,
+  );
+  const notes = new FakeTable<NoteWrite, NoteRow>(
+    (w, prev, nowIso) => ({
+      id: w.id,
+      user_id: w.user_id,
+      title: w.title ?? null,
+      body: w.body ?? [],
+      color: w.color ?? null,
+      tags: w.tags ?? [],
+      pinned: w.pinned ?? false,
+      pinned_to_widget: w.pinned_to_widget ?? false,
+      font: w.font ?? null,
+      align: w.align ?? null,
+      links: w.links ?? [],
+      trashed_at: w.trashed_at ?? null,
+      created_at: prev?.created_at ?? nowIso,
+      updated_at: w.updated_at,
+      deleted_at: w.deleted_at ?? null,
+    }),
+    now,
+  );
+  const diary = new FakeTable<DiaryWrite, DiaryRow>(
+    (w, prev, nowIso) => ({
+      id: w.id,
+      user_id: w.user_id,
+      date: w.date,
+      one_line: w.one_line,
+      mood: w.mood,
+      body: w.body ?? null,
+      tags: w.tags ?? [],
+      created_at: prev?.created_at ?? nowIso,
+      updated_at: w.updated_at,
+      deleted_at: w.deleted_at ?? null,
+    }),
+    now,
+  );
+  const remotes: PlannerRemotes = {
+    goals: goals.remote(),
+    events: events.remote(),
+    notes: notes.remote(),
+    diary_entries: diary.remote(),
+  };
+  return { goals, events, notes, diary, remotes };
 }

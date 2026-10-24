@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { lazy, Suspense, useState, useCallback, useEffect, useMemo } from "react";
 import { format, getISOWeek } from "date-fns";
 import { Plus } from "lucide-react";
 import TodayPanel from "@/components/TodayPanel";
@@ -18,9 +18,12 @@ import { useCreateGoal } from "@/hooks/useCreateGoal";
 import { useNow } from "@/hooks/useNow";
 import { useNotifications } from "@/hooks/useNotifications";
 import { supabase } from "@/lib/supabase";
+import { useWidgetActions } from "@/hooks/useWidgetActions";
 import { requestWidgetExport } from "@/lib/widgetExportBus";
 import AuthScreen from "@/components/AuthScreen";
 import { Toaster } from "sonner";
+const DiaryPage = lazy(() => import("@/components/diary/DiaryPage"));
+const NotesPage = lazy(() => import("@/components/notes/NotesPage"));
 export default function App() {
   const { user, loading: authLoading } = useAuth();
   const [section, setSection] = useState<Section>("today");
@@ -36,10 +39,12 @@ export default function App() {
   const [goalDialogOpen, setGoalDialogOpen] = useState(false);
   const [sidebarMode, setSidebarMode] = useState<SidebarMode>("");
   const [cheatOpen, setCheatOpen] = useState(false);
+  const [widgetNote, setWidgetNote] = useState<{id:string;request:number}|null>(null);
+  const [noteCaptureRequest, setNoteCaptureRequest] = useState(0);
   const createGoal = useCreateGoal();
   const now = useNow();
   const { events, addEvent, updateEvent, deleteEvent } = useEvents();
-  const { goals, toggleComplete, markNotified } = useGoals();
+  const { goals, markNotified } = useGoals();
   useNotifications(goals, markNotified);
   // Handle OAuth callback from URL hash (e.g. email confirmation)
   useEffect(() => {
@@ -69,8 +74,8 @@ export default function App() {
     let unsub: (() => void) | undefined;
     (async () => {
       try {
-        const { onOpenUrl } = await import("@tauri-apps/plugin-deep-link");
-        unsub = await onOpenUrl((urls: string[]) => {
+        const { onOpenUrl, getCurrent } = await import("@tauri-apps/plugin-deep-link");
+        const processUrls = (urls: string[]) => {
           for (const urlStr of urls) {
             if (urlStr.includes("access_token=")) {
               const url = new URL(urlStr);
@@ -84,6 +89,10 @@ export default function App() {
                 });
               }
             } else if (urlStr.includes("facta://focus")) {
+              const focusUrl = new URL(urlStr);
+              const target = focusUrl.searchParams.get("section"), noteId = focusUrl.searchParams.get("note");
+              if(target === "notes" || target === "diary") setSection(target);
+              if(target === "notes" && noteId && /^[a-f0-9-]{36}$/i.test(noteId)) setWidgetNote({id:noteId,request:Date.now()});
               // Show and focus main window
               import("@tauri-apps/api/window").then(({ getCurrentWindow }) => {
                 const win = getCurrentWindow();
@@ -92,7 +101,10 @@ export default function App() {
               }).catch(() => {});
             }
           }
-        });
+        };
+        unsub = await onOpenUrl(processUrls);
+        const initialUrls = await getCurrent();
+        if(initialUrls) processUrls(initialUrls);
       } catch {
         // ignore if deep-link plugin not available
       }
@@ -108,40 +120,10 @@ export default function App() {
   useEffect(() => {
     if (typeof window === "undefined" || !((window as any).__TAURI_INTERNALS__ || (window as any).__TAURI__)) return;
     requestWidgetExport();
-  }, []);
+  }, [now.getFullYear(), now.getMonth(), now.getDate()]);
 
-  // Process widget toggle actions from floating widgets
-  const appliedActionIds = useRef<Set<string>>(new Set());
-  useEffect(() => {
-    if (typeof window === "undefined" || !((window as any).__TAURI_INTERNALS__ || (window as any).__TAURI__)) return;
-    type WidgetAction = { type: string; goal_id: string; id?: string };
-    function apply(actions: WidgetAction[]) {
-      for (const action of actions) {
-        if (action.type !== "toggle_goal" || !action.goal_id) continue;
-        // Guard against rare double-delivery of the same queued action.
-        const actionId = action.id ?? `${action.type}_${action.goal_id}`;
-        if (appliedActionIds.current.has(actionId)) continue;
-        appliedActionIds.current.add(actionId);
-        toggleComplete(action.goal_id);
-      }
-    }
-    let unlisten: (() => void) | undefined;
-    let cancelled = false;
-    (async () => {
-      try {
-        const { invoke } = await import("@tauri-apps/api/core");
-        const { listen } = await import("@tauri-apps/api/event");
-        const un = await listen<WidgetAction[]>("widget-actions", (e) => apply(e.payload));
-        if (cancelled) { un(); return; }
-        unlisten = un;
-        // Pick up anything queued before this window started listening.
-        apply((await invoke("read_pending_actions")) as WidgetAction[]);
-      } catch (e) {
-        console.error("[ActionApply] failed:", e);
-      }
-    })();
-    return () => { cancelled = true; unlisten?.(); };
-  }, [toggleComplete]);
+  // Process durable widget actions from floating widgets
+  useWidgetActions();
 
   const openNew = useCallback((date?: string, time?: string, endTime?: string) => {
     setEditingEvent(null);
@@ -186,9 +168,15 @@ export default function App() {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target instanceof HTMLElement ? e.target : null;
       if (e.defaultPrevented || dialogOpen || goalDialogOpen || searchOpen || cheatOpen) return;
+      if (target?.closest('[role="dialog"]')) return;
+      if (user && (e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "n") {
+        e.preventDefault(); setSection("notes"); setNoteCaptureRequest((value) => value + 1); return;
+      }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        if (target?.closest('[contenteditable="true"]')) return;
         e.preventDefault(); setSearchOpen(true); return;
       }
+      if (section === "notes" || section === "diary") return;
       if (target?.closest('input, textarea, select, [contenteditable="true"], [role="dialog"]')) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const key = e.key.toLowerCase();
@@ -198,7 +186,7 @@ export default function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [section, dialogOpen, goalDialogOpen, searchOpen, cheatOpen, openNew, openNewGoal, selectedDate]);
+  }, [section, user, dialogOpen, goalDialogOpen, searchOpen, cheatOpen, openNew, openNewGoal, selectedDate]);
 
   if (authLoading) return <div className="flex min-h-screen items-center justify-center bg-background text-foreground"><span className="text-sm text-muted-foreground">Loading…</span></div>;
   if (!user) return <AuthScreen />;
@@ -229,6 +217,8 @@ export default function App() {
         {section === "calendar" && <CalendarPage anchor={selectedDate} view={view} onAnchor={setSelectedDate} onView={setView}
           actions={calendarActions} keyboardBlocked={dialogOpen || goalDialogOpen || searchOpen || cheatOpen} />}
         {section === "goals" && <GoalsPage keyboardBlocked={dialogOpen || goalDialogOpen || searchOpen || cheatOpen} />}
+        {section === "notes" && <Suspense fallback={<p role="status" className="p-8 text-subtle">Opening Notes…</p>}><NotesPage openRequest={widgetNote} onOpenRequestHandled={() => setWidgetNote(null)} captureRequest={noteCaptureRequest} keyboardBlocked={dialogOpen || goalDialogOpen || searchOpen || cheatOpen} /></Suspense>}
+        {section === "diary" && <Suspense fallback={<p role="status" className="p-8 text-subtle">Opening Diary…</p>}><DiaryPage keyboardBlocked={dialogOpen || goalDialogOpen || searchOpen || cheatOpen} onOpenToday={() => changeSection("today")} /></Suspense>}
         {section === "settings" && <SettingsPage />}
       </main>
       <GoalDialog open={goalDialogOpen} onClose={() => setGoalDialogOpen(false)} onSave={createGoal}
@@ -236,7 +226,7 @@ export default function App() {
       <EventDialog open={dialogOpen} onClose={() => { setDialogOpen(false); setEditingEvent(null); }}
         onSave={handleSave} onDelete={deleteEvent} initialDate={dialogInitialDate} initialStartTime={dialogInitialTime}
         initialEndTime={dialogInitialEnd} editEvent={editingEvent} draft={eventDraft} />
-      <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} events={events} goals={goals} onSelectEvent={openEdit}
+      <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} events={events} goals={goals} onSelectEvent={openEdit} onOpenPage={changeSection}
         onGoToDate={(date, nextView) => { setSelectedDate(date); setView(nextView); setSection("calendar"); }} />
       {cheatOpen && <CheatSheet context={section === "goals" ? "goals" : section === "today" ? "today" : "calendar"} onClose={() => setCheatOpen(false)} />}
       <Toaster richColors position="bottom-right" />

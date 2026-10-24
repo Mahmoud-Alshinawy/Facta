@@ -4,13 +4,13 @@
 
 import { useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import { conflicts, layoutColumns, type CalendarPrefs } from "@facta/calendar";
+import { conflicts, layoutColumns, minutesAt, type CalendarPrefs } from "@facta/calendar";
 import { useEvents } from "@/hooks/useEvents";
 import { useGoals } from "@/hooks/useGoals";
 import { goalsOn, keyOf, splitDay, toggledOn } from "@/lib/calendarData";
 import type { CalendarEvent } from "@/types/planner";
 import { IconWarn } from "@/components/shell/Icons";
-import { Check, Commit, Kbd, addDays, clocks, colorVar, dayLabel, deleteEventWithUndo, sameDay, useDeletingEvents } from "./common";
+import { Check, Commit, Kbd, addDays, bandTooltip, clocks, colorVar, dayLabel, deleteEventWithUndo, sameDay, useDeletingEvents } from "./common";
 import { DetailPopover, QuickAddPopover } from "./Popovers";
 import type { CalendarActions } from "./types";
 
@@ -37,10 +37,11 @@ export default function DayView({ anchor, now, prefs, actions, onAnchor, say }: 
   const isPast = !isToday && anchor < now;
   const nowMin = now.getHours() * 60 + now.getMinutes();
   const events = getEventsForDate(key).filter((e) => !deleting.has(e.id));
-  const { allDay, timed } = splitDay(events);
+  const { allDay, timed } = splitDay(events, key, true);
   const dayGoals = goalsOn(goals, key);
   const [slot, setSlot] = useState(() => Math.min(SLOTS - 1, Math.floor(nowMin / 30)));
   const [qa, setQa] = useState<{ a: number; b: number } | null>(null);
+  const [detailAt, setDetailAt] = useState(0);
   const [detail, setDetail] = useState<string | null>(null);
   const scRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -67,7 +68,7 @@ export default function DayView({ anchor, now, prefs, actions, onAnchor, say }: 
 
   // Events side by side; timed goals sit on top at their time.
   const laid = layoutColumns(timed.map((t) => ({ ...t, end: Math.max(t.end, t.start + 30), realEnd: t.end })));
-  const clash = conflicts(timed.map((t) => ({ id: t.event.id, start: t.start, end: t.end })));
+  const clash = conflicts(timed.map((t) => ({ id: t.id, start: t.start, end: t.end })));
 
   const ensureVisible = (s: number) => {
     const el = scRef.current;
@@ -97,7 +98,7 @@ export default function DayView({ anchor, now, prefs, actions, onAnchor, say }: 
       const gg = dayGoals.find((g) => g.at !== null && g.at >= t0 && g.at < t0 + 30);
       if (gg) { toggle(gg); say(`${gg.done ? "Not done" : "Done"} · ${gg.goal.title}`); return; }
       const hit = timed.find((t) => t.start <= t0 && t.end > t0);
-      if (hit) { setDetail(hit.event.id); return; }
+      if (hit) { setDetail(hit.event.id); setDetailAt(t0); return; }
       setQa({ a: slot, b: Math.min(SLOTS - 1, slot + 1) });
     }
   };
@@ -120,7 +121,7 @@ export default function DayView({ anchor, now, prefs, actions, onAnchor, say }: 
                 <span className="mono sec lbl">ALL DAY</span>
                 {allDay.length === 0 && <span style={{ fontSize: 13, color: "var(--subtle)" }}>Nothing all day</span>}
                 {allDay.map((a) => (
-                  <button key={a.id} type="button" className="ad1" style={{ ["--c" as string]: colorVar(a.color) }} onClick={() => setDetail(a.id)}>
+                  <button key={a.id} type="button" className="ad1" title={bandTooltip(a, key, C)} style={{ ["--c" as string]: colorVar(a.color) }} onClick={() => setDetail(a.id)}>
                     <span className="ee" aria-hidden="true" />{a.title}
                   </button>
                 ))}
@@ -145,15 +146,15 @@ export default function DayView({ anchor, now, prefs, actions, onAnchor, say }: 
                 const h = Math.max(28, ((t.realEnd - t.start) / 60) * H - 2);
                 const row = h < 46;
                 const past = isPast || (isToday && t.realEnd <= nowMin);
-                const cl = clash.ids.has(t.event.id);
+                const cl = clash.ids.has(t.id);
                 return (
-                  <button key={t.event.id} type="button"
+                  <button key={t.id} type="button"
                     className={`dev${row ? " row" : ""}${past ? " is-past" : ""}${cl ? " clash" : ""}`}
                     aria-label={`${t.event.title}, ${C.range(t.start, t.realEnd)}${cl ? ", overlaps another event" : ""}`}
                     title={`${t.event.title}, ${C.range(t.start, t.realEnd)}`}
                     style={{ top: (t.start / 60) * H + 1, height: h, left: `calc(${LEFT}px + (100% - ${LEFT}px) * ${(t.col / t.cols).toFixed(4)})`, width: `calc((100% - ${LEFT}px) / ${t.cols} - 4px)`, ["--c" as string]: colorVar(t.event.color) }}
                     onMouseDown={(e) => e.stopPropagation()}
-                    onClick={() => { setQa(null); setDetail(t.event.id); }}>
+                    onClick={(event) => { setQa(null); setDetail(t.event.id); setDetailAt(event.detail === 0 ? t.start : minutesAt(event.clientY - (gridRef.current?.getBoundingClientRect().top ?? event.clientY), H)); }}>
                     <span className="ee" aria-hidden="true" />
                     <span className="in"><span className="et">{t.event.title}</span><span className="em">{C.chipRange(t.start, t.realEnd)}</span></span>
                     {cl && <span className="ci" title="Overlaps another event"><IconWarn size={12} /></span>}
@@ -188,8 +189,8 @@ export default function DayView({ anchor, now, prefs, actions, onAnchor, say }: 
                   onMore={(draft) => { setQa(null); actions.newEvent(draft); }} />
               )}
               {detailEvent && (
-                <DetailPopover event={detailEvent} day={anchor} clocks={C}
-                  style={{ ...popHoriz, top: Math.max(8, detailEvent.allDay ? 8 : (splitDay([detailEvent]).timed[0].start / 60) * H - 12), width: 330 }}
+                <DetailPopover event={detailEvent} day={anchor} at={detailAt} viewportRef={scRef} slotBounds={{start:0,end:0}} clocks={C}
+                  style={{ ...popHoriz, top: Math.max(8, allDay.some(e => e.id === detailEvent.id) ? 8 : (splitDay([detailEvent], key, true).timed[0].start / 60) * H - 12), width: 330 }}
                   onClose={() => { setDetail(null); focusGrid(); }}
                   onEdit={() => { setDetail(null); actions.editEvent(detailEvent); }}
                   onDelete={() => { setDetail(null); deleteEventWithUndo(detailEvent as CalendarEvent, deleteEvent); focusGrid(); }} />
@@ -227,10 +228,10 @@ export default function DayView({ anchor, now, prefs, actions, onAnchor, say }: 
           <h2>Agenda</h2>
           <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 1 }}>
             {[...allDay.map((e) => ({ e, at: -1 })), ...timed.map((t) => ({ e: t.event, at: t.start }))].map(({ e, at }) => (
-              <li key={e.id} className="grow">
+              <li key={`${e.id}:${at}`} className="grow">
                 <span className="evdot" style={{ ["--c" as string]: colorVar(e.color) }} />
                 <button type="button" className="gt grow-btn" onClick={() => actions.editEvent(e)}>{e.title}</button>
-                <span className="em">{at < 0 ? "All day" : C.chip(at)}</span>
+                <span className="em">{at < 0 ? (e.allDay ? "All day" : "Spanning") : C.chip(at)}</span>
               </li>
             ))}
           </ul>
