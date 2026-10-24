@@ -158,6 +158,12 @@ create table if not exists facta_private.shared_rate_limits (
   attempts integer not null,
   primary key(actor_id,operation,window_start)
 );
+create table if not exists facta_private.shared_group_invite_budgets (
+  group_id uuid not null references public.shared_groups(id),
+  window_start timestamptz not null,
+  attempts integer not null,
+  primary key(group_id,window_start)
+);
 
 -- Additional constraints follow the existing re-runnable pg_constraint pattern.
 do $constraints$ declare c record; begin
@@ -411,6 +417,21 @@ language plpgsql set search_path='' as $$ begin
   if not facta_private.sg_budget('failed_redeem',10,60) then return jsonb_build_object('ok',false,'code','rate_limited'); end if;
   return jsonb_build_object('ok',false,'code',code);
 end $$;
+-- One durable UTC-hour budget across all owners, shared by issue and rotate.
+-- The group lock serializes this check with transfer, revocation and issuance.
+create or replace function facta_private.sg_invite_budget(gid uuid) returns boolean
+language plpgsql set search_path='' as $$
+declare n integer; at_time timestamptz; bucket timestamptz;
+begin
+  perform 1 from public.shared_groups where id=gid for update;
+  at_time:=facta_private.sg_now();
+  bucket:=to_timestamp(floor(extract(epoch from at_time)/3600)*3600);
+  insert into facta_private.shared_group_invite_budgets(group_id,window_start,attempts)
+    values(gid,bucket,1) on conflict(group_id,window_start)
+    do update set attempts=shared_group_invite_budgets.attempts+1 returning attempts into n;
+  delete from facta_private.shared_group_invite_budgets where group_id=gid and window_start<at_time-interval '2 days';
+  return n<=20;
+end $$;
 create or replace function facta_private.sg_preview(i public.shared_invites,g public.shared_groups)
 returns jsonb language sql stable set search_path='' as $$
   select jsonb_build_object('ok',true,'invite_id',i.id,'group_id',g.id,'name',g.name,
@@ -432,7 +453,7 @@ declare
   at_time timestamptz; start_date date; effective date; value integer;
   token text; outcome jsonb; member_id uuid; handle_value text;
   reserve_mine boolean; captured timestamptz; day_value date; desired boolean;
-  rr public.shared_goal_rounds; profile public.shared_profiles;
+  rr public.shared_goal_rounds; profile public.shared_profiles; profile_constraint text;
 begin
   if actor is null then raise exception 'Authentication required' using errcode='42501'; end if;
   if payload is null or jsonb_typeof(payload)<>'object' or octet_length(payload::text)>8192 then
@@ -471,10 +492,22 @@ begin
       or char_length(btrim(payload->>'display_name')) not between 1 and 80 then raise exception 'Invalid profile' using errcode='22023'; end if;
     select * into profile from public.shared_profiles where user_id=actor for update;
     if found and profile.handle<>handle_value then return jsonb_build_object('ok',false,'code','handle_immutable'); end if;
+    -- Probe budget applies before availability lookup, even without a profile.
+    -- Existing immutable-handle display-name edits are not availability probes.
+    if profile.user_id is null and not facta_private.sg_budget('profile_setup',10,60) then
+      return jsonb_build_object('ok',false,'code','rate_limited','scope','profile_setup'); end if;
     if exists(select 1 from public.shared_profiles where handle=handle_value and user_id<>actor) then return jsonb_build_object('ok',false,'code','handle_taken'); end if;
-    insert into public.shared_profiles(user_id,handle,display_name,created_at,updated_at)
-      values(actor,handle_value,btrim(payload->>'display_name'),at_time,at_time)
-      on conflict(user_id) do update set display_name=excluded.display_name,updated_at=excluded.updated_at,revision=shared_profiles.revision+1;
+    begin
+      insert into public.shared_profiles(user_id,handle,display_name,created_at,updated_at)
+        values(actor,handle_value,btrim(payload->>'display_name'),at_time,at_time)
+        on conflict(user_id) do update set display_name=excluded.display_name,updated_at=excluded.updated_at,revision=shared_profiles.revision+1;
+    exception when unique_violation then
+      get stacked diagnostics profile_constraint=constraint_name;
+      if profile_constraint<>'shared_profiles_handle_key' then raise; end if;
+      -- Another account can claim the handle after the lookup. Keep the budget
+      -- and receipt durable by rolling back only this insert, not the command.
+      return jsonb_build_object('ok',false,'code','handle_taken');
+    end;
     outcome:=jsonb_build_object('ok',true,'code','profile_saved');
   elsif operation='create_draft' then
     if not exists(select 1 from public.shared_profiles where user_id=actor and deleted_at is null) then return jsonb_build_object('ok',false,'code','profile_required'); end if;
@@ -557,6 +590,7 @@ begin
         outcome:=jsonb_build_object('ok',true,'code','published','group_id',gid,'first_round_date',start_date);
       when 'invite','issue_link' then
         if not facta_private.sg_budget('invite_issue',20,3600) then return jsonb_build_object('ok',false,'code','rate_limited'); end if;
+        if not facta_private.sg_invite_budget(gid) then return jsonb_build_object('ok',false,'code','rate_limited','scope','group_invites'); end if;
         recipient:=null;
         if operation='invite' then
           if not facta_private.sg_budget('handle_lookup',10,60) then return jsonb_build_object('ok',false,'code','rate_limited'); end if;
@@ -577,6 +611,7 @@ begin
       when 'rotate_invite' then
         if invite.state<>'pending' then return jsonb_build_object('ok',false,'code','invalid_invite'); end if;
         if not facta_private.sg_budget('invite_issue',20,3600) then return jsonb_build_object('ok',false,'code','rate_limited'); end if;
+        if not facta_private.sg_invite_budget(gid) then return jsonb_build_object('ok',false,'code','rate_limited','scope','group_invites'); end if;
         if invite.kind='direct' and invite.expires_at<=at_time and facta_private.sg_used(gid,at_time)>=8 then return jsonb_build_object('ok',false,'code','full'); end if;
         if exists(select 1 from public.shared_memberships where group_id=gid and user_id=invite.recipient_id and left_at is null and deleted_at is null) then return jsonb_build_object('ok',false,'code','already_joined'); end if;
         token:=translate(rtrim(encode(extensions.gen_random_bytes(32),'base64'),'='),'+/','-_');
@@ -1119,6 +1154,72 @@ do $$ begin
   begin update public.shared_profiles set handle='other_handle',revision=revision+1 where handle='tester_1'; raise exception 'handle edited'; exception when check_violation then null; end;
   begin delete from public.shared_checkins; raise exception 'permanent delete accepted'; exception when check_violation then null; end;
 end $$;
+-- BEGIN invitation-budget regression
+-- A transfer cannot reset the group's shared issue/rotation allowance.
+select pg_temp.set_clock('2026-12-04 10:00+03');
+select pg_temp.draft(1,'group-budget'); select pg_temp.publish(1,'group-budget','2026-12-07');
+insert into sg_fixture values('group-budget-id',jsonb_build_object('id',gen_random_uuid()));
+insert into sg_fixture values('group-budget-link',pg_temp.command(1,'issue_link',jsonb_build_object('group_id',pg_temp.gid('group-budget')),(select (v->>'id')::uuid from sg_fixture where k='group-budget-id')));
+select pg_temp.check_true(pg_temp.command(2,'join',jsonb_build_object('token',(select v->>'token' from sg_fixture where k='group-budget-link'),'target',2))->>'code'='joined','budget successor joined');
+select pg_temp.check_true(pg_temp.command(1,'issue_link',jsonb_build_object('group_id',pg_temp.gid('group-budget')))->>'code'='invite_issued','group budget old owner '||n) from generate_series(1,12) n;
+select pg_temp.check_true(pg_temp.command(1,'transfer_owner',jsonb_build_object('group_id',pg_temp.gid('group-budget'),'user_id','aaaaaaaa-0000-4000-8000-000000000002'))->>'code'='owner_transferred','budget owner transferred');
+select pg_temp.check_true(pg_temp.command(2,'rotate_invite',jsonb_build_object('invite_id',(select v->>'invite_id' from sg_fixture where k='group-budget-link')))->>'code'='invite_rotated','rotation consumes group allowance');
+select pg_temp.check_true(pg_temp.command(2,'issue_link',jsonb_build_object('group_id',pg_temp.gid('group-budget')))->>'code'='invite_issued','group budget new owner '||n) from generate_series(1,5) n;
+select pg_temp.check_true(pg_temp.command(1,'issue_link',jsonb_build_object('group_id',pg_temp.gid('group-budget')),(select (v->>'id')::uuid from sg_fixture where k='group-budget-id'))->>'code'='invite_issued','issue receipt retry does not spend group budget');
+select pg_temp.check_true(pg_temp.command(2,'issue_link',jsonb_build_object('group_id',pg_temp.gid('group-budget')))->>'code'='invite_issued','twentieth distinct group attempt allowed');
+select pg_temp.check_true(pg_temp.command(2,'issue_link',jsonb_build_object('group_id',pg_temp.gid('group-budget')))->>'scope'='group_invites','twenty-first group attempt blocked across owners');
+select pg_temp.command(2,'revoke_invite',jsonb_build_object('invite_id',(select v->>'invite_id' from sg_fixture where k='group-budget-link')));
+select pg_temp.check_true(pg_temp.command(2,'issue_link',jsonb_build_object('group_id',pg_temp.gid('group-budget')))->>'scope'='group_invites','revocation does not refund group budget');
+select pg_temp.command(2,'transfer_owner',jsonb_build_object('group_id',pg_temp.gid('group-budget'),'user_id','aaaaaaaa-0000-4000-8000-000000000001'));
+select pg_temp.check_true(pg_temp.command(1,'rotate_invite',jsonb_build_object('invite_id',(select id from public.shared_invites where group_id=pg_temp.gid('group-budget') and state='pending' limit 1)))->>'scope'='group_invites','rotation blocked after ownership transfers back');
+
+-- Expiry does not refund the current hour; expired rotation spends the next
+-- hour's allowance, and old tokens remain invalid after a successful rotation.
+select pg_temp.set_clock('2026-12-04 11:30+03');
+select pg_temp.draft(3,'expiry-budget'); select pg_temp.publish(3,'expiry-budget','2026-12-07');
+insert into sg_fixture values('expiry-budget-link',pg_temp.command(3,'issue_link',jsonb_build_object('group_id',pg_temp.gid('expiry-budget'))));
+select pg_temp.command(4,'join',jsonb_build_object('token',(select v->>'token' from sg_fixture where k='expiry-budget-link'),'target',2));
+select pg_temp.set_clock('2026-12-11 11:00+03');
+select pg_temp.check_true(pg_temp.command(3,'issue_link',jsonb_build_object('group_id',pg_temp.gid('expiry-budget')))->>'code'='invite_issued','expiry group allowance '||n) from generate_series(1,20) n;
+select pg_temp.command(3,'transfer_owner',jsonb_build_object('group_id',pg_temp.gid('expiry-budget'),'user_id','aaaaaaaa-0000-4000-8000-000000000004'));
+select pg_temp.set_clock('2026-12-11 11:29:59.999999+03');
+select pg_temp.check_true(pg_temp.command(4,'rotate_invite',jsonb_build_object('invite_id',(select v->>'invite_id' from sg_fixture where k='expiry-budget-link')))->>'scope'='group_invites','live rotation blocked before expiry');
+select pg_temp.set_clock('2026-12-11 11:30+03');
+select pg_temp.check_true(pg_temp.command(4,'rotate_invite',jsonb_build_object('invite_id',(select v->>'invite_id' from sg_fixture where k='expiry-budget-link')))->>'scope'='group_invites','expiry does not reopen group budget');
+select pg_temp.set_clock('2026-12-11 12:00+03');
+insert into sg_fixture values('expiry-budget-rotated',pg_temp.command(4,'rotate_invite',jsonb_build_object('invite_id',(select v->>'invite_id' from sg_fixture where k='expiry-budget-link'))));
+select pg_temp.check_true((select v->>'code' from sg_fixture where k='expiry-budget-rotated')='invite_rotated','new UTC hour permits expired rotation');
+select pg_temp.check_true(pg_temp.as_user(5,format('select public.facta_shared_preview(%L)',(select v->>'token' from sg_fixture where k='expiry-budget-link')))->>'code'='invalid_invite','old expired token stays invalid after rotation');
+select pg_temp.check_true((pg_temp.as_user(5,format('select public.facta_shared_preview(%L)',(select v->>'token' from sg_fixture where k='expiry-budget-rotated')))->>'ok')::boolean,'new rotated token previews');
+select pg_temp.check_true(pg_temp.command(4,'issue_link',jsonb_build_object('group_id',pg_temp.gid('expiry-budget')))->>'code'='invite_issued','rotation leaves nineteen slots '||n) from generate_series(1,19) n;
+select pg_temp.command(4,'transfer_owner',jsonb_build_object('group_id',pg_temp.gid('expiry-budget'),'user_id','aaaaaaaa-0000-4000-8000-000000000003'));
+select pg_temp.check_true(pg_temp.command(3,'issue_link',jsonb_build_object('group_id',pg_temp.gid('expiry-budget')))->>'scope'='group_invites','rotation counts in new-hour budget across transfer');
+select pg_temp.check_true(pg_temp.denied(3,'select * from facta_private.shared_group_invite_budgets'),'group budget storage is private');
+select pg_temp.check_true(pg_temp.denied(3,format('select facta_private.sg_invite_budget(%L)',pg_temp.gid('expiry-budget'))),'group budget helper is private');
+-- END invitation-budget regression
+
+-- BEGIN profile-budget regression
+insert into auth.users(id) values('aaaaaaaa-0000-4000-8000-000000000014');
+select pg_temp.set_clock('2026-12-12 10:00+03');
+insert into sg_fixture values('profile-probe-id',jsonb_build_object('id',gen_random_uuid()));
+select pg_temp.check_true(pg_temp.command(14,'set_profile','{"handle":"tester_1","display_name":"Setup"}',(select (v->>'id')::uuid from sg_fixture where k='profile-probe-id'))->>'code'='handle_taken','first profile probe rejected');
+select pg_temp.check_true(pg_temp.command(14,'set_profile','{"handle":"tester_1","display_name":"Setup"}')->>'code'='handle_taken','taken handle consumes profile allowance '||n) from generate_series(1,8) n;
+select pg_temp.check_true(pg_temp.command(14,'set_profile','{"handle":"tester_1","display_name":"Setup"}',(select (v->>'id')::uuid from sg_fixture where k='profile-probe-id'))->>'code'='handle_taken','taken receipt retry spends no availability slot');
+select pg_temp.check_true(pg_temp.command(14,'set_profile','{"handle":"tester_1","display_name":"Setup"}')->>'code'='handle_taken','tenth distinct profile probe allowed');
+select pg_temp.check_true(pg_temp.command(14,'set_profile','{"handle":"new_profile_14","display_name":"Setup"}')->>'scope'='profile_setup','profile-less account cannot bypass availability limit');
+insert into auth.users(id) values('aaaaaaaa-0000-4000-8000-000000000015');
+select pg_temp.check_true(pg_temp.command(15,'set_profile','{"handle":"new_profile_15","display_name":"Other"}')->>'code'='profile_saved','another actor can still set up a profile');
+select pg_temp.set_clock('2026-12-12 10:00:59.999999+03');
+select pg_temp.check_true(pg_temp.command(14,'set_profile','{"handle":"new_profile_14","display_name":"Setup"}')->>'scope'='profile_setup','profile budget holds to end of UTC minute');
+select pg_temp.set_clock('2026-12-12 10:01+03');
+insert into sg_fixture values('profile-save-id',jsonb_build_object('id',gen_random_uuid()));
+select pg_temp.check_true(pg_temp.command(14,'set_profile','{"handle":"new_profile_14","display_name":"Setup"}',(select (v->>'id')::uuid from sg_fixture where k='profile-save-id'))->>'code'='profile_saved','fresh minute permits legitimate profile setup');
+select pg_temp.check_true(pg_temp.command(14,'set_profile','{"handle":"new_profile_14","display_name":"Edited"}')->>'code'='profile_saved','existing immutable-handle edit stays usable '||n) from generate_series(1,12) n;
+select pg_temp.check_true(pg_temp.command(14,'set_profile','{"handle":"new_profile_14","display_name":"Setup"}',(select (v->>'id')::uuid from sg_fixture where k='profile-save-id'))->>'code'='profile_saved','successful setup receipt retry remains valid');
+select pg_temp.check_true(pg_temp.as_user(14,'select to_jsonb(display_name) from public.shared_profiles where user_id=auth.uid()')='"Edited"'::jsonb,'setup receipt retry does not revert profile edit');
+select pg_temp.check_true(pg_temp.command(14,'set_profile','{"handle":"tester_2","display_name":"Edited"}')->>'code'='handle_immutable','existing handle cannot probe other availability');
+-- END profile-budget regression
+
 set constraints all immediate;
 set constraints all deferred;
 select set_config('shared_test.checkins',(select count(*)::text from public.shared_checkins),true);
@@ -1265,6 +1366,12 @@ create table if not exists facta_private.shared_rate_limits (
   window_start timestamptz not null,
   attempts integer not null,
   primary key(actor_id,operation,window_start)
+);
+create table if not exists facta_private.shared_group_invite_budgets (
+  group_id uuid not null references public.shared_groups(id),
+  window_start timestamptz not null,
+  attempts integer not null,
+  primary key(group_id,window_start)
 );
 
 -- Additional constraints follow the existing re-runnable pg_constraint pattern.
@@ -1519,6 +1626,21 @@ language plpgsql set search_path='' as $$ begin
   if not facta_private.sg_budget('failed_redeem',10,60) then return jsonb_build_object('ok',false,'code','rate_limited'); end if;
   return jsonb_build_object('ok',false,'code',code);
 end $$;
+-- One durable UTC-hour budget across all owners, shared by issue and rotate.
+-- The group lock serializes this check with transfer, revocation and issuance.
+create or replace function facta_private.sg_invite_budget(gid uuid) returns boolean
+language plpgsql set search_path='' as $$
+declare n integer; at_time timestamptz; bucket timestamptz;
+begin
+  perform 1 from public.shared_groups where id=gid for update;
+  at_time:=facta_private.sg_now();
+  bucket:=to_timestamp(floor(extract(epoch from at_time)/3600)*3600);
+  insert into facta_private.shared_group_invite_budgets(group_id,window_start,attempts)
+    values(gid,bucket,1) on conflict(group_id,window_start)
+    do update set attempts=shared_group_invite_budgets.attempts+1 returning attempts into n;
+  delete from facta_private.shared_group_invite_budgets where group_id=gid and window_start<at_time-interval '2 days';
+  return n<=20;
+end $$;
 create or replace function facta_private.sg_preview(i public.shared_invites,g public.shared_groups)
 returns jsonb language sql stable set search_path='' as $$
   select jsonb_build_object('ok',true,'invite_id',i.id,'group_id',g.id,'name',g.name,
@@ -1540,7 +1662,7 @@ declare
   at_time timestamptz; start_date date; effective date; value integer;
   token text; outcome jsonb; member_id uuid; handle_value text;
   reserve_mine boolean; captured timestamptz; day_value date; desired boolean;
-  rr public.shared_goal_rounds; profile public.shared_profiles;
+  rr public.shared_goal_rounds; profile public.shared_profiles; profile_constraint text;
 begin
   if actor is null then raise exception 'Authentication required' using errcode='42501'; end if;
   if payload is null or jsonb_typeof(payload)<>'object' or octet_length(payload::text)>8192 then
@@ -1579,10 +1701,22 @@ begin
       or char_length(btrim(payload->>'display_name')) not between 1 and 80 then raise exception 'Invalid profile' using errcode='22023'; end if;
     select * into profile from public.shared_profiles where user_id=actor for update;
     if found and profile.handle<>handle_value then return jsonb_build_object('ok',false,'code','handle_immutable'); end if;
+    -- Probe budget applies before availability lookup, even without a profile.
+    -- Existing immutable-handle display-name edits are not availability probes.
+    if profile.user_id is null and not facta_private.sg_budget('profile_setup',10,60) then
+      return jsonb_build_object('ok',false,'code','rate_limited','scope','profile_setup'); end if;
     if exists(select 1 from public.shared_profiles where handle=handle_value and user_id<>actor) then return jsonb_build_object('ok',false,'code','handle_taken'); end if;
-    insert into public.shared_profiles(user_id,handle,display_name,created_at,updated_at)
-      values(actor,handle_value,btrim(payload->>'display_name'),at_time,at_time)
-      on conflict(user_id) do update set display_name=excluded.display_name,updated_at=excluded.updated_at,revision=shared_profiles.revision+1;
+    begin
+      insert into public.shared_profiles(user_id,handle,display_name,created_at,updated_at)
+        values(actor,handle_value,btrim(payload->>'display_name'),at_time,at_time)
+        on conflict(user_id) do update set display_name=excluded.display_name,updated_at=excluded.updated_at,revision=shared_profiles.revision+1;
+    exception when unique_violation then
+      get stacked diagnostics profile_constraint=constraint_name;
+      if profile_constraint<>'shared_profiles_handle_key' then raise; end if;
+      -- Another account can claim the handle after the lookup. Keep the budget
+      -- and receipt durable by rolling back only this insert, not the command.
+      return jsonb_build_object('ok',false,'code','handle_taken');
+    end;
     outcome:=jsonb_build_object('ok',true,'code','profile_saved');
   elsif operation='create_draft' then
     if not exists(select 1 from public.shared_profiles where user_id=actor and deleted_at is null) then return jsonb_build_object('ok',false,'code','profile_required'); end if;
@@ -1665,6 +1799,7 @@ begin
         outcome:=jsonb_build_object('ok',true,'code','published','group_id',gid,'first_round_date',start_date);
       when 'invite','issue_link' then
         if not facta_private.sg_budget('invite_issue',20,3600) then return jsonb_build_object('ok',false,'code','rate_limited'); end if;
+        if not facta_private.sg_invite_budget(gid) then return jsonb_build_object('ok',false,'code','rate_limited','scope','group_invites'); end if;
         recipient:=null;
         if operation='invite' then
           if not facta_private.sg_budget('handle_lookup',10,60) then return jsonb_build_object('ok',false,'code','rate_limited'); end if;
@@ -1685,6 +1820,7 @@ begin
       when 'rotate_invite' then
         if invite.state<>'pending' then return jsonb_build_object('ok',false,'code','invalid_invite'); end if;
         if not facta_private.sg_budget('invite_issue',20,3600) then return jsonb_build_object('ok',false,'code','rate_limited'); end if;
+        if not facta_private.sg_invite_budget(gid) then return jsonb_build_object('ok',false,'code','rate_limited','scope','group_invites'); end if;
         if invite.kind='direct' and invite.expires_at<=at_time and facta_private.sg_used(gid,at_time)>=8 then return jsonb_build_object('ok',false,'code','full'); end if;
         if exists(select 1 from public.shared_memberships where group_id=gid and user_id=invite.recipient_id and left_at is null and deleted_at is null) then return jsonb_build_object('ok',false,'code','already_joined'); end if;
         token:=translate(rtrim(encode(extensions.gen_random_bytes(32),'base64'),'='),'+/','-_');
@@ -1833,6 +1969,8 @@ grant execute on function public.facta_shared_command(uuid,text,jsonb),public.fa
 select pg_temp.check_true((select count(*) from public.shared_checkins)=current_setting('shared_test.checkins')::int,'rerun preserves check-ins');
 select pg_temp.check_true((select count(*) from public.shared_memberships)=current_setting('shared_test.memberships')::int,'rerun preserves membership epochs');
 select pg_temp.check_true((select count(*) from facta_private.shared_command_receipts)=current_setting('shared_test.receipts')::int,'rerun preserves receipts');
+select pg_temp.set_clock('2026-12-11 12:00+03');
+select pg_temp.check_true(pg_temp.command(3,'issue_link',jsonb_build_object('group_id',pg_temp.gid('expiry-budget')))->>'scope'='group_invites','rerun preserves exhausted group budget');
 select pg_temp.set_clock('2026-11-16 10:00+03');
 select pg_temp.check_true((select count(*) from public.shared_goal_round_scores where group_id=(select (v->>'group_id')::uuid from sg_fixture where k='lifecycle'))=4,'rerun preserves archived scored-round set');
 select 'shared_goals: all SQL assertions passed ('||n||' checked assertions, plus exception assertions)' as result from sg_assertions;

@@ -9,6 +9,7 @@ import datetime as dt
 import json
 import os
 from pathlib import Path
+import re
 import time
 import uuid
 
@@ -38,6 +39,8 @@ def main():
     p.add_argument("--user", default="postgres")
     p.add_argument("--keep", action="store_true", help="retain only this run's disposable database")
     p.add_argument("--output", type=Path)
+    p.add_argument("--only", choices=["invitation-budget", "profile-budget"],
+                   help="run one focused real-SQL review regression in a fresh database")
     args = p.parse_args()
     base = dict(host=args.host, port=args.port, user=args.user, connect_timeout=5,
                 password=os.environ.get("FACTA_TEST_PG_PASSWORD", ""), autocommit=True)
@@ -50,7 +53,15 @@ def main():
         with psycopg.connect(dbname=db, **base) as c:
             report["server"] = c.execute("select version()").fetchone()[0]
             c.execute(BOOTSTRAP)
-            cursor = c.execute((ROOT / "supabase/tests/shared_goals.sql").read_text(encoding="utf-8"))
+            if args.only:
+                migration = re.sub(r"^(?:begin|commit);[ \t]*\n?", "", MIGRATION.read_text(encoding="utf-8"), flags=re.M)
+                source = (ROOT / "supabase/tests/shared_goals.assertions.sql").read_text(encoding="utf-8")
+                helpers = source.split("-- 1. Sunday draft", 1)[0]
+                block = source.split("-- BEGIN " + args.only + " regression", 1)[1].split("-- END " + args.only + " regression", 1)[0]
+                script = "begin;\n" + migration + helpers + block + "\nset constraints all immediate;\nselect 'shared_goals: all SQL assertions passed (focused " + args.only + ")';\nrollback;"
+            else:
+                script = (ROOT / "supabase/tests/shared_goals.sql").read_text(encoding="utf-8")
+            cursor = c.execute(script)
             marker = None
             while True:
                 if cursor.description:
@@ -62,10 +73,11 @@ def main():
             if marker is None:
                 raise AssertionError("Standalone SQL suite did not finish")
             report["sql"] = marker
-            c.execute(MIGRATION.read_text(encoding="utf-8"))
-            report["concurrency"] = concurrency(base, db, c)
-            report["coexistence"] = coexistence(c)
-            report["history_query"] = history_query(c)
+            if not args.only:
+                c.execute(MIGRATION.read_text(encoding="utf-8"))
+                report["concurrency"] = concurrency(base, db, c)
+                report["coexistence"] = coexistence(c)
+                report["history_query"] = history_query(c)
         report["ok"] = True
         print(json.dumps(report, indent=2))
         if args.output:
@@ -136,17 +148,22 @@ def concurrency(base, db, owner):
 
     reports = []
 
-    def race(label, gid, a, b, expected_a, expected_b, same_id=False, advance_to=None):
+    def race(label, gid, a, b, expected_a, expected_b, same_id=False, advance_to=None, transfer_after_first=None):
         cid = uuid.uuid4()
         one = psycopg.connect(dbname=db, **{**base, "autocommit": False}, application_name="facta_shared_race_first")
         second_name = "facta_shared_race_" + uuid.uuid4().hex[:12]
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         future = None
         try:
-            one.execute("select id from public.shared_groups where id=%s for update", (gid,))
+            if gid is not None:
+                one.execute("select id from public.shared_groups where id=%s for update", (gid,))
             authenticate(one, a[0])
             first = one.execute("select public.facta_shared_command(%s,%s,%s)", (cid, a[1], Jsonb(a[2]))).fetchone()[0]
             expect(first, expected_a)
+            if transfer_after_first is not None:
+                transfer = one.execute("select public.facta_shared_command(%s,'transfer_owner',%s)",
+                    (uuid.uuid4(), Jsonb(dict(group_id=gid, user_id=str(uid(transfer_after_first)))))).fetchone()[0]
+                expect(transfer, "owner_transferred")
 
             def second():
                 with psycopg.connect(dbname=db, **{**base, "autocommit": False}, application_name=second_name) as c:
@@ -266,7 +283,45 @@ def concurrency(base, db, owner):
     race("lock wait crosses round boundary", gid, (1, "set_target", dict(group_id=gid, target=3)),
          (2, "set_checkin", body), "target_scheduled", "checked", advance_to="2026-10-26 00:00:00+03")
     assert owner.execute("select checkin_date='2026-10-26' from public.shared_checkins where group_id=%s", (gid,)).fetchone()[0]
-    assert len(reports) == 17
+    # Last group allowance: old owner rotates and transfers in one transaction;
+    # new owner's queued issuance must see the group's exhausted shared budget.
+    gid, invite = group("shared invite budget across transfer")
+    clock("2026-10-19 13:00:00+03")
+    for _ in range(19):
+        expect(command(1, "rotate_invite", dict(invite_id=invite["invite_id"])), "invite_rotated")
+    _, denied = race("last group slot survives concurrent transfer", gid,
+         (1, "rotate_invite", dict(invite_id=invite["invite_id"])),
+         (2, "issue_link", dict(group_id=gid)), "invite_rotated", "rate_limited", transfer_after_first=2)
+    assert denied.get("scope") == "group_invites"
+
+    clock("2026-12-12 10:00:00+03")
+    for number in [14, 15, 16, 17]:
+        owner.execute("insert into auth.users(id) values(%s)", (uid(number),))
+    taken = dict(handle="concurrent_1", display_name="Setup")
+    for _ in range(9):
+        expect(command(14, "set_profile", taken), "handle_taken")
+    _, denied = race("last profile availability slot", None,
+         (14, "set_profile", taken), (14, "set_profile", taken), "handle_taken", "rate_limited")
+    assert denied.get("scope") == "profile_setup"
+    # A fresh connection/new UUID cannot escape committed failures.
+    expect(command(14, "set_profile", dict(handle="fresh_14", display_name="Setup")), "rate_limited")
+
+    claim = dict(handle="contended_handle", display_name="Winner")
+    race("two accounts claim one free handle", None,
+         (15, "set_profile", claim), (16, "set_profile", claim), "profile_saved", "handle_taken")
+    for _ in range(9):
+        expect(command(16, "set_profile", claim), "handle_taken")
+    expect(command(16, "set_profile", dict(handle="fresh_16", display_name="Setup")), "rate_limited")
+
+    for _ in range(8):
+        expect(command(17, "set_profile", taken), "handle_taken")
+    race("concurrent taken-handle receipt retry", None,
+         (17, "set_profile", taken), (17, "set_profile", taken), "handle_taken", "handle_taken", same_id=True)
+    expect(command(17, "set_profile", taken), "handle_taken")
+    expect(command(17, "set_profile", dict(handle="fresh_17", display_name="Setup")), "rate_limited")
+    clock("2026-12-12 10:01:00+03")
+    expect(command(14, "set_profile", dict(handle="fresh_14", display_name="Setup")), "profile_saved")
+    assert len(reports) == 21
     return reports
 
 def coexistence(c):

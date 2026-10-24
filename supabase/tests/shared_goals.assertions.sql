@@ -394,6 +394,72 @@ do $$ begin
   begin update public.shared_profiles set handle='other_handle',revision=revision+1 where handle='tester_1'; raise exception 'handle edited'; exception when check_violation then null; end;
   begin delete from public.shared_checkins; raise exception 'permanent delete accepted'; exception when check_violation then null; end;
 end $$;
+-- BEGIN invitation-budget regression
+-- A transfer cannot reset the group's shared issue/rotation allowance.
+select pg_temp.set_clock('2026-12-04 10:00+03');
+select pg_temp.draft(1,'group-budget'); select pg_temp.publish(1,'group-budget','2026-12-07');
+insert into sg_fixture values('group-budget-id',jsonb_build_object('id',gen_random_uuid()));
+insert into sg_fixture values('group-budget-link',pg_temp.command(1,'issue_link',jsonb_build_object('group_id',pg_temp.gid('group-budget')),(select (v->>'id')::uuid from sg_fixture where k='group-budget-id')));
+select pg_temp.check_true(pg_temp.command(2,'join',jsonb_build_object('token',(select v->>'token' from sg_fixture where k='group-budget-link'),'target',2))->>'code'='joined','budget successor joined');
+select pg_temp.check_true(pg_temp.command(1,'issue_link',jsonb_build_object('group_id',pg_temp.gid('group-budget')))->>'code'='invite_issued','group budget old owner '||n) from generate_series(1,12) n;
+select pg_temp.check_true(pg_temp.command(1,'transfer_owner',jsonb_build_object('group_id',pg_temp.gid('group-budget'),'user_id','aaaaaaaa-0000-4000-8000-000000000002'))->>'code'='owner_transferred','budget owner transferred');
+select pg_temp.check_true(pg_temp.command(2,'rotate_invite',jsonb_build_object('invite_id',(select v->>'invite_id' from sg_fixture where k='group-budget-link')))->>'code'='invite_rotated','rotation consumes group allowance');
+select pg_temp.check_true(pg_temp.command(2,'issue_link',jsonb_build_object('group_id',pg_temp.gid('group-budget')))->>'code'='invite_issued','group budget new owner '||n) from generate_series(1,5) n;
+select pg_temp.check_true(pg_temp.command(1,'issue_link',jsonb_build_object('group_id',pg_temp.gid('group-budget')),(select (v->>'id')::uuid from sg_fixture where k='group-budget-id'))->>'code'='invite_issued','issue receipt retry does not spend group budget');
+select pg_temp.check_true(pg_temp.command(2,'issue_link',jsonb_build_object('group_id',pg_temp.gid('group-budget')))->>'code'='invite_issued','twentieth distinct group attempt allowed');
+select pg_temp.check_true(pg_temp.command(2,'issue_link',jsonb_build_object('group_id',pg_temp.gid('group-budget')))->>'scope'='group_invites','twenty-first group attempt blocked across owners');
+select pg_temp.command(2,'revoke_invite',jsonb_build_object('invite_id',(select v->>'invite_id' from sg_fixture where k='group-budget-link')));
+select pg_temp.check_true(pg_temp.command(2,'issue_link',jsonb_build_object('group_id',pg_temp.gid('group-budget')))->>'scope'='group_invites','revocation does not refund group budget');
+select pg_temp.command(2,'transfer_owner',jsonb_build_object('group_id',pg_temp.gid('group-budget'),'user_id','aaaaaaaa-0000-4000-8000-000000000001'));
+select pg_temp.check_true(pg_temp.command(1,'rotate_invite',jsonb_build_object('invite_id',(select id from public.shared_invites where group_id=pg_temp.gid('group-budget') and state='pending' limit 1)))->>'scope'='group_invites','rotation blocked after ownership transfers back');
+
+-- Expiry does not refund the current hour; expired rotation spends the next
+-- hour's allowance, and old tokens remain invalid after a successful rotation.
+select pg_temp.set_clock('2026-12-04 11:30+03');
+select pg_temp.draft(3,'expiry-budget'); select pg_temp.publish(3,'expiry-budget','2026-12-07');
+insert into sg_fixture values('expiry-budget-link',pg_temp.command(3,'issue_link',jsonb_build_object('group_id',pg_temp.gid('expiry-budget'))));
+select pg_temp.command(4,'join',jsonb_build_object('token',(select v->>'token' from sg_fixture where k='expiry-budget-link'),'target',2));
+select pg_temp.set_clock('2026-12-11 11:00+03');
+select pg_temp.check_true(pg_temp.command(3,'issue_link',jsonb_build_object('group_id',pg_temp.gid('expiry-budget')))->>'code'='invite_issued','expiry group allowance '||n) from generate_series(1,20) n;
+select pg_temp.command(3,'transfer_owner',jsonb_build_object('group_id',pg_temp.gid('expiry-budget'),'user_id','aaaaaaaa-0000-4000-8000-000000000004'));
+select pg_temp.set_clock('2026-12-11 11:29:59.999999+03');
+select pg_temp.check_true(pg_temp.command(4,'rotate_invite',jsonb_build_object('invite_id',(select v->>'invite_id' from sg_fixture where k='expiry-budget-link')))->>'scope'='group_invites','live rotation blocked before expiry');
+select pg_temp.set_clock('2026-12-11 11:30+03');
+select pg_temp.check_true(pg_temp.command(4,'rotate_invite',jsonb_build_object('invite_id',(select v->>'invite_id' from sg_fixture where k='expiry-budget-link')))->>'scope'='group_invites','expiry does not reopen group budget');
+select pg_temp.set_clock('2026-12-11 12:00+03');
+insert into sg_fixture values('expiry-budget-rotated',pg_temp.command(4,'rotate_invite',jsonb_build_object('invite_id',(select v->>'invite_id' from sg_fixture where k='expiry-budget-link'))));
+select pg_temp.check_true((select v->>'code' from sg_fixture where k='expiry-budget-rotated')='invite_rotated','new UTC hour permits expired rotation');
+select pg_temp.check_true(pg_temp.as_user(5,format('select public.facta_shared_preview(%L)',(select v->>'token' from sg_fixture where k='expiry-budget-link')))->>'code'='invalid_invite','old expired token stays invalid after rotation');
+select pg_temp.check_true((pg_temp.as_user(5,format('select public.facta_shared_preview(%L)',(select v->>'token' from sg_fixture where k='expiry-budget-rotated')))->>'ok')::boolean,'new rotated token previews');
+select pg_temp.check_true(pg_temp.command(4,'issue_link',jsonb_build_object('group_id',pg_temp.gid('expiry-budget')))->>'code'='invite_issued','rotation leaves nineteen slots '||n) from generate_series(1,19) n;
+select pg_temp.command(4,'transfer_owner',jsonb_build_object('group_id',pg_temp.gid('expiry-budget'),'user_id','aaaaaaaa-0000-4000-8000-000000000003'));
+select pg_temp.check_true(pg_temp.command(3,'issue_link',jsonb_build_object('group_id',pg_temp.gid('expiry-budget')))->>'scope'='group_invites','rotation counts in new-hour budget across transfer');
+select pg_temp.check_true(pg_temp.denied(3,'select * from facta_private.shared_group_invite_budgets'),'group budget storage is private');
+select pg_temp.check_true(pg_temp.denied(3,format('select facta_private.sg_invite_budget(%L)',pg_temp.gid('expiry-budget'))),'group budget helper is private');
+-- END invitation-budget regression
+
+-- BEGIN profile-budget regression
+insert into auth.users(id) values('aaaaaaaa-0000-4000-8000-000000000014');
+select pg_temp.set_clock('2026-12-12 10:00+03');
+insert into sg_fixture values('profile-probe-id',jsonb_build_object('id',gen_random_uuid()));
+select pg_temp.check_true(pg_temp.command(14,'set_profile','{"handle":"tester_1","display_name":"Setup"}',(select (v->>'id')::uuid from sg_fixture where k='profile-probe-id'))->>'code'='handle_taken','first profile probe rejected');
+select pg_temp.check_true(pg_temp.command(14,'set_profile','{"handle":"tester_1","display_name":"Setup"}')->>'code'='handle_taken','taken handle consumes profile allowance '||n) from generate_series(1,8) n;
+select pg_temp.check_true(pg_temp.command(14,'set_profile','{"handle":"tester_1","display_name":"Setup"}',(select (v->>'id')::uuid from sg_fixture where k='profile-probe-id'))->>'code'='handle_taken','taken receipt retry spends no availability slot');
+select pg_temp.check_true(pg_temp.command(14,'set_profile','{"handle":"tester_1","display_name":"Setup"}')->>'code'='handle_taken','tenth distinct profile probe allowed');
+select pg_temp.check_true(pg_temp.command(14,'set_profile','{"handle":"new_profile_14","display_name":"Setup"}')->>'scope'='profile_setup','profile-less account cannot bypass availability limit');
+insert into auth.users(id) values('aaaaaaaa-0000-4000-8000-000000000015');
+select pg_temp.check_true(pg_temp.command(15,'set_profile','{"handle":"new_profile_15","display_name":"Other"}')->>'code'='profile_saved','another actor can still set up a profile');
+select pg_temp.set_clock('2026-12-12 10:00:59.999999+03');
+select pg_temp.check_true(pg_temp.command(14,'set_profile','{"handle":"new_profile_14","display_name":"Setup"}')->>'scope'='profile_setup','profile budget holds to end of UTC minute');
+select pg_temp.set_clock('2026-12-12 10:01+03');
+insert into sg_fixture values('profile-save-id',jsonb_build_object('id',gen_random_uuid()));
+select pg_temp.check_true(pg_temp.command(14,'set_profile','{"handle":"new_profile_14","display_name":"Setup"}',(select (v->>'id')::uuid from sg_fixture where k='profile-save-id'))->>'code'='profile_saved','fresh minute permits legitimate profile setup');
+select pg_temp.check_true(pg_temp.command(14,'set_profile','{"handle":"new_profile_14","display_name":"Edited"}')->>'code'='profile_saved','existing immutable-handle edit stays usable '||n) from generate_series(1,12) n;
+select pg_temp.check_true(pg_temp.command(14,'set_profile','{"handle":"new_profile_14","display_name":"Setup"}',(select (v->>'id')::uuid from sg_fixture where k='profile-save-id'))->>'code'='profile_saved','successful setup receipt retry remains valid');
+select pg_temp.check_true(pg_temp.as_user(14,'select to_jsonb(display_name) from public.shared_profiles where user_id=auth.uid()')='"Edited"'::jsonb,'setup receipt retry does not revert profile edit');
+select pg_temp.check_true(pg_temp.command(14,'set_profile','{"handle":"tester_2","display_name":"Edited"}')->>'code'='handle_immutable','existing handle cannot probe other availability');
+-- END profile-budget regression
+
 set constraints all immediate;
 set constraints all deferred;
 select set_config('shared_test.checkins',(select count(*)::text from public.shared_checkins),true);

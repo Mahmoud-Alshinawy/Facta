@@ -35,6 +35,8 @@ def generated():
             + "select pg_temp.check_true((select count(*) from public.shared_checkins)=current_setting('shared_test.checkins')::int,'rerun preserves check-ins');\n"
             + "select pg_temp.check_true((select count(*) from public.shared_memberships)=current_setting('shared_test.memberships')::int,'rerun preserves membership epochs');\n"
             + "select pg_temp.check_true((select count(*) from facta_private.shared_command_receipts)=current_setting('shared_test.receipts')::int,'rerun preserves receipts');\n"
+            + "select pg_temp.set_clock('2026-12-11 12:00+03');\n"
+            + "select pg_temp.check_true(pg_temp.command(3,'issue_link',jsonb_build_object('group_id',pg_temp.gid('expiry-budget')))->>'scope'='group_invites','rerun preserves exhausted group budget');\n"
             + "select pg_temp.set_clock('2026-11-16 10:00+03');\n"
             + "select pg_temp.check_true((select count(*) from public.shared_goal_round_scores where group_id=(select (v->>'group_id')::uuid from sg_fixture where k='lifecycle'))=4,'rerun preserves archived scored-round set');\n"
             + "select 'shared_goals: all SQL assertions passed ('||n||' checked assertions, plus exception assertions)' as result from sg_assertions;\nrollback;\n")

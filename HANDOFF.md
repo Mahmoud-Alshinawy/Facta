@@ -1,6 +1,47 @@
 # Handoff: branch 3 Step 1 — STOP for schema/security review
 
-## Approved plan and Step 1 checkpoint (24 October 2026)
+## Step 1 review fixes (24 October 2026)
+
+- Addressed the two should-fixes from review of **87183cc**. No Step 2 client or
+  UI work. The pending migration remains re-runnable; both embedded test copies
+  are synchronized. No public database type changed: the new relation is private.
+- Added a durable **20 invitation issue/rotation attempts per group per fixed UTC
+  hour** budget, in addition to the existing actor limit. Its private helper
+  obtains the group lock; direct/link issuance and rotation share the counter.
+  Ownership transfer, expiration, acceptance and revocation do not refund it.
+  Expired pending rotation spends the new hour's allowance; rerunning the
+  migration preserves an exhausted counter. Denial scope is `group_invites`.
+- Added **10 profile handle-availability attempts per actor per fixed UTC minute**
+  before availability lookup, including `handle_taken` from profile-less actors.
+  Normal rejections commit their budget/receipt. A concurrent handle claim's
+  unique-constraint loser rolls back only its insert and returns `handle_taken`,
+  retaining its consumed attempt. Existing immutable-handle display-name edits
+  remain usable. Exact receipt retries spend no extra allowance; denial scope
+  is `profile_setup`.
+- Used the TDD skill at the already approved real authenticated RPC seam. Both
+  focused regressions failed before their respective fixes, then passed. Added
+  focused `--only invitation-budget` / `--only profile-budget` runner commands.
+  Documented exact policy, charging, expiry/revoke/transfer and retry behavior in
+  `docs/shared-goals-data.md`.
+- Actual disposable PostgreSQL **17.5** results: **409 checked SQL assertions**
+  plus exception assertions, **21 independent-session concurrency cases**, all
+  passing. Four new races observe real transaction/advisory waits: last group
+  allowance with rotation+ownership transfer, last profile availability slot,
+  two accounts claiming one handle, and concurrent taken-handle receipt replay.
+  Separate committed calls verify failed setup attempts remain limited. Existing
+  lifecycle/RLS/scoring tests, migration reruns, four personal-row preservation
+  checks and authenticated historical EXPLAIN ANALYZE also passed.
+- Required checks rerun and passed: frozen install; npx offline tsc in desktop,
+  widgets and calendar; desktop **378** and calendar **184** Vitest tests;
+  PORT=1420 BASE_PATH=/ desktop build; widgets build; Windows cargo check
+  --offline in both native folders. Existing main-chunk warning only.
+- Same isolated loopback cluster/auth-role scaffold as the initial checkpoint;
+  no live Supabase or application credentials used. Full Supabase Auth,
+  PostgREST and HTTP/JWT integration remain unverified. No new dependencies.
+- Commit/push this follow-up, then **STOP for schema/security review**. Step 2
+  remains unauthorized. Untracked `.agents/` and `skills-lock.json` are untouched.
+
+## Approved plan and initial Step 1 checkpoint (87183cc; historical)
 
 - Owner approved the revised plan at **5337807**, including proposed defaults
   and lifecycle contracts. Implemented Step 1 only on `feat/shared-goals`, based

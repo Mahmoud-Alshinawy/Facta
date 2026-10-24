@@ -63,6 +63,9 @@ Private relations in **`facta_private`**, outside the API schema:
   automatic cleanup in this checkpoint; cleanup must not permit reapplication.
 - `shared_rate_limits`: actor/operation/time bucket/attempt count. Old buckets
   for that actor are pruned during a later budget check.
+- `shared_group_invite_budgets`: group/UTC-hour PK and attempt count. A private
+  helper holds the group row lock while debiting the shared invitation allowance.
+  It is independent of owner identity and survives ownership changes and reruns.
 
 ## Lifecycle and authoritative scores
 
@@ -190,8 +193,36 @@ token. A lost issue reply cannot recover its token through receipt replay: issue
 another link, or rotate a known invite with a **new** command. Expiry is seven
 days (168 hours, independent of session DST); rotation/revocation is rechecked after the join lock. Rate limits per actor:
 20 issue/rotate attempts per hour, 10 exact handle lookups per minute and 10
-failed preview/redemptions per minute. Buckets use server time. SQL exceptions
-roll back budgets; application-level rejected attempts commit them.
+failed preview/redemptions per minute. In addition, each **group** has 20
+invitation issue/rotation attempts per fixed UTC hour, shared by all owners.
+After authorization and the actor budget check, `invite`, `issue_link` and a
+pending invite's `rotate_invite` debit this allowance under the group lock.
+Direct and generic invitations share it. A group rejection returns
+`{ok:false,code:"rate_limited",scope:"group_invites"}` before any token or invite
+change. Invalid/terminal rotations do not reach this budget; normal rejected
+attempts that reach it consume a slot. This limits invitation churn; accepted
+members plus live direct reservations still have the separate eight-seat limit.
+
+Expiry, revoke/decline, acceptance and owner transfer never refund/reset the
+group allowance. Rotating an expired pending invite refreshes expiry and spends
+a slot, subject to the existing direct-seat capacity checks. The next UTC hour
+has a new allowance; archive remains read-only. Counters are private and old
+buckets are pruned after two days without changing a current allowance.
+
+`set_profile` now allows **10 availability attempts per actor per fixed UTC
+minute**, before looking up another account's handle, including for actors with
+no profile. Both `handle_taken` and a successful first setup consume an attempt;
+the eleventh returns `{ok:false,code:"rate_limited",scope:"profile_setup"}`.
+Malformed input is rejected before lookup. The actor's profile lock serializes
+setup attempts. Existing profiles may edit their display name on their immutable
+handle without availability charges; changing that handle remains forbidden.
+If another account wins a concurrent free-handle claim, only the losing insert
+rolls back: its attempt and `handle_taken` receipt commit normally.
+
+All buckets use server time. SQL exceptions roll back budgets;
+application-level rejected attempts commit them. Exact command-receipt retries
+bypass budget evaluation and never spend another slot or mint another token.
+A new attempt after a product rejection or bucket rollover needs a new UUID.
 
 Check-in intent contains desired state, original membership epoch/date/capture,
 and base row revision, never toggle. The capture must equal the group-local date,
@@ -234,13 +265,24 @@ preview privacy, capacity/reservations, token rotation/revocation, rate limits,
 real-role cross-group/former/anonymous reads, nested invoker views, denied private
 helpers/direct writes, actor injection and actual constraint/guard failures.
 
-Executed result: **304 checked assertions plus exception assertions**, followed
+Initial checkpoint (`87183cc`): **304 checked assertions plus exception assertions**, followed
 by **17 passing independent-session races**. A separate coexistence check applied
 both personal migrations, seeded goals/events/notes/diary, and reran the shared
 migration: all four rows and the personal sync guard were preserved. An actual
 authenticated EXPLAIN ANALYZE over a synthetic group starting in January 2020
 returned a bounded 2026 history window and used membership/target indexes. This
 small fixture is query-plan evidence, not an account-scale performance claim.
+
+Review follow-up: **409 checked SQL assertions plus exception assertions and
+21 independent-session races passed** on the same disposable PostgreSQL 17.5
+infrastructure. Both focused regressions were observed failing before the
+respective fixes, then passing. Tests cover the shared issue/rotation allowance
+across repeated ownership transfers, revoke and expiry without refunds, expired
+rotation and exact new-hour rollover, budget preservation on migration rerun,
+and denied access to the private budget table/helper. Profile tests cover
+profile-less `handle_taken` attempts, exact minute rollover, separate actors,
+legitimate setup, display edits, and successful/rejected receipt retries.
+Migration coexistence and the historical query plan were rerun successfully.
 
 The concurrency runner uses **two independent connections per case**, switches
 both mutation sessions to authenticated, and asserts a PostgreSQL lock wait
@@ -250,6 +292,12 @@ before old-token join; check-in before archive; archive before check-in; own
 check-in before leave; leave before own check-in; two next-target edits; transfer
 before new-owner leave; member leave before transfer; leave before next-round
 join; join before transfer; and a lock wait spanning a round boundary.
+The four review races add: last group slot consumed by rotation followed by
+ownership transfer in one transaction versus the new owner's issuance; two setup
+calls competing for the last availability slot; two accounts claiming the same
+free handle (the loser stays charged); and concurrent replay of a taken-handle
+receipt (no duplicate charge). Setup attempts use separate committed connections
+to verify durability across RPC calls, not just visibility inside one transaction.
 
 Reproduce with a **disposable loopback cluster** and a temporary test-only Python
 environment containing `psycopg[binary]>=3.2`:
@@ -257,6 +305,8 @@ environment containing `psycopg[binary]>=3.2`:
 ```powershell
 python scripts/build-shared-goals-sql.py --check
 python scripts/run-shared-goals-tests.py --port <local-disposable-port> --output tmp/shared-goals-results.json
+python scripts/run-shared-goals-tests.py --port <local-disposable-port> --only invitation-budget
+python scripts/run-shared-goals-tests.py --port <local-disposable-port> --only profile-budget
 ```
 
 The runner requires a local role able to create/drop its randomly named test
