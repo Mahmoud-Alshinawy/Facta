@@ -475,6 +475,7 @@ export function mapOutcome(value: unknown): SharedOutcome {
     invite_id: "?uuid",
     token: "?text",
     effective_round: "?date",
+    eligible_round: "?date|null",
     target: "?positive",
     scope: "?text",
   });

@@ -8,6 +8,7 @@ import { createSharedRemote } from "@/lib/sync/shared/remote";
 import { decodeSharedState, sharedStorageKey } from "@/lib/sync/shared/state";
 import { makeCommand } from "@/lib/sharedGoals/contracts";
 import { defaultHistoryRange } from "@/lib/sharedGoals/dates";
+import { projectSharedProgress } from "@/lib/sharedGoals/projection";
 import { PlannerSync } from "@/lib/sync/engine";
 import { createSupabaseRemotes } from "@/lib/sync/supabaseRemote";
 
@@ -54,6 +55,7 @@ async function runSharedIntegration({
   const checks: string[] = [];
   let assertions = 0;
   const check = (ok: unknown, message: string) => {
+    Object.assign(window, { sharedIntegrationCheckpoint: message });
     assertions++;
     if (!ok) throw new Error(message);
   };
@@ -96,6 +98,11 @@ async function runSharedIntegration({
     createSharedRemote(userId, client, {
       getSession: async () =>
         current ? { userId: current, accessToken: `fixture.${current}` } : null,
+      timeoutMs: 10_000,
+    });
+  const actorRemote = (userId: string) =>
+    createSharedRemote(userId, client, {
+      getSession: async () => ({ userId, accessToken: `fixture.${userId}` }),
       timeoutMs: 10_000,
     });
   const engine = (store: IndexedDbStore, userId = config.owner) => {
@@ -144,6 +151,120 @@ async function runSharedIntegration({
   };
 
   if (phase === 1) {
+    // Exercise the real join response codec, including negative receipt replay
+    // after publication and successful replay after token revocation.
+    const ownerRemote = actorRemote(config.owner);
+    const joiningRemote = actorRemote(config.third);
+    const draft = await ownerRemote.command(
+      makeCommand("create_draft", {
+        name: "Join contract regression",
+        template: "gym",
+        schedule_kind: "n",
+        time_zone: "Asia/Riyadh",
+        round_weekday: 1,
+        target: 2,
+      }),
+    );
+    check(draft.ok && draft.groupId, "Join regression draft must exist");
+    const invitation = await ownerRemote.command(
+      makeCommand("issue_link", { group_id: draft.groupId! }),
+    );
+    check(
+      invitation.ok && invitation.token && invitation.inviteId,
+      "Draft invitation must issue through the adapter",
+    );
+    const beforePublication = makeCommand("join", {
+      token: invitation.token!,
+      target: 2,
+    });
+    const unpublished = await joiningRemote.command(beforePublication);
+    check(
+      !unpublished.ok &&
+        unpublished.code === "not_published" &&
+        unpublished.eligibleRound === undefined,
+      "Unpublished join must return its actual not_published outcome",
+    );
+    check(
+      JSON.stringify(await joiningRemote.command(beforePublication)) ===
+        JSON.stringify(unpublished),
+      "Unpublished same-UUID receipt replay must decode identically",
+    );
+    const draftSnapshot = await ownerRemote.snapshot(defaultHistoryRange(now));
+    const revision = draftSnapshot.groups.find(
+      (g) => g.id === draft.groupId,
+    )!.revision;
+    const published = await ownerRemote.command(
+      makeCommand("publish", {
+        group_id: draft.groupId!,
+        expected_revision: revision,
+        first_round_date: "2026-10-26",
+      }),
+    );
+    check(published.ok, "Join regression must publish through the adapter");
+    check(
+      JSON.stringify(await joiningRemote.command(beforePublication)) ===
+        JSON.stringify(unpublished),
+      "Publishing must not change an already committed negative join receipt",
+    );
+    const joinPacket = makeCommand("join", {
+      token: invitation.token!,
+      target: 2,
+    });
+    const joined = await joiningRemote.command(joinPacket);
+    check(
+      joined.ok &&
+        joined.code === "joined" &&
+        joined.groupId === draft.groupId &&
+        joined.membershipId &&
+        joined.eligibleRound === "2026-10-26",
+      "Published join must decode the server eligibility date",
+    );
+    check(
+      JSON.stringify(await joiningRemote.command(joinPacket)) ===
+        JSON.stringify(joined),
+      "Published same-UUID receipt replay must retain eligibility and membership",
+    );
+    check(
+      (
+        await ownerRemote.command(
+          makeCommand("revoke_invite", { invite_id: invitation.inviteId! }),
+        )
+      ).ok,
+      "Join regression token must revoke",
+    );
+    check(
+      JSON.stringify(await joiningRemote.command(joinPacket)) ===
+        JSON.stringify(joined),
+      "Committed join receipt must remain decodable after token revocation",
+    );
+    check(
+      (
+        await ownerRemote.command(
+          makeCommand("archive", { group_id: draft.groupId! }),
+        )
+      ).ok,
+      "Join regression group must archive",
+    );
+    check(
+      (
+        await ownerRemote.command(
+          makeCommand("leave", { group_id: draft.groupId! }),
+        )
+      ).ok,
+      "Join regression owner must leave its archived group",
+    );
+    check(
+      (
+        await joiningRemote.command(
+          makeCommand("leave", { group_id: draft.groupId! }),
+        )
+      ).ok,
+      "Join regression member must leave its archived group",
+    );
+    step(
+      "real adapter published/unpublished join responses and exact-UUID receipt replay before/after lifecycle changes",
+    );
+
     // Upgrade the existing real object store; all old per-account keys survive.
     const migrationDb = `${db}-migration`;
     const legacy = Object.fromEntries(
@@ -209,6 +330,45 @@ async function runSharedIntegration({
         .getSnapshot()
         .cache?.snapshot.groups.some((g) => g.id === config.groupId),
       "Own group must be mapped",
+    );
+    const roundConfirmedAt = now;
+    check(
+      projectSharedProgress(
+        shared.getSnapshot(),
+        config.owner,
+        now,
+        config.groupId,
+      )?.confirmedAt === roundConfirmedAt,
+      "Displayed round must use its initial coverage confirmation",
+    );
+    now += 180_000;
+    await control("clock", { now: new Date(now).toISOString() });
+    await shared.syncNow({ from: "2026-10-26", until: "2026-11-01" });
+    const retainedProgress = projectSharedProgress(
+      shared.getSnapshot(),
+      config.owner,
+      now,
+      config.groupId,
+    );
+    check(
+      retainedProgress?.confirmedAt === roundConfirmedAt &&
+        retainedProgress.stale &&
+        retainedProgress.round?.start === "2026-10-19",
+      "Real unrelated history read must not refresh retained scores",
+    );
+    await shared.syncNow({ from: "2026-10-19", until: "2026-10-19" });
+    const refreshedProgress = projectSharedProgress(
+      shared.getSnapshot(),
+      config.owner,
+      now,
+      config.groupId,
+    );
+    check(
+      refreshedProgress?.confirmedAt === now && !refreshedProgress.stale,
+      "Real reread covering the round start must refresh that round",
+    );
+    step(
+      "round-specific coverage retains old confirmation after unrelated reads and refreshes only on matching reread",
     );
     const oldDisk = await raw(db, sharedStorageKey(config.owner));
     const restore = quotaOnce();
@@ -777,12 +937,17 @@ async function runSharedIntegration({
     Array.isArray(await remote(config.other).pendingInvites()),
     "Real pending-invitation read must decode",
   );
-  const joined = await control("command", {
-    actor: config.third,
-    operation: "join",
-    payload: { token: link.token, target: 2 },
-  });
-  check(joined.ok, "Third account must accept for next-round eligibility");
+  const joinPacket = makeCommand("join", { token: link.token!, target: 2 });
+  const joined = await actorRemote(config.third).command(joinPacket);
+  check(
+    joined.ok && joined.eligibleRound === "2026-10-26",
+    "Third account must decode acceptance and next-round eligibility through the adapter",
+  );
+  check(
+    JSON.stringify(await actorRemote(config.third).command(joinPacket)) ===
+      JSON.stringify(joined),
+    "Next-round join receipt replay must decode identically",
+  );
   now = Date.parse("2026-10-21T10:00:00Z");
   await control("clock", { now: new Date(now).toISOString() });
   await shared.syncNow();

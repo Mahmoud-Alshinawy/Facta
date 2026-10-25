@@ -1,6 +1,48 @@
 # Handoff: branch 3 Step 2 — STOP for data-client review
 
-## Current decision and Step 2 checkpoint (24 October 2026)
+## Step 2 review fixes (25 October 2026)
+
+- Addressed both review findings on **dd88028**. Step 3 remains **unapproved**;
+  no UI, routing, migrations or new dependencies. Unrelated untracked `.agents/`
+  and `skills-lock.json` remain untouched.
+- `mapOutcome` accepts optional nullable `eligible_round`, mapped to
+  `SharedOutcome.eligibleRound?: string | null`. Added codec coverage for null,
+  valid dates and invalid dates. Real `createSharedRemote` regressions cover
+  unpublished `not_published`, published `joined` with the eligibility date and
+  exact same-UUID receipt replay. A negative receipt stays negative after
+  publication; a successful receipt survives invite revocation unchanged.
+  The existing next-round join now also uses the adapter, replacing the fixture
+  control-endpoint bypass. Nullable-wire coverage does not claim unpublished
+  groups permit joining: actual SQL returns `not_published`.
+- `projectSharedProgress` uses the newest coverage window matching the selected
+  group revision and containing the displayed round start (inclusive), rather
+  than global cache confirmation. Missing coverage returns `confirmedAt: null`
+  and stays stale. Unrelated history reads retain the old score confirmation;
+  rereading the round's interval refreshes it. Tests also cover wrong group,
+  wrong revision, excluded round start and unordered overlapping windows.
+- Both issues reproduced before the fixes using the TDD skill at the requested
+  adapter/projection seams. Final affected browser integration passed **94
+  assertions**, real Chromium-based Edge **156.0.4314.42** IndexedDB with two
+  reloads, real Supabase SDK requests and real SQL in its own disposable local
+  PostgreSQL **17.5** database. Included actual unrelated/reread history RPCs,
+  all prior persistence/recovery/account/outage regressions and join replay.
+  One preliminary run hit the test adapter's 10-second deadline; subsequent
+  complete 91- and 94-assertion runs passed. Added safe checkpoint diagnostics.
+- Required checks passed: frozen install; npx offline tsc in desktop/widgets/
+  calendar; desktop **403** and calendar **184** Vitest tests; PORT=1420
+  BASE_PATH=/ desktop build; widgets build; Windows cargo check --offline in
+  both native folders. Existing desktop main-chunk warning only.
+- Updated `docs/shared-goals-client.md`; reproducible affected integration report
+  is `tmp/shared-goals-runtime/client-result.json` (ignored). No live Supabase
+  accessed. The full standalone 409-assertion SQL/security suite and 21 races
+  were not rerun in this client-only follow-up; their prior results are below.
+  The bridge uses synthetic identity claims/real roles: Supabase Auth, JWT
+  signatures/refresh and PostgREST/deployed HTTP remain unverified. Quota/open
+  faults are injected at native IndexedDB boundaries; no physical disk-full or
+  packaged Tauri UI smoke claim. Stopped the owned disposable cluster afterward.
+- Commit/push these review fixes, then **STOP for review before Step 3**.
+
+## Initial Step 2 checkpoint (24 October 2026; historical)
 
 - Owner approved Step 1 at **223a044**, including both review fixes, and
   authorized **Step 2 only** of the approved 5337807 plan. Implemented on

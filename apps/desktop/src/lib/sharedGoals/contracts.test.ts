@@ -15,6 +15,17 @@ import {
 } from "@/test/sharedFixtures";
 
 describe("shared RPC contracts", () => {
+  it("accepts optional nullable join eligibility while rejecting invalid dates", () => {
+    expect(
+      mapOutcome({ ok: true, code: "joined", eligible_round: null }),
+    ).toMatchObject({ eligibleRound: null });
+    expect(
+      mapOutcome({ ok: true, code: "joined", eligible_round: "2026-10-26" }),
+    ).toMatchObject({ eligibleRound: "2026-10-26" });
+    expect(() =>
+      mapOutcome({ ok: true, code: "joined", eligible_round: "2026-02-30" }),
+    ).toThrow();
+  });
   it("maps a complete authorized snapshot without inventing pending or inactive scores", () => {
     const data = sharedRpcFixture();
     const mapped = mapSnapshot(data, SHARED_USER, SHARED_RANGE);

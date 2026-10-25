@@ -80,6 +80,111 @@ describe("shared Progress handoff", () => {
       ),
     ).toBeNull();
   });
+  it("does not refresh retained scores from an unrelated history read, but refreshes their own interval", () => {
+    const saved = state();
+    const now = SHARED_NOW + 180_000;
+    const otherRange = { from: "2026-10-26", until: "2026-11-01" };
+    const otherPage = mapSnapshot(
+      { ...sharedRpcFixture(), rounds: [], scores: [] },
+      SHARED_USER,
+      otherRange,
+    );
+    const unrelated = {
+      ...saved,
+      cache: reconcileSnapshot(saved.cache, otherPage, otherRange, now),
+    };
+    expect(unrelated.cache.confirmedAt).toBe(now);
+    expect(projectSharedProgress(unrelated, SHARED_USER, now)).toMatchObject({
+      confirmedAt: SHARED_NOW,
+      stale: true,
+      round: { start: "2026-10-19" },
+    });
+    const ownRange = { from: "2026-10-19", until: "2026-10-19" };
+    const reread = {
+      ...saved,
+      cache: reconcileSnapshot(
+        unrelated.cache,
+        mapSnapshot(sharedRpcFixture(), SHARED_USER, ownRange),
+        ownRange,
+        now + 1,
+      ),
+    };
+    expect(projectSharedProgress(reread, SHARED_USER, now + 1)).toMatchObject({
+      confirmedAt: now + 1,
+      stale: false,
+      round: { start: "2026-10-19" },
+    });
+  });
+  it.each<{
+    name: string;
+    from: string;
+    until: string;
+    versions: Record<string, number>;
+  }>([
+    { name: "absent", from: "2026-10-19", until: "2026-10-25", versions: {} },
+    {
+      name: "other group",
+      from: "2026-10-19",
+      until: "2026-10-25",
+      versions: { [SHARED_OTHER]: 1 },
+    },
+    {
+      name: "other revision",
+      from: "2026-10-19",
+      until: "2026-10-25",
+      versions: { [SHARED_GROUP]: 2 },
+    },
+    {
+      name: "after round start",
+      from: "2026-10-20",
+      until: "2026-10-25",
+      versions: { [SHARED_GROUP]: 1 },
+    },
+  ])("keeps scores stale with $name coverage", ({ from, until, versions }) => {
+    const saved = state();
+    const unconfirmed = {
+      ...saved,
+      cache: {
+        ...saved.cache!,
+        windows: [{ from, until, versions, confirmedAt: SHARED_NOW }],
+      },
+    };
+    expect(
+      projectSharedProgress(unconfirmed, SHARED_USER, SHARED_NOW),
+    ).toMatchObject({ confirmedAt: null, stale: true });
+  });
+  it("uses the newest matching coverage regardless of window order", () => {
+    const saved = state();
+    const covered = {
+      ...saved,
+      cache: {
+        ...saved.cache!,
+        windows: [
+          {
+            from: "2026-10-01",
+            until: "2026-10-19",
+            versions: { [SHARED_GROUP]: 1 },
+            confirmedAt: SHARED_NOW + 60_000,
+          },
+          {
+            from: "2026-10-19",
+            until: "2026-10-25",
+            versions: { [SHARED_GROUP]: 1 },
+            confirmedAt: SHARED_NOW,
+          },
+          {
+            from: "2026-10-19",
+            until: "2026-10-25",
+            versions: { [SHARED_GROUP]: 2 },
+            confirmedAt: SHARED_NOW + 120_000,
+          },
+        ],
+      },
+    };
+    expect(
+      projectSharedProgress(covered, SHARED_USER, SHARED_NOW + 60_000),
+    ).toMatchObject({ confirmedAt: SHARED_NOW + 60_000, stale: false });
+  });
   it("limits an eight-person leaderboard to top three plus self, preserving server ranks", () => {
     const saved = state();
     const own = saved.cache!.snapshot.scores[0];

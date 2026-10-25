@@ -113,10 +113,20 @@ try {
   const results = [];
   let checkpoint;
   for (const phase of [1, 2, 3]) {
-    const result = await page.evaluate(
-      (args) => window.runSharedIntegration(args),
-      { fixtureUrl: ready.url, phase, checkpoint },
-    );
+    let result;
+    try {
+      result = await page.evaluate(
+        (args) => window.runSharedIntegration(args),
+        { fixtureUrl: ready.url, phase, checkpoint },
+      );
+    } catch (error) {
+      const lastCheck = await page
+        .evaluate(() => window.sharedIntegrationCheckpoint ?? "phase start")
+        .catch(() => "page unavailable");
+      throw new Error(`Phase ${phase} stopped at: ${lastCheck}`, {
+        cause: error,
+      });
+    }
     results.push({
       phase,
       assertions: result.assertions,

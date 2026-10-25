@@ -6,6 +6,13 @@ Shared screens, profile/wizard flows, routing and native/widget changes remain
 later steps. The database contract remains [shared-goals-data.md](shared-goals-data.md);
 no migration or database type changes are needed here.
 
+The review follow-up to **dd88028** accepts the server's optional nullable
+`eligible_round` as `SharedOutcome.eligibleRound`. Unpublished joins return
+`not_published`; their committed negative receipt remains unchanged after
+publication. Published joins and same-UUID receipt retries retain the server's
+eligibility date. The browser regressions exercise these joins through
+`createSharedRemote`, including replay after invitation revocation.
+
 ## Public boundaries
 
 | Boundary                                               | Contract                                                                                                                                                                                                                                                      |
@@ -136,9 +143,12 @@ silently switching to another group. It returns at most top three server-ranked
 rows plus self, with server threshold/average values, dates, pending/stale and
 archive flags. No invitations, tokens, drafts, profile directory or raw history.
 Missing rounds yield no leaderboard; account mismatch yields null. Confirmation
-older than two minutes, an expired active interval or `needsRefresh` marks the
-projection stale. Consumers must flush and recheck account identity before a
-later export. Shared durable writes already request the existing export bus;
+is the newest coverage-window time matching the selected group revision and
+containing the displayed round's start date, inclusively. An unrelated page read
+does not advance that time. Missing matching coverage yields `confirmedAt: null`
+and remains stale. Confirmation older than two minutes, an expired active interval
+or `needsRefresh` also marks the projection stale. Consumers must flush and recheck
+account identity before a later export. Shared durable writes already request the existing export bus;
 native payload/schema wiring and persisted group selection remain Step 5.
 
 ## Evidence and limits

@@ -4,7 +4,7 @@ export interface SharedProgress {
   groupId: string;
   name: string;
   timeZone: string;
-  confirmedAt: number;
+  confirmedAt: number | null;
   archived: boolean;
   pending: boolean;
   stale: boolean;
@@ -37,7 +37,7 @@ export function projectSharedProgress(
   selectedGroupId?: string,
 ): SharedProgress | null {
   if (state.userId !== userId || !state.cache) return null;
-  const { snapshot, confirmedAt } = state.cache;
+  const { snapshot, windows } = state.cache;
   const active = (id: string) =>
     snapshot.rounds.some(
       (r) =>
@@ -71,6 +71,18 @@ export function projectSharedProgress(
   const latest = snapshot.rounds
     .filter((r) => r.groupId === group.id && Date.parse(r.activityStart) <= now)
     .sort((a, b) => b.roundStart.localeCompare(a.roundStart))[0];
+  const confirmedAt = windows.reduce<number | null>((newest, window) => {
+    if (
+      !latest ||
+      window.versions[group.id] !== group.revision ||
+      window.from > latest.roundStart ||
+      window.until < latest.roundStart
+    )
+      return newest;
+    return newest === null
+      ? window.confirmedAt
+      : Math.max(newest, window.confirmedAt);
+  }, null);
   const scores = latest
     ? snapshot.scores
         .filter(
@@ -92,6 +104,7 @@ export function projectSharedProgress(
     stale:
       state.needsRefresh ||
       !latest ||
+      confirmedAt === null ||
       now < confirmedAt ||
       now - confirmedAt > 120_000 ||
       (latest.isActive && now >= Date.parse(latest.activityEnd)),

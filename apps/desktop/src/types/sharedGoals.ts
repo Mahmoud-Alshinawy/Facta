@@ -99,6 +99,7 @@ export interface SharedOutcome {
   inviteId?: string;
   token?: string;
   effectiveRound?: string;
+  eligibleRound?: string | null;
   target?: number;
   scope?: string;
 }
