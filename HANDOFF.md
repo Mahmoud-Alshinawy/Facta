@@ -1,6 +1,47 @@
-# Handoff: branch 3 Step 3 — draft recovery review checkpoint
+# Handoff: branch 3 Step 3 — restart durability review checkpoint
 
-## Current decision / review fix (25 October 2026)
+## Current decision / restart review fix (25 October 2026)
+
+- Owner requested the confirmed-create/read-outage/restart fix on **e87d281**.
+  **Step 4 is still unapproved. STOP after this focused commit/push for review.**
+  No application scope expansion, migrations, dependencies, native changes or
+  live Supabase access. Preserve unrelated untracked `.agents/` / `skills-lock.json`.
+- Reproduced with an actual `page.reload()` using the same native IndexedDB:
+  a confirmed create followed by failed snapshots left no cached group; resume
+  after restart then created another group when reads recovered. Before the fix,
+  `restoring reads and continuing after reload reuses the original server group,
+  never a second group` failed. Session-only aliases did not carry provenance.
+- The canonical draft now durably carries validated optional `server` metadata:
+  `{ groupId, source: "created", commandId }` from the confirmed command/response.
+  Reconciliation writes identity, provenance and current edits atomically;
+  autosave/close preserve it even without any cached group. The decoder checks
+  exact keys, UUIDs, matching draft/group IDs and source; malformed data is
+  retained/reported instead of reset. The account record remains version 1.
+- Existing three-field drafts remain readable, with edits intact. A cached
+  owner row can establish `source: "snapshot"`; legacy resume without that cache
+  first performs an authorized lookup by its stored ID. Failed reads never imply
+  a new draft. Explicit server-bound drafts remain bound when the row is absent;
+  a successful owner read is required before continuing, updating or Review.
+- Added two real reload scenarios (modern and legacy): **16 assertions** verify
+  snapshot-only failure after confirmed creation, durable original ID/provenance,
+  preserved edits, blocked Next during the outage, authorized recovery, exactly
+  one create UUID/group, and publication/cleanup of the original ID. The normal
+  UI suite also retains all **12 mounted-session recovery assertions**. New pure
+  tests cover legacy compatibility, owner-cache upgrade and invalid provenance.
+- Required checks passed: frozen install; npx offline tsc in desktop/widgets/
+  calendar; **424 desktop / 184 calendar** Vitest tests; desktop PORT=1420
+  BASE_PATH=/ build; widgets build; both Windows cargo check --offline. Existing
+  desktop chunk warning remains. **94 data integration / 85 UI acceptance
+  assertions** passed, retaining all three mounted cases and both actual page
+  reloads. Browser external requests: **0**. The owned disposable cluster was
+  stopped afterward. No visual restyling or new native smoke claim.
+- Verification limits stay explicit: disposable local PostgreSQL 17.5, real SDK
+  and SQL roles/RPCs, Edge 156.0.4314.42/native IndexedDB with synthetic identity
+  claims. No full Auth/JWT/PostgREST, deployed HTTP or packaged native-link
+  verification, installed planner/live backend access, or standalone SQL/security/
+  concurrency-suite rerun. See `docs/shared-goals-step3.md` for the checkpoint.
+
+## Mounted-session review fix (25 October 2026; historical)
 
 - Owner requested duplicate-draft recovery fixes on **21b8a2c**. **Step 4 is
   still unapproved. STOP for review after this focused commit/push.** No UI

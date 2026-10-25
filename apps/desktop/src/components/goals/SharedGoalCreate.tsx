@@ -48,9 +48,10 @@ export default function SharedGoalCreate({
   const initialGroup = data.cache?.snapshot.groups.find(
     (g) => g.id === savedId,
   );
+  const initialDraft = data.drafts.find((d) => d.id === savedId);
   const [draftId, setDraftId] = useState(savedId ?? crypto.randomUUID());
   const [groupId, setGroupId] = useState<string | null>(
-    initialGroup?.id ?? null,
+    initialDraft?.server?.groupId ?? initialGroup?.id ?? null,
   );
   const [fields, setFields] = useState<SharedDraftFields>(() => {
     const defaults = creationFields(
@@ -75,7 +76,9 @@ export default function SharedGoalCreate({
       ...data.drafts.find((d) => d.id === savedId)?.fields,
     };
   });
-  const [step, setStep] = useState(initialGroup ? 2 : 0),
+  const [step, setStep] = useState(
+      initialGroup ? 2 : initialDraft?.server ? 1 : 0,
+    ),
     [message, setMessage] = useState("");
   const [firstDate, setFirstDate] = useState<string | null>(null),
     [revision, setRevision] = useState<number | null>(null),
@@ -121,21 +124,23 @@ export default function SharedGoalCreate({
     return () => clearTimeout(timer);
   }, [engine, draftId, fields, now, latest?.publishedAt]);
   const currentGroup = async (id: string): Promise<SharedGroup> => {
-    await engine.syncNow();
-    const group = engine
-      .getSnapshot()
-      .cache?.snapshot.groups.find((g) => g.id === id);
-    if (!group)
-      throw new Error(
-        "The draft has not been refreshed. Retry when connected.",
-      );
-    return group;
+    return engine.refreshDraftGroup(id);
   };
   const ensureDraft = async () => {
     const error = validateCreation(fields);
     if (error) throw new Error(error);
     await engine.saveDraft({ id: draftId, fields, updatedAt: now() });
     let id = groupId;
+    if (!id && savedId) {
+      // Legacy records have no explicit provenance. A successful owner read
+      // can recover their binding; a failed read must never imply "new draft".
+      const existing = await engine.findDraftGroup(savedId);
+      if (existing) {
+        id = existing.id;
+        setGroupId(id);
+        await engine.saveDraft({ id, fields, updatedAt: now() });
+      }
+    }
     if (!id) {
       const out = await requests.perform(
         `draft:${draftId}`,

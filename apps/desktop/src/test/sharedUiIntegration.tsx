@@ -5,6 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import { IndexedDbStore } from "@/lib/sync/indexedDbStore";
 import { SharedSync } from "@/lib/sync/shared/engine";
+import { sharedStorageKey } from "@/lib/sync/shared/state";
 import { createSharedRemote } from "@/lib/sync/shared/remote";
 import { makeCommand } from "@/lib/sharedGoals/contracts";
 import { appLinks, parseFactaLink } from "@/lib/sharedGoals/deepLinks";
@@ -25,7 +26,11 @@ let current: string | null = null,
   store: IndexedDbStore | null = null;
 let clock = Date.parse("2026-10-20T09:00:00Z");
 const now = () => clock;
-const db = `facta-shared-ui-${crypto.randomUUID()}`;
+const db =
+  new URLSearchParams(location.search).get("database") ??
+  `facta-shared-ui-${crypto.randomUUID()}`;
+if (!/^facta-shared-ui-[a-f0-9-]{36}$/.test(db))
+  throw new Error("Isolated test database required");
 const client = createClient<Database>(fixture, "disposable-key", {
   accessToken: async () => (current ? `fixture.${current}` : null),
 });
@@ -80,6 +85,14 @@ function Harness() {
           payload: never,
         ) => remote(id).command(makeCommand(op, payload)),
         snapshot: () => engine?.getSnapshot(),
+        legacyDraft: async (id: string) => {
+          if (!store || !current) throw new Error("Isolated store required");
+          const key = sharedStorageKey(current);
+          const record = JSON.parse(store.get(key)!);
+          delete record.drafts.find((d: { id: string }) => d.id === id).server;
+          store.set(key, JSON.stringify(record));
+          await store.flush();
+        },
         pending: () =>
           engine
             ? sharedRequests(engine)

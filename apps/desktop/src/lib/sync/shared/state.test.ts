@@ -17,6 +17,80 @@ import {
 } from "@/test/sharedFixtures";
 
 describe("saved shared account record", () => {
+  it("keeps legacy draft edits and validates optional server creation provenance", () => {
+    const state = emptySharedState(SHARED_USER);
+    const draft = {
+      id: SHARED_GROUP,
+      fields: {
+        name: "Saved local edits",
+        template: "gym" as const,
+        target: 4,
+      },
+      updatedAt: SHARED_NOW,
+    };
+    state.drafts = [draft];
+    expect(
+      decodeSharedState(encodeSharedState(state), SHARED_USER).drafts,
+    ).toEqual([draft]);
+    const server = {
+      groupId: SHARED_GROUP,
+      source: "created" as const,
+      commandId: "99999999-9999-4999-8999-999999999999",
+    };
+    state.drafts = [{ ...draft, server }];
+    expect(
+      decodeSharedState(encodeSharedState(state), SHARED_USER).drafts,
+    ).toEqual([{ ...draft, server }]);
+    for (const invalid of [
+      { ...server, groupId: SHARED_OTHER },
+      { ...server, commandId: "not-a-uuid" },
+      { ...server, source: "guessed" },
+      { ...server, token: "never-store" },
+      { groupId: SHARED_GROUP, source: "created" },
+      null,
+    ]) {
+      const record = JSON.parse(encodeSharedState(state));
+      record.drafts[0].server = invalid;
+      expect(() =>
+        decodeSharedState(JSON.stringify(record), SHARED_USER),
+      ).toThrow();
+    }
+  });
+  it("upgrades legacy bindings only from an authorized cached owner row", () => {
+    const state = emptySharedState(SHARED_USER);
+    state.cache = reconcileSnapshot(
+      null,
+      mapSnapshot(sharedRpcFixture(), SHARED_USER, SHARED_RANGE),
+      SHARED_RANGE,
+      SHARED_NOW,
+    );
+    state.drafts = [
+      {
+        id: SHARED_GROUP,
+        fields: { name: "Keep my edits" },
+        updatedAt: SHARED_NOW,
+      },
+    ];
+    expect(
+      decodeSharedState(encodeSharedState(state), SHARED_USER).drafts[0],
+    ).toMatchObject({
+      fields: { name: "Keep my edits" },
+      server: { groupId: SHARED_GROUP, source: "snapshot" },
+    });
+    state.cache = {
+      ...state.cache,
+      snapshot: {
+        ...state.cache.snapshot,
+        groups: state.cache.snapshot.groups.map((g) => ({
+          ...g,
+          ownerId: SHARED_OTHER,
+        })),
+      },
+    };
+    expect(
+      decodeSharedState(encodeSharedState(state), SHARED_USER).drafts[0].server,
+    ).toBeUndefined();
+  });
   it("restores exact prepared command bytes and rejects wrong-account or corrupt state", () => {
     const data = mapSnapshot(sharedRpcFixture(), SHARED_USER, SHARED_RANGE);
     const state = emptySharedState(SHARED_USER);

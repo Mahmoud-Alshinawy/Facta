@@ -93,7 +93,11 @@ export class SharedRequests {
       outcome.groupId &&
       key.startsWith("draft:")
     )
-      await this.engine.reconcileDraft(key.slice(6), outcome.groupId);
+      await this.engine.reconcileDraft(
+        key.slice(6),
+        outcome.groupId,
+        command.command_id,
+      );
     if (
       command.operation === "publish" &&
       (outcome.ok || outcome.code === "already_published")

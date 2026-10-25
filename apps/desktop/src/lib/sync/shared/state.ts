@@ -16,10 +16,29 @@ import {
 import { validDate, validInstant } from "@/lib/sharedGoals/dates";
 import type { CheckinIntent, SharedReceipt } from "./outbox";
 
+export type SharedDraftServer =
+  | { groupId: string; source: "created"; commandId: string }
+  | { groupId: string; source: "snapshot" };
 export interface SharedLocalDraft {
   id: string;
   fields: Partial<SharedDraftFields>;
   updatedAt: number;
+  server?: SharedDraftServer;
+}
+export function validateDraftServer(
+  value: unknown,
+  id: string,
+): SharedDraftServer {
+  const server = object(value);
+  if (server.source === "created") {
+    keys(server, ["groupId", "source", "commandId"]);
+    assert(isUuid(server.commandId));
+  } else {
+    keys(server, ["groupId", "source"]);
+    assert(server.source === "snapshot");
+  }
+  assert(isUuid(server.groupId) && server.groupId === id);
+  return server as unknown as SharedDraftServer;
 }
 export interface SharedState {
   version: 1;
@@ -211,12 +230,27 @@ export function decodeSharedState(raw: string, userId: string): SharedState {
   assert(new Set(state.outbox.map((e) => e.id)).size === state.outbox.length);
   state.drafts = array(row.drafts).map((value) => {
     const d = object(value);
-    keys(d, ["id", "fields", "updatedAt"]);
+    keys(d, [
+      "id",
+      "fields",
+      "updatedAt",
+      ...(Object.hasOwn(d, "server") ? ["server"] : []),
+    ]);
     assert(isUuid(d.id) && time(d.updatedAt));
+    // Old three-field drafts still load. An authorized cached owner row can
+    // establish their binding; UUID shape or a missing row cannot establish it.
+    const server = Object.hasOwn(d, "server")
+      ? validateDraftServer(d.server, d.id)
+      : state.cache?.snapshot.groups.some(
+            (g) => g.id === d.id && g.ownerId === userId,
+          )
+        ? { groupId: d.id, source: "snapshot" as const }
+        : undefined;
     return {
       id: d.id,
       fields: validateDraft(d.fields),
       updatedAt: d.updatedAt,
+      ...(server ? { server } : {}),
     };
   });
   assert(new Set(state.drafts.map((d) => d.id)).size === state.drafts.length);

@@ -94,7 +94,7 @@ def main():
         group_id = group(OWNER, OTHER, "Client integration")
         other_group = group(OTHER, THIRD, "Other account")
         clock(NOW)
-        state = dict(missing=False, drop_command=False, malformed=False, hold_command=False, hold_snapshot=False)
+        state = dict(missing=False, fail_snapshots=False, drop_command=False, malformed=False, hold_command=False, hold_snapshot=False)
         metrics = dict(commands=[], snapshots=[], previews=[], personal_writes=0, held=False)
         lock = threading.Lock()
         released = threading.Event()
@@ -185,7 +185,7 @@ def main():
                     name = path.removeprefix("/rest/v1/rpc/")
                     shared = name.startswith("facta_shared_")
                     with lock:
-                        missing = shared and state["missing"]
+                        missing = shared and (state["missing"] or (name == "facta_shared_snapshot" and state["fail_snapshots"]))
                         malformed = name == "facta_shared_snapshot" and state["malformed"]
                         if malformed:
                             state["malformed"] = False

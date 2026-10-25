@@ -2,6 +2,7 @@ import type {
   SharedCommand,
   SharedOutcome,
   HistoryRange,
+  SharedGroup,
 } from "@/types/sharedGoals";
 import {
   assert,
@@ -277,13 +278,22 @@ export class SharedSync {
     });
     this.scheduleWake();
   }
-  saveDraft(draft: SharedLocalDraft): Promise<void> {
+  saveDraft(
+    draft: Pick<SharedLocalDraft, "id" | "fields" | "updatedAt">,
+  ): Promise<void> {
     assert(isUuid(draft.id));
     const fields = validateDraft(draft.fields);
     return this.mutate((state) => {
       // Resolve inside the serialized mutation, including writes queued before
       // a receipt arrived. A stale autosave/close cannot restore an old alias.
       const id = this.canonicalDraftId(draft.id);
+      const server =
+        state.drafts.find((d) => this.canonicalDraftId(d.id) === id)?.server ??
+        (state.cache?.snapshot.groups.some(
+          (g) => g.id === id && g.ownerId === this.userId,
+        )
+          ? { groupId: id, source: "snapshot" as const }
+          : undefined);
       const remaining = state.drafts.filter(
         (d) => this.canonicalDraftId(d.id) !== id,
       );
@@ -291,7 +301,15 @@ export class SharedSync {
         ...state,
         drafts: this.draftCompleted(state, id)
           ? remaining
-          : [...remaining, { id, fields, updatedAt: this.now() }],
+          : [
+              ...remaining,
+              {
+                id,
+                fields,
+                updatedAt: this.now(),
+                ...(server ? { server } : {}),
+              },
+            ],
       };
     });
   }
@@ -308,8 +326,12 @@ export class SharedSync {
   }
   /** Bind a local creation identity once, moving its latest fields atomically.
    * Reapplying a receipt preserves edits instead of restoring the command body. */
-  reconcileDraft(localId: string, groupId: string): Promise<void> {
-    assert(isUuid(localId) && isUuid(groupId));
+  reconcileDraft(
+    localId: string,
+    groupId: string,
+    commandId: string,
+  ): Promise<void> {
+    assert(isUuid(localId) && isUuid(groupId) && isUuid(commandId));
     const previous = this.draftAliases.get(localId);
     assert(!previous || previous === groupId);
     if (localId !== groupId) this.draftAliases.set(localId, groupId);
@@ -317,6 +339,12 @@ export class SharedSync {
       const draft =
         state.drafts.find((d) => d.id === localId) ??
         state.drafts.find((d) => d.id === groupId);
+      assert(
+        !draft?.server ||
+          (draft.server.groupId === groupId &&
+            (draft.server.source !== "created" ||
+              draft.server.commandId === commandId)),
+      );
       const remaining = state.drafts.filter(
         (d) => this.canonicalDraftId(d.id) !== groupId,
       );
@@ -325,7 +353,14 @@ export class SharedSync {
         drafts:
           !draft || this.draftCompleted(state, groupId)
             ? remaining
-            : [...remaining, { ...draft, id: groupId }],
+            : [
+                ...remaining,
+                {
+                  ...draft,
+                  id: groupId,
+                  server: { groupId, source: "created" as const, commandId },
+                },
+              ],
       };
     });
   }
@@ -392,6 +427,40 @@ export class SharedSync {
     const run = this.networkChain.then(work);
     this.networkChain = run.catch(() => {});
     return run;
+  }
+  /** A creation wizard needs a successful authorized read, never a stale cache
+   * fallback. Missing access preserves the bound draft and must not create anew. */
+  findDraftGroup(id: string): Promise<SharedGroup | null> {
+    assert(isUuid(id));
+    return this.network(async () => {
+      if (
+        !this.current() ||
+        !this.loaded ||
+        !this.options.remote ||
+        !this.online()
+      )
+        throw new SharedRemoteError("offline");
+      await this.pull(defaultHistoryRange(this.now()));
+      if (!this.current()) throw new Error("The shared account changed");
+      const group = this.state.cache?.snapshot.groups.find((g) => g.id === id);
+      if (
+        group &&
+        (group.deletedAt || group.archivedAt || group.ownerId !== this.userId)
+      )
+        throw new Error(
+          "This server draft is unavailable for this account. Your local edits are kept; retry when access is restored.",
+        );
+      this.patch({ state: "idle", lastError: null });
+      return group ?? null;
+    });
+  }
+  async refreshDraftGroup(id: string): Promise<SharedGroup> {
+    const group = await this.findDraftGroup(id);
+    if (!group)
+      throw new Error(
+        "This server draft is unavailable for this account. Your local edits are kept; retry when access is restored.",
+      );
+    return group;
   }
   async previewInvite(token: string) {
     if (!this.current() || !this.options.remote || !this.online())

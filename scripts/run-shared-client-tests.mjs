@@ -165,6 +165,8 @@ try {
     const { runSharedUiTests } = await import("./shared-ui-tests.mjs");
     const { runDraftRecoveryTests } =
       await import("./shared-draft-recovery-tests.mjs");
+    const { runDraftReloadTests } =
+      await import("./shared-draft-reload-tests.mjs");
     const uiOptions = {
       page,
       context,
@@ -172,9 +174,26 @@ try {
       fixture: ready.url,
       root,
     };
-    const focused = process.argv.includes("--draft-recovery");
+    const reloadOnly = process.argv.includes("--draft-reload");
+    const focused = process.argv.includes("--draft-recovery") || reloadOnly;
     const original = focused ? null : await runSharedUiTests(uiOptions);
-    const recovery = await runDraftRecoveryTests(uiOptions);
+    const mounted = reloadOnly ? null : await runDraftRecoveryTests(uiOptions);
+    const reload = await runDraftReloadTests(uiOptions);
+    const legacyReload = await runDraftReloadTests({
+      ...uiOptions,
+      legacy: true,
+    });
+    const restarts = {
+      assertions: reload.assertions + legacyReload.assertions,
+      checks: [...reload.checks, ...legacyReload.checks],
+    };
+    const recovery = mounted
+      ? {
+          ...mounted,
+          assertions: mounted.assertions + restarts.assertions,
+          checks: [...mounted.checks, ...restarts.checks],
+        }
+      : { ...reload, ...restarts };
     const result = original
       ? {
           ...original,
