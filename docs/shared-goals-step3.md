@@ -5,6 +5,9 @@ The owner approved Step 2 at **2e37a49** and authorized Step 3 only of the
 explicit joining. Stop for review before Step 4. No migrations, native changes,
 application dependencies or live Supabase changes are included.
 
+Review follow-up to **21b8a2c** fixes duplicate local/server draft recovery.
+Step 4 remains unapproved; stop for review after this focused follow-up.
+
 ## Implemented contract
 
 - `SharedGoalsPage` replaces the Shared placeholder while preserving Mine.
@@ -68,6 +71,32 @@ Different fields cannot reuse an unresolved identity. Server product rejections
 are definitive receipts; correcting fields/date uses a fresh UUID. Server
 transaction rejection permits correction rather than pinning an invalid body.
 
+Creation receipts now keep their successful local-alias → server-group binding
+for the engine session. Consuming a recovered outcome reapplies reconciliation
+idempotently before returning it. Later fields use `update_draft` on that group,
+with a new update command; the original creation UUID/body is never modified or
+replaced with another create. Reconciliation moves the latest local fields and
+removes aliases in one IndexedDB record mutation, without restoring an older
+command payload over autosaved edits.
+
+`SharedSync` resolves aliases inside the serialized save/remove mutation, so
+already scheduled autosave/close callbacks cannot recreate an old ID. A confirmed
+publication outcome marks the draft completed before cleanup/snapshot refresh;
+late saves under either identity are suppressed. Confirmed cached publication,
+archival and deletion also suppress saves. Bindings/completion fences are
+session metadata, not invitation tokens or a storage format change. Only the
+canonical draft is durable; completion removes it durably. Resume preserves its
+locally saved fields and updates the same server draft before entering Review.
+
+The review repro went red before the fix at `mounted recovery through publication
+leaves no local alias`. The close/resume regression also caught the previous loss
+of newer local fields. `--ui --draft-recovery` exercises only these focused flows;
+the normal `--ui` runner now includes them automatically. Its **12 assertions**
+cover mounted retry → Next → publication, post-recovery autosave and close/resume,
+and closing after recovered publication while the snapshot refresh is held.
+Real IndexedDB close/reopen confirms one server group per wizard and no remaining
+local alias/completed draft; creation retries retain their original UUIDs.
+
 Online control packets and tokens deliberately do not survive process loss.
 Keep the session open to settle uncertain results; after a restart reopen/paste
 the invitation and reconcile server drafts/groups. The durable check-in outbox
@@ -109,7 +138,8 @@ The owned disposable cluster was stopped after verification.
 - Data integration: **94 assertions**, including actual reloads, storage failure
   recovery, immutable receipt retries, account isolation, round coverage,
   reconciliation, personal sync during shared outage and lifecycle replay.
-- UI integration: **57 assertions** against actual React components, SDK adapter
+- UI integration: **69 assertions** (the original 57 plus 12 draft-recovery
+  regressions above) against actual React components, SDK adapter
   and migrated SQL RPCs: profile validation/taken handle/setup; Gym and all three
   Custom creation modes; invalid target/schedule rejection; real direct/link
   invitation issuance, explicit join/decline, rotation/copy/revocation; expired,

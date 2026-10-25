@@ -89,6 +89,10 @@ export class SharedSync {
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
   private interval: ReturnType<typeof setInterval> | null = null;
   private failures = 0;
+  // Session bindings fence callbacks from a still-mounted wizard. The atomic
+  // record stores only the canonical draft, so aliases need not survive reload.
+  private draftAliases = new Map<string, string>();
+  private completedDrafts = new Set<string>();
 
   constructor(private readonly options: SharedSyncOptions) {
     this.userId = options.userId;
@@ -276,18 +280,67 @@ export class SharedSync {
   saveDraft(draft: SharedLocalDraft): Promise<void> {
     assert(isUuid(draft.id));
     const fields = validateDraft(draft.fields);
-    return this.mutate((state) => ({
-      ...state,
-      drafts: [
-        ...state.drafts.filter((d) => d.id !== draft.id),
-        { id: draft.id, fields, updatedAt: this.now() },
-      ],
-    }));
+    return this.mutate((state) => {
+      // Resolve inside the serialized mutation, including writes queued before
+      // a receipt arrived. A stale autosave/close cannot restore an old alias.
+      const id = this.canonicalDraftId(draft.id);
+      const remaining = state.drafts.filter(
+        (d) => this.canonicalDraftId(d.id) !== id,
+      );
+      return {
+        ...state,
+        drafts: this.draftCompleted(state, id)
+          ? remaining
+          : [...remaining, { id, fields, updatedAt: this.now() }],
+      };
+    });
+  }
+  private canonicalDraftId(id: string): string {
+    return this.draftAliases.get(id) ?? id;
+  }
+  private draftCompleted(state: SharedState, id: string): boolean {
+    return (
+      this.completedDrafts.has(id) ||
+      !!state.cache?.snapshot.groups.some(
+        (g) => g.id === id && (g.publishedAt || g.archivedAt || g.deletedAt),
+      )
+    );
+  }
+  /** Bind a local creation identity once, moving its latest fields atomically.
+   * Reapplying a receipt preserves edits instead of restoring the command body. */
+  reconcileDraft(localId: string, groupId: string): Promise<void> {
+    assert(isUuid(localId) && isUuid(groupId));
+    const previous = this.draftAliases.get(localId);
+    assert(!previous || previous === groupId);
+    if (localId !== groupId) this.draftAliases.set(localId, groupId);
+    return this.mutate((state) => {
+      const draft =
+        state.drafts.find((d) => d.id === localId) ??
+        state.drafts.find((d) => d.id === groupId);
+      const remaining = state.drafts.filter(
+        (d) => this.canonicalDraftId(d.id) !== groupId,
+      );
+      return {
+        ...state,
+        drafts:
+          !draft || this.draftCompleted(state, groupId)
+            ? remaining
+            : [...remaining, { ...draft, id: groupId }],
+      };
+    });
+  }
+  /** Fence saves before queuing cleanup, even while the confirmed snapshot is
+   * still being refreshed after publication or a recovered publication receipt. */
+  completeDraft(id: string): Promise<void> {
+    this.completedDrafts.add(this.canonicalDraftId(id));
+    return this.removeDraft(id);
   }
   removeDraft(id: string): Promise<void> {
     return this.mutate((state) => ({
       ...state,
-      drafts: state.drafts.filter((d) => d.id !== id),
+      drafts: state.drafts.filter(
+        (d) => this.canonicalDraftId(d.id) !== this.canonicalDraftId(id),
+      ),
     }));
   }
   discardFailed(id: string): Promise<void> {

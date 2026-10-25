@@ -163,13 +163,26 @@ try {
   const page = await context.newPage();
   if (ui) {
     const { runSharedUiTests } = await import("./shared-ui-tests.mjs");
-    const result = await runSharedUiTests({
+    const { runDraftRecoveryTests } =
+      await import("./shared-draft-recovery-tests.mjs");
+    const uiOptions = {
       page,
       context,
       url: `http://127.0.0.1:${address.port}/tmp/shared-goals-runtime/ui-test.html?fixture=${encodeURIComponent(ready.url)}`,
       fixture: ready.url,
       root,
-    });
+    };
+    const focused = process.argv.includes("--draft-recovery");
+    const original = focused ? null : await runSharedUiTests(uiOptions);
+    const recovery = await runDraftRecoveryTests(uiOptions);
+    const result = original
+      ? {
+          ...original,
+          assertions: original.assertions + recovery.assertions,
+          checks: [...original.checks, ...recovery.checks],
+          recoveryAssertions: recovery.assertions,
+        }
+      : recovery;
     if (external.length) throw new Error("Unexpected external UI request");
     const report = {
       ...result,
@@ -179,7 +192,10 @@ try {
       auth: "synthetic identity bridge; full Supabase Auth/JWT/PostgREST unverified",
     };
     await writeFile(
-      path.join(root, "tmp/shared-goals-runtime/ui-result.json"),
+      path.join(
+        root,
+        `tmp/shared-goals-runtime/${focused ? "draft-recovery-result" : "ui-result"}.json`,
+      ),
       JSON.stringify(report, null, 2) + "\n",
     );
     console.log(JSON.stringify(report, null, 2));

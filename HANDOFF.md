@@ -1,6 +1,45 @@
-# Handoff: branch 3 Step 3 — review checkpoint
+# Handoff: branch 3 Step 3 — draft recovery review checkpoint
 
-## Current authorization (25 October 2026)
+## Current decision / review fix (25 October 2026)
+
+- Owner requested duplicate-draft recovery fixes on **21b8a2c**. **Step 4 is
+  still unapproved. STOP for review after this focused commit/push.** No UI
+  scope expansion, schema/native changes, dependencies or live Supabase access.
+- Reproduced the exact mounted-wizard failure in the actual React/SDK/native
+  IndexedDB/disposable SQL harness before fixing it: lost create reply → retry
+  while mounted → Next → publish left the local alias behind. The browser
+  assertion `mounted recovery through publication leaves no local alias` failed.
+- Recovered outcomes now reapply idempotent identity reconciliation. Creation
+  success binds the local alias to its server group for the engine session;
+  consuming it cannot allocate a replacement create UUID. The latest local
+  fields move to the canonical ID in one serialized durable mutation, rather
+  than separate save/remove writes or restoring old command fields.
+- Autosave/close resolve aliases inside the mutation queue. Publication fences
+  further saves before snapshot refresh, removes canonical/alias drafts, and
+  blocks resurrection from stale callbacks. Cached published/archived/deleted
+  groups also reject draft saves. Resume preserves newer local fields and
+  updates the existing server draft before Review; a browser regression first
+  reproduced the previous loss of those fields on resume.
+- Added **12 browser assertions** for mounted recovery through publication,
+  autosave and close/resume after recovery, and closing after recovered
+  publication with the snapshot deliberately held. Real IndexedDB reopen checks
+  one server group per wizard and no alias/completed local drafts. The normal
+  `--ui` suite includes these regressions; `--ui --draft-recovery` runs only them.
+- Required checks passed: frozen install; npx offline tsc in desktop/widgets/
+  calendar; **422 desktop / 184 calendar** Vitest tests; desktop PORT=1420
+  BASE_PATH=/ build; widgets build; both Windows cargo check --offline. Existing
+  desktop main-chunk warning only. **94 data integration / 69 UI acceptance
+  assertions** passed, including the 12 new recovery assertions. Browser external
+  requests: **0**. No visual restyling; the existing UI/theme/keyboard suite also
+  passed. The owned disposable PostgreSQL cluster is stopped after verification.
+- Same verification limits: local PostgreSQL 17.5, real SDK/SQL roles/RPCs and
+  Edge 156.0.4314.42 IndexedDB with synthetic identity claims. Full Supabase
+  Auth/JWT/PostgREST, deployed HTTP and packaged native links remain unverified.
+  No live backend/installed planner access or standalone SQL/security/race-suite
+  rerun. See `docs/shared-goals-step3.md`. Preserve unrelated untracked `.agents/`
+  and `skills-lock.json`.
+
+## Initial Step 3 checkpoint (25 October 2026; historical)
 
 - Owner approved **2e37a49**, resolving both Step 2 findings. Step 3 only is
   authorized: profile setup, four-step creation, invitations/link paste,

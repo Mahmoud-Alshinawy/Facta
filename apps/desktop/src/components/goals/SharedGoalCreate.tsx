@@ -58,13 +58,18 @@ export default function SharedGoalCreate({
       Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
     );
     if (initialGroup)
-      return groupFields(
-        initialGroup,
-        data.cache?.snapshot.memberships.find(
-          (m) =>
-            m.groupId === savedId && m.userId === engine.userId && !m.leftAt,
-        )?.initialGymTarget ?? null,
-      );
+      return {
+        ...groupFields(
+          initialGroup,
+          data.cache?.snapshot.memberships.find(
+            (m) =>
+              m.groupId === savedId && m.userId === engine.userId && !m.leftAt,
+          )?.initialGymTarget ?? null,
+        ),
+        ...(!initialGroup.publishedAt
+          ? data.drafts.find((d) => d.id === savedId)?.fields
+          : {}),
+      };
     return {
       ...defaults,
       ...data.drafts.find((d) => d.id === savedId)?.fields,
@@ -144,6 +149,7 @@ export default function SharedGoalCreate({
     }
     let g = await currentGroup(id);
     if (g.publishedAt) {
+      await engine.completeDraft(id);
       onDone(id);
       return g;
     }
@@ -176,7 +182,7 @@ export default function SharedGoalCreate({
         setStep(2);
       } else if (step === 2) {
         if (!groupId) throw new Error("Save the details first.");
-        const g = await currentGroup(groupId);
+        const g = await ensureDraft();
         setRevision(g.revision);
         setFirstDate(
           nextRoundDate(now(), fields.time_zone, fields.round_weekday),

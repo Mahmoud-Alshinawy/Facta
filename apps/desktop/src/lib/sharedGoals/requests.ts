@@ -43,9 +43,14 @@ export class SharedRequests {
     if (
       recovered &&
       recovered.command.operation === operation &&
-      JSON.stringify(recovered.command.payload) === JSON.stringify(payload)
+      (JSON.stringify(recovered.command.payload) === JSON.stringify(payload) ||
+        (operation === "create_draft" && recovered.outcome.ok))
     ) {
-      this.recovered.delete(key);
+      await this.reconcileOutcome(key, recovered.command, recovered.outcome);
+      // A creation alias stays bound for this session. Later field edits are
+      // update_draft commands, never a second create with a replacement UUID.
+      if (operation !== "create_draft" || !recovered.outcome.ok)
+        this.recovered.delete(key);
       return recovered.outcome;
     }
     const prior = this.pending.find((r) => r.key === key);
@@ -77,6 +82,24 @@ export class SharedRequests {
     if (entry) this.recovered.set(key, { command: entry.command, outcome });
     return outcome;
   }
+  private async reconcileOutcome(
+    key: string,
+    command: SharedCommand,
+    outcome: SharedOutcome,
+  ) {
+    if (
+      outcome.ok &&
+      command.operation === "create_draft" &&
+      outcome.groupId &&
+      key.startsWith("draft:")
+    )
+      await this.engine.reconcileDraft(key.slice(6), outcome.groupId);
+    if (
+      command.operation === "publish" &&
+      (outcome.ok || outcome.code === "already_published")
+    )
+      await this.engine.completeDraft(command.payload.group_id);
+  }
   private async send(key: string): Promise<SharedOutcome> {
     const entry = this.pending.find((r) => r.key === key);
     if (!entry || entry.busy)
@@ -87,18 +110,14 @@ export class SharedRequests {
     this.emit();
     try {
       const outcome = await this.engine.executeOnline(entry.command);
+      await this.reconcileOutcome(key, entry.command, outcome);
       if (
         outcome.ok &&
         entry.command.operation === "create_draft" &&
         outcome.groupId &&
         key.startsWith("draft:")
       ) {
-        await this.engine.saveDraft({
-          id: outcome.groupId,
-          fields: entry.command.payload,
-          updatedAt: Date.now(),
-        });
-        await this.engine.removeDraft(key.slice(6));
+        this.recovered.set(key, { command: entry.command, outcome });
       }
       if (outcome.token && outcome.inviteId)
         this.tokens.set(outcome.inviteId, outcome.token);
