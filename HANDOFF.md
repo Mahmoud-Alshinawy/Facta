@@ -1,4 +1,41 @@
-# Handoff: branch 3 Step 2 — STOP for data-client review
+# Handoff: branch 3 Step 3 — review checkpoint
+
+## Current authorization (25 October 2026)
+
+- Owner approved **2e37a49**, resolving both Step 2 findings. Step 3 only is
+  authorized: profile setup, four-step creation, invitations/link paste,
+  signed-out deferral, explicit join/decline and strict routes. Stop for owner
+  review before Step 4. No live Supabase, migrations or new dependencies.
+- Implemented profile setup; Gym/Custom four-step creation and durable local
+  drafts; real link/direct invitations, rotation/copy/revocation; limited
+  authenticated preview and explicit join/decline; pending/expired/revoked/full
+  outcomes; strict auth/join/group/existing widget-focus routing. Shared Mine
+  stays intact. Minimal group/draft rows enable resume/invitation management;
+  overview/detail/scoring/check-in UI remains Step 4.
+- Final publication revalidates the displayed date/revision and requires an
+  explicit updated-date confirmation with a new UUID. Caller-owned session
+  request packets survive form unmount and retry the exact UUID/body. Raw invite
+  tokens stay in memory; no unauthenticated group preview or automatic joining.
+  The bridge sits above the storage gate and clears old-account route intent.
+- Required checks passed: frozen install; npx offline tsc in desktop/widgets/
+  calendar; **422 desktop / 184 calendar** Vitest tests; desktop PORT=1420
+  BASE_PATH=/ build; widgets build; both Windows cargo check --offline. Existing
+  desktop main-chunk warning only. No new dependencies, schema or native code.
+- Disposable local PostgreSQL **17.5**, actual SDK/SQL RPCs, native Edge
+  **156.0.4314.42** IndexedDB: **94 data integration assertions** and **57 UI
+  assertions**. UI covers Gym/all Custom schedules, profile setup/taken handle,
+  explicit join/decline, invitation limits/states, keyboard/mount focus, token
+  replacement, lost-reply receipt retries and Sunday-draft/Wednesday-publication
+  date reconfirmation. Browser external requests: **0**. Captured fit checks in
+  four themes at 1440/1280/1100; selected screenshots visually inspected.
+- See `docs/shared-goals-step3.md` for implementation, repeatable verification
+  and limits. Full Auth/JWT/PostgREST and packaged native OAuth/warm/cold links
+  remain unverified: the local bridge uses synthetic identity claims. Whole-app
+  board parity remains Step 6. No live Supabase or installed planner accessed;
+  the standalone SQL/security/concurrency suite was not rerun in this UI step.
+  The owned disposable PostgreSQL cluster was stopped after the passing runs.
+  Unrelated untracked `.agents/` and `skills-lock.json` remain untouched.
+- Commit/push this checkpoint, then **STOP for review before Step 4**.
 
 ## Step 2 review fixes (25 October 2026)
 

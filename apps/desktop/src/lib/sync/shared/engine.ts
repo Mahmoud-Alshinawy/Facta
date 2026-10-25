@@ -340,6 +340,25 @@ export class SharedSync {
     this.networkChain = run.catch(() => {});
     return run;
   }
+  async previewInvite(token: string) {
+    if (!this.current() || !this.options.remote || !this.online())
+      throw new SharedRemoteError("offline");
+    const value = await this.options.remote.preview(
+      token,
+      this.controller.signal,
+    );
+    if (!this.current()) throw new Error("The shared account changed");
+    return value;
+  }
+  async pendingInvites() {
+    if (!this.current() || !this.options.remote || !this.online())
+      throw new SharedRemoteError("offline");
+    const value = await this.options.remote.pendingInvites(
+      this.controller.signal,
+    );
+    if (!this.current()) throw new Error("The shared account changed");
+    return value;
+  }
   /** Online control operations are not silently queued. Caller retains this
    * immutable packet for an uncertain reply. Tokens remain only in memory. */
   executeOnline(value: SharedCommand): Promise<SharedOutcome> {

@@ -28,7 +28,7 @@ const messages: Record<SharedFailureKind, string> = {
   invalid:
     "Shared goals returned incomplete or incompatible data. Saved data has been retained.",
   rejected:
-    "The server rejected this check-in. Review it before making a new attempt.",
+    "The server rejected this request. Review its values before making a new attempt.",
   server: "Shared goals could not sync. Saved changes have been retained.",
 };
 export class SharedRemoteError extends Error {

@@ -29,6 +29,9 @@ import {
   IconRight,
 } from "../shell/Icons";
 import GoalOverview from "./GoalOverview";
+import SharedGoalsPage from "./SharedGoalsPage";
+import { useSharedSyncEngine } from "@/hooks/useSync";
+import type { LinkIntent } from "@/lib/sharedGoals/deepLinks";
 
 const PRIORITIES: [GoalCategory, string, string, number][] = [
   ["must-do", "Must", "must", 3],
@@ -38,9 +41,14 @@ const PRIORITIES: [GoalCategory, string, string, number][] = [
 
 export default function GoalsPage({
   keyboardBlocked = false,
+  request,
+  onRequestHandled,
 }: {
   keyboardBlocked?: boolean;
+  request?: LinkIntent | null;
+  onRequestHandled?: () => void;
 }) {
+  const sharedEngine = useSharedSyncEngine();
   const { goals, addGoal, updateGoal, deleteGoal } = useGoals();
   const createGoal = useCreateGoal(),
     prefs = usePrefs(),
@@ -48,6 +56,9 @@ export default function GoalsPage({
   const today = format(now, "yyyy-MM-dd");
   const [tab, setTab] = useState<"mine" | "shared">("mine"),
     [view, setView] = useState<"list" | "board">("list");
+  useEffect(() => {
+    if (request) setTab("shared");
+  }, [request]);
   const [filter, setFilter] = useState<GoalCategory | "all">("all"),
     [sort, setSort] = useState<GoalSort>("time");
   const [doneOpen, setDoneOpen] = useState(false),
@@ -118,6 +129,8 @@ export default function GoalsPage({
       const target = e.target instanceof HTMLElement ? e.target : null;
       if (
         e.defaultPrevented ||
+        tab !== "mine" ||
+        e.shiftKey ||
         keyboardBlocked ||
         dialog ||
         e.ctrlKey ||
@@ -136,7 +149,7 @@ export default function GoalsPage({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [keyboardBlocked, dialog]);
+  }, [keyboardBlocked, dialog, tab]);
 
   const rowContent = (row: GoalRow, board = false) => {
     const [, label, cls, bars] = PRIORITIES.find(
@@ -254,6 +267,17 @@ export default function GoalsPage({
     );
   };
 
+  if (tab === "shared" && sharedEngine)
+    return (
+      <SharedGoalsPage
+        engine={sharedEngine}
+        weekStart={prefs.weekStart}
+        onMine={() => setTab("mine")}
+        request={request}
+        onRequestHandled={onRequestHandled}
+        keyboardBlocked={keyboardBlocked}
+      />
+    );
   return (
     <div className="gmain">
       <header className="hd">

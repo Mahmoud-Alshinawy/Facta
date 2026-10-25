@@ -20,6 +20,9 @@ ROOT = Path(__file__).resolve().parents[1]
 OWNER = "11111111-1111-4111-8111-111111111111"
 OTHER = "22222222-2222-4222-8222-222222222222"
 THIRD = "88888888-8888-4888-8888-888888888888"
+NEW_USER = "99999999-9999-4999-8999-999999999999"
+SEATS = [str(uuid.UUID(int=100 + n)) for n in range(5)]
+ACTORS = [OWNER, OTHER, THIRD, NEW_USER, *SEATS]
 NOW = "2026-10-20T09:00:00Z"
 
 def main():
@@ -36,7 +39,7 @@ def main():
     def connect(actor=None):
         c = psycopg.connect(dbname=dbname, **base)
         if actor is not None:
-            if actor not in [OWNER, OTHER, THIRD]:
+            if actor not in ACTORS:
                 c.close()
                 raise ValueError("Unknown disposable actor")
             c.execute("select set_config('request.jwt.claim.sub',%s,false)", (actor,))
@@ -72,10 +75,12 @@ def main():
             c.execute("insert into facta_private.shared_client_clock values('2026-10-14 09:00Z')")
             for name in ["sg_now", "sg_read_now"]:
                 c.execute(sql.SQL("create or replace function facta_private.{}() returns timestamptz language sql volatile security definer set search_path='' as 'select at from facta_private.shared_client_clock'").format(sql.Identifier(name)))
-            for actor in [OWNER, OTHER, THIRD]:
+            for actor in ACTORS:
                 c.execute("insert into auth.users(id) values(%s)", (actor,))
         for n, actor in enumerate([OWNER, OTHER, THIRD]):
             assert command(actor, "set_profile", dict(handle=f"client_{n}", display_name=f"Client {n}"))["ok"]
+        for n, actor in enumerate(SEATS):
+            assert command(actor, "set_profile", dict(handle=f"seat_{n}", display_name=f"Seat {n}"))["ok"]
 
         def group(owner, member, name):
             draft = command(owner, "create_draft", dict(name=name, template="gym", schedule_kind="n", time_zone="Asia/Riyadh", round_weekday=1, target=2))
@@ -90,7 +95,7 @@ def main():
         other_group = group(OTHER, THIRD, "Other account")
         clock(NOW)
         state = dict(missing=False, drop_command=False, malformed=False, hold_command=False, hold_snapshot=False)
-        metrics = dict(commands=[], snapshots=[], personal_writes=0, held=False)
+        metrics = dict(commands=[], snapshots=[], previews=[], personal_writes=0, held=False)
         lock = threading.Lock()
         released = threading.Event()
         released.set()
@@ -120,14 +125,14 @@ def main():
 
             def actor(self):
                 token = self.headers.get("Authorization", "").removeprefix("Bearer fixture.")
-                if token not in [OWNER, OTHER, THIRD]:
+                if token not in ACTORS:
                     raise ValueError("Unknown disposable actor")
                 return token
 
             def do_GET(self):
                 path = urlparse(self.path)
                 if path.path == "/test/config":
-                    return self.send(200, dict(owner=OWNER, other=OTHER, third=THIRD, groupId=group_id, otherGroupId=other_group, now=NOW))
+                    return self.send(200, dict(owner=OWNER, other=OTHER, third=THIRD, newUser=NEW_USER, seats=SEATS, groupId=group_id, otherGroupId=other_group, now=NOW))
                 if path.path == "/test/metrics":
                     with lock:
                         return self.send(200, json.loads(json.dumps(metrics)))
@@ -206,6 +211,8 @@ def main():
                                 metrics["commands"].append(dict(actor=actor, commandId=body["command_id"], operation=body["operation"], body=raw if body["operation"] == "set_checkin" else None, code=result["code"]))
                         elif name == "facta_shared_preview":
                             result = c.execute("select public.facta_shared_preview(%s)", (body["token"],)).fetchone()[0]
+                            with lock:
+                                metrics["previews"].append(actor)
                         elif name == "facta_shared_pending_invites":
                             result = c.execute("select public.facta_shared_pending_invites()").fetchone()[0]
                         elif name == "facta_write_diary":
