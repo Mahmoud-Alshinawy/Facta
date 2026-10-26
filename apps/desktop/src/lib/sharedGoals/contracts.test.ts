@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   makeCommand,
   mapSnapshot,
+  mapSavedSnapshot,
   mapOutcome,
   snapshotToRows,
 } from "./contracts";
@@ -15,6 +16,36 @@ import {
 } from "@/test/sharedFixtures";
 
 describe("shared RPC contracts", () => {
+  it("retains authoritative activation evidence outside score history and accepts legacy caches", () => {
+    const old = sharedRpcFixture();
+    const mapped = mapSnapshot(
+      {
+        ...old,
+        lifecycle: [
+          { group_id: SHARED_GROUP, first_scored_round: "2026-10-19" },
+        ],
+      },
+      SHARED_USER,
+      SHARED_RANGE,
+    );
+    expect(mapped.lifecycle).toEqual([
+      { groupId: SHARED_GROUP, firstScoredRound: "2026-10-19" },
+    ]);
+    expect(
+      mapSavedSnapshot(snapshotToRows(mapped), SHARED_USER).lifecycle,
+    ).toEqual(mapped.lifecycle);
+    expect(mapSavedSnapshot(old, SHARED_USER).lifecycle).toBeUndefined();
+    for (const lifecycle of [
+      [],
+      [{ group_id: SHARED_OTHER, first_scored_round: null }],
+      [{ group_id: SHARED_GROUP, first_scored_round: "2026-10-18" }],
+      [{ group_id: SHARED_GROUP, first_scored_round: "2026-02-30" }],
+    ]) {
+      expect(() =>
+        mapSnapshot({ ...old, lifecycle }, SHARED_USER, SHARED_RANGE),
+      ).toThrow();
+    }
+  });
   it("accepts optional nullable join eligibility while rejecting invalid dates", () => {
     expect(
       mapOutcome({ ok: true, code: "joined", eligible_round: null }),

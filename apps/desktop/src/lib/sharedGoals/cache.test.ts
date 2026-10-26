@@ -48,13 +48,23 @@ describe("shared snapshot reconciliation", () => {
   it("purges a confirmed leave immediately without claiming a new snapshot for other groups", () => {
     const cache = reconcileSnapshot(
       null,
-      mapSnapshot(sharedRpcFixture(), SHARED_USER, SHARED_RANGE),
+      mapSnapshot(
+        {
+          ...sharedRpcFixture(),
+          lifecycle: [
+            { group_id: SHARED_GROUP, first_scored_round: "2026-10-19" },
+          ],
+        },
+        SHARED_USER,
+        SHARED_RANGE,
+      ),
       SHARED_RANGE,
       SHARED_NOW,
     );
     const removed = forgetGroup(cache, SHARED_GROUP, SHARED_USER)!;
     expect(removed.confirmedAt).toBe(SHARED_NOW);
     expect(removed.snapshot.groups).toEqual([]);
+    expect(removed.snapshot.lifecycle).toEqual([]);
     expect(removed.snapshot.memberships).toEqual([]);
     expect(removed.snapshot.targets).toEqual([]);
     expect(removed.snapshot.scores).toEqual([]);

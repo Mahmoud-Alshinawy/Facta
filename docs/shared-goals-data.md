@@ -1,5 +1,39 @@
 # Shared goals: Step 1 database contract
 
+## Step 4 review amendment (26 October 2026)
+
+The ccece44 review adds two focused corrections to the re-runnable migration.
+`set_target` cancellation uses the latest earlier version or, if absent, the
+immutable membership `initial_gym_target`. For a next-round joiner whose initial
+row shares the pending boundary, 2 → 4 → cancel therefore restores 2 without
+requiring a nonexistent earlier row. Current/historical denominators and the
+group lock/receipt protocol remain unchanged.
+
+`facta_shared_snapshot` additionally returns `lifecycle`:
+`[{group_id, first_scored_round}]`, exactly one row per RLS-visible group. The
+date is `min(shared_goal_rounds.round_start)` across its actual scored history;
+null explicitly means it has never activated. It is independent of requested
+score/check-in/round bounds, so a cold recent-history read can distinguish waiting
+from an old pause. No new tables, grants, definer rights, stored lifecycle state
+or stored scores. The RPC still runs as invoker, and its bounded arrays retain
+their original contract. Older saved/older-server snapshots without this field
+remain readable by the client as unknown, with conservative coverage/history
+fallback. New summaries are validated, saved and purged with group access.
+
+Actually rerun on disposable PostgreSQL 17.5: **421 checked SQL assertions plus
+exception assertions; 22 independent-session races**, each checking a real lock
+wait; migration apply/rerun and preservation; generated-copy synchronization;
+personal-schema coexistence and the six-year bounded-history query plan.
+New coverage includes late-first-target edit/cancel with no earlier version,
+persisted restored target, long waiting/old paused activation summaries outside
+history bounds, one summary per visible group, former-member summary denial,
+and a first-target edit racing cancellation (result restores 2).
+Full Auth/JWT/PostgREST remains unverified. See `shared-goals-step4.md` for client
+and mounted UI evidence; Step 5 remains unapproved. The owner applies SQL; no live
+Supabase project was accessed.
+
+## Original Step 1 checkpoint (historical)
+
 Approved scope: `docs/shared-goals-plan.md` at **5337807**. This checkpoint
 implements the database contract only. No shared client, outbox, routing,
 widgets or UI is wired. Personal collections and their sync guard are unchanged.

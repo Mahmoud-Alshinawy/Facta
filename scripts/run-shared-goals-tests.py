@@ -260,6 +260,13 @@ def concurrency(base, db, owner):
          (2, "set_target", dict(group_id=gid, target=5)), "target_scheduled", "target_scheduled")
     assert owner.execute("select target from public.shared_targets t join public.shared_memberships m on m.id=t.membership_id where m.group_id=%s and m.user_id=%s and effective_round='2026-10-26'", (gid, uid(2))).fetchone()[0] == 5
 
+    gid, invite = group("late target cancellation serialization")
+    expect(command(3, "join", dict(token=invite["token"], target=2)), "joined")
+    race("late first-target edit before cancellation", gid,
+         (3, "set_target", dict(group_id=gid, target=4)),
+         (3, "set_target", dict(group_id=gid, target=None)), "target_scheduled", "target_scheduled")
+    assert owner.execute("select target from public.shared_targets t join public.shared_memberships m on m.id=t.membership_id where m.group_id=%s and m.user_id=%s and effective_round='2026-10-26'", (gid, uid(3))).fetchone()[0] == 2
+
     gid, _ = group("ownership transfer ordering")
     race("transfer before new-owner leave", gid, (1, "transfer_owner", dict(group_id=gid, user_id=str(uid(2)))),
          (2, "leave", dict(group_id=gid)), "owner_transferred", "owner_transfer_required")
@@ -321,7 +328,7 @@ def concurrency(base, db, owner):
     expect(command(17, "set_profile", dict(handle="fresh_17", display_name="Setup")), "rate_limited")
     clock("2026-12-12 10:01:00+03")
     expect(command(14, "set_profile", dict(handle="fresh_14", display_name="Setup")), "profile_saved")
-    assert len(reports) == 21
+    assert len(reports) == 22
     return reports
 
 def coexistence(c):

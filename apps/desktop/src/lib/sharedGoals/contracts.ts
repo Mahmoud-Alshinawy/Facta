@@ -236,7 +236,11 @@ function decodeSnapshot(
   assert(isUuid(userId));
   const source = object(value);
   const all = { ...shapes, rounds: roundShape, scores: scoreShape };
-  assert(Object.keys(source).length === Object.keys(all).length);
+  const hasLifecycle = Object.hasOwn(source, "lifecycle");
+  assert(
+    Object.keys(source).length ===
+      Object.keys(all).length + Number(hasLifecycle),
+  );
   const result = emptySnapshot();
   for (const [key, shape] of Object.entries(all)) {
     const rows = source[key];
@@ -262,6 +266,42 @@ function decodeSnapshot(
   unique(scores, (s) => `${s.groupId}:${s.roundStart}:${s.membershipId}`);
   unique(checkins, (c) => `${c.groupId}:${c.userId}:${c.checkinDate}`);
   const groupIds = new Set(groups.map((g) => g.id));
+  if (hasLifecycle) {
+    assert(
+      Array.isArray(source.lifecycle) &&
+        source.lifecycle.length === groups.length,
+    );
+    result.lifecycle = source.lifecycle.map((row) =>
+      camel(
+        checked(row, {
+          group_id: "uuid",
+          first_scored_round: "date|null",
+        }),
+      ),
+    );
+    unique(result.lifecycle, (row) => row.groupId);
+    for (const row of result.lifecycle) {
+      const group = groups.find((g) => g.id === row.groupId);
+      assert(
+        group &&
+          (row.firstScoredRound === null ||
+            (group.firstRoundDate &&
+              row.firstScoredRound >= group.firstRoundDate &&
+              (Date.parse(row.firstScoredRound) -
+                Date.parse(group.firstRoundDate)) %
+                (7 * 86_400_000) ===
+                0)),
+      );
+      assert(
+        !rounds.some(
+          (r) =>
+            r.groupId === row.groupId &&
+            (row.firstScoredRound === null ||
+              r.roundStart < row.firstScoredRound),
+        ),
+      );
+    }
+  }
   const memberMap = new Map(memberships.map((m) => [m.id, m]));
   const profileIds = new Set(profiles.map((p) => p.userId));
   const roundMap = new Map(

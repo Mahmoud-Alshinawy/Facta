@@ -627,6 +627,9 @@ begin
         value:=(payload->>'target')::integer;
         if value is null then
           select target into value from public.shared_targets where membership_id=m.id and effective_round<effective and deleted_at is null order by effective_round desc limit 1;
+          -- Before first eligibility the original row and the pending change
+          -- share a boundary. The immutable join target is the baseline then.
+          value:=coalesce(value,m.initial_gym_target);
           if value is null then return jsonb_build_object('ok',false,'code','initial_target_required'); end if;
         end if;
         if value not between 2 and 7 then raise exception 'Invalid target' using errcode='22023'; end if;
@@ -740,6 +743,11 @@ begin
     select distinct group_id,round_start,round_end,activity_start,scheduled_end,activity_end,roster_size,end_reason,is_active from scores
   ) select jsonb_build_object(
     'groups',coalesce((select jsonb_agg(to_jsonb(g)) from public.shared_groups g),'[]'::jsonb),
+    -- One compact authoritative activation fact per visible group, independent
+    -- of the requested score window. RLS still scopes both tables and view.
+    'lifecycle',coalesce((select jsonb_agg(jsonb_build_object('group_id',g.id,'first_scored_round',
+      (select min(r.round_start) from public.shared_goal_rounds r where r.group_id=g.id)))
+      from public.shared_groups g),'[]'::jsonb),
     'memberships',coalesce((select jsonb_agg(to_jsonb(m)) from public.shared_memberships m),'[]'::jsonb),
     'profiles',coalesce((select jsonb_agg(to_jsonb(p)) from public.shared_profiles p),'[]'::jsonb),
     'targets',coalesce((select jsonb_agg(to_jsonb(t)) from public.shared_targets t),'[]'::jsonb),
@@ -975,6 +983,10 @@ select pg_temp.join_user(9,12,'instant-joins');
 select pg_temp.check_true((select eligible_round='2026-10-19' from public.shared_memberships where group_id=pg_temp.gid('instant-joins') and user_id='aaaaaaaa-0000-4000-8000-000000000010'),'join one microsecond before boundary eligible now');
 select pg_temp.check_true((select bool_and(eligible_round='2026-10-26') from public.shared_memberships where group_id=pg_temp.gid('instant-joins') and user_id in ('aaaaaaaa-0000-4000-8000-000000000011','aaaaaaaa-0000-4000-8000-000000000012')),'join at/after boundary eligible next');
 select pg_temp.check_true((select roster_size=2 from public.shared_goal_rounds where group_id=pg_temp.gid('instant-joins')),'boundary roster excludes both late acceptances');
+-- Late joiners have an initial target only at their future eligible boundary.
+select pg_temp.check_true(pg_temp.command(11,'set_target',jsonb_build_object('group_id',pg_temp.gid('instant-joins'),'target',4))->>'target'='4','late joiner can revise first eligible target');
+select pg_temp.check_true(pg_temp.command(11,'set_target',jsonb_build_object('group_id',pg_temp.gid('instant-joins'),'target',null))->>'target'='2','late joiner cancellation restores original target without earlier version');
+select pg_temp.check_true((select target=2 from public.shared_targets where membership_id=(select id from public.shared_memberships where group_id=pg_temp.gid('instant-joins') and user_id='aaaaaaaa-0000-4000-8000-000000000011') and effective_round='2026-10-26'),'cancelled first eligible target is persisted as two');
 select pg_temp.set_clock('2026-10-14 13:40+03');
 select pg_temp.draft(7,'cutoff-tie'); select pg_temp.publish(7,'cutoff-tie','2026-10-19'); select pg_temp.join_user(7,8,'cutoff-tie');
 select pg_temp.set_clock('2026-10-21 12:00+03');
@@ -1107,6 +1119,18 @@ select pg_temp.set_clock('2026-03-09 10:00-04');
 select pg_temp.check_true((select scheduled_end-activity_start=interval '167 hours' from public.shared_goal_rounds where group_id=pg_temp.gid('spring-dst')),'spring gap round has 167 hours');
 
 -- Read RPC uses invoker RLS; no shared data leaks through a definer snapshot.
+select pg_temp.set_clock('2026-10-14 16:00+03');
+select pg_temp.draft(6,'long-waiting'); select pg_temp.publish(6,'long-waiting','2026-10-19');
+select pg_temp.draft(6,'old-paused'); select pg_temp.publish(6,'old-paused','2026-10-19'); select pg_temp.join_user(6,7,'old-paused');
+select pg_temp.set_clock('2026-10-21 12:00+03');
+select pg_temp.command(7,'leave',jsonb_build_object('group_id',pg_temp.gid('old-paused')));
+select pg_temp.set_clock('2027-01-18 12:00+03');
+insert into sg_fixture values('cold-lifecycle',pg_temp.as_user(6,$q$select public.facta_shared_snapshot('2026-12-01','2027-01-31')$q$));
+select pg_temp.check_true((select l->'first_scored_round'='null'::jsonb from sg_fixture,jsonb_array_elements(v->'lifecycle') l where k='cold-lifecycle' and l->>'group_id'=pg_temp.gid('long-waiting')::text),'long waiting is explicitly never activated outside bounded score history');
+select pg_temp.check_true((select l->>'first_scored_round'='2026-10-19' from sg_fixture,jsonb_array_elements(v->'lifecycle') l where k='cold-lifecycle' and l->>'group_id'=pg_temp.gid('old-paused')::text),'old paused activation is returned outside bounded score history');
+select pg_temp.check_true(not exists(select 1 from sg_fixture,jsonb_array_elements(v->'rounds') r where k='cold-lifecycle' and r->>'group_id' in (pg_temp.gid('long-waiting')::text,pg_temp.gid('old-paused')::text)),'lifecycle summary does not expand bounded round history');
+select pg_temp.check_true((select jsonb_array_length(v->'lifecycle')=jsonb_array_length(v->'groups') from sg_fixture where k='cold-lifecycle'),'one activation summary per authorized group');
+select pg_temp.check_true(pg_temp.as_user(7,format('select to_jsonb(count(*)) from jsonb_array_elements(public.facta_shared_snapshot(''2026-12-01'',''2027-01-31'')->''lifecycle'') l where l->>''group_id''=%L',pg_temp.gid('old-paused')))='0','departed member cannot read activation summary');
 select pg_temp.check_true(pg_temp.as_user(4,format('select to_jsonb(count(*)) from jsonb_array_elements(public.facta_shared_snapshot(''2026-10-01'',''2026-11-30'')->''groups'') g where g->>''id''=%L',pg_temp.gid('lifecycle')))='0','snapshot removes departed group');
 select pg_temp.check_true(pg_temp.denied(3,$q$select public.facta_shared_snapshot('2020-01-01','2026-11-30')$q$,'22023'),'snapshot rejects unbounded history');
 
@@ -1836,6 +1860,9 @@ begin
         value:=(payload->>'target')::integer;
         if value is null then
           select target into value from public.shared_targets where membership_id=m.id and effective_round<effective and deleted_at is null order by effective_round desc limit 1;
+          -- Before first eligibility the original row and the pending change
+          -- share a boundary. The immutable join target is the baseline then.
+          value:=coalesce(value,m.initial_gym_target);
           if value is null then return jsonb_build_object('ok',false,'code','initial_target_required'); end if;
         end if;
         if value not between 2 and 7 then raise exception 'Invalid target' using errcode='22023'; end if;
@@ -1949,6 +1976,11 @@ begin
     select distinct group_id,round_start,round_end,activity_start,scheduled_end,activity_end,roster_size,end_reason,is_active from scores
   ) select jsonb_build_object(
     'groups',coalesce((select jsonb_agg(to_jsonb(g)) from public.shared_groups g),'[]'::jsonb),
+    -- One compact authoritative activation fact per visible group, independent
+    -- of the requested score window. RLS still scopes both tables and view.
+    'lifecycle',coalesce((select jsonb_agg(jsonb_build_object('group_id',g.id,'first_scored_round',
+      (select min(r.round_start) from public.shared_goal_rounds r where r.group_id=g.id)))
+      from public.shared_groups g),'[]'::jsonb),
     'memberships',coalesce((select jsonb_agg(to_jsonb(m)) from public.shared_memberships m),'[]'::jsonb),
     'profiles',coalesce((select jsonb_agg(to_jsonb(p)) from public.shared_profiles p),'[]'::jsonb),
     'targets',coalesce((select jsonb_agg(to_jsonb(t)) from public.shared_targets t),'[]'::jsonb),

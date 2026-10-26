@@ -70,6 +70,34 @@ function populated() {
   );
   return state;
 }
+it("resolves long-waiting versus old-paused from authoritative activation outside bounded history", () => {
+  const state = populated();
+  const now = Date.parse("2027-01-18T09:00:00Z");
+  state.cache!.snapshot.rounds = [];
+  state.cache!.snapshot.scores = [];
+  state.cache!.snapshot.lifecycle = [
+    { groupId: SHARED_GROUP, firstScoredRound: null },
+  ];
+  state.cache!.windows = [
+    {
+      from: "2026-12-01",
+      until: "2027-01-31",
+      confirmedAt: now,
+      versions: { [SHARED_GROUP]: 1 },
+    },
+  ];
+  const read = () => sharedGroupView(state, SHARED_USER, SHARED_GROUP, now)!;
+  expect(read().phase).toBe("waiting");
+  expect(read().scores).toEqual([]);
+  state.cache!.snapshot.lifecycle[0].firstScoredRound = "2026-10-19";
+  expect(read().phase).toBe("paused");
+  expect(read().canCheck).toBe(false);
+  state.cache!.windows[0].confirmedAt = Date.parse("2027-01-17T09:00:00Z");
+  expect(read().phase).toBe("unconfirmed");
+  state.cache!.windows[0].confirmedAt = now;
+  delete state.cache!.snapshot.lifecycle;
+  expect(read().phase).toBe("unconfirmed");
+});
 it("pages history using only coverage for this group revision and stops at its anchor", () => {
   const state = populated(),
     group = state.cache!.snapshot.groups[0];

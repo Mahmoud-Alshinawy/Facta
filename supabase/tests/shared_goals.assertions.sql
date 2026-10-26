@@ -215,6 +215,10 @@ select pg_temp.join_user(9,12,'instant-joins');
 select pg_temp.check_true((select eligible_round='2026-10-19' from public.shared_memberships where group_id=pg_temp.gid('instant-joins') and user_id='aaaaaaaa-0000-4000-8000-000000000010'),'join one microsecond before boundary eligible now');
 select pg_temp.check_true((select bool_and(eligible_round='2026-10-26') from public.shared_memberships where group_id=pg_temp.gid('instant-joins') and user_id in ('aaaaaaaa-0000-4000-8000-000000000011','aaaaaaaa-0000-4000-8000-000000000012')),'join at/after boundary eligible next');
 select pg_temp.check_true((select roster_size=2 from public.shared_goal_rounds where group_id=pg_temp.gid('instant-joins')),'boundary roster excludes both late acceptances');
+-- Late joiners have an initial target only at their future eligible boundary.
+select pg_temp.check_true(pg_temp.command(11,'set_target',jsonb_build_object('group_id',pg_temp.gid('instant-joins'),'target',4))->>'target'='4','late joiner can revise first eligible target');
+select pg_temp.check_true(pg_temp.command(11,'set_target',jsonb_build_object('group_id',pg_temp.gid('instant-joins'),'target',null))->>'target'='2','late joiner cancellation restores original target without earlier version');
+select pg_temp.check_true((select target=2 from public.shared_targets where membership_id=(select id from public.shared_memberships where group_id=pg_temp.gid('instant-joins') and user_id='aaaaaaaa-0000-4000-8000-000000000011') and effective_round='2026-10-26'),'cancelled first eligible target is persisted as two');
 select pg_temp.set_clock('2026-10-14 13:40+03');
 select pg_temp.draft(7,'cutoff-tie'); select pg_temp.publish(7,'cutoff-tie','2026-10-19'); select pg_temp.join_user(7,8,'cutoff-tie');
 select pg_temp.set_clock('2026-10-21 12:00+03');
@@ -347,6 +351,18 @@ select pg_temp.set_clock('2026-03-09 10:00-04');
 select pg_temp.check_true((select scheduled_end-activity_start=interval '167 hours' from public.shared_goal_rounds where group_id=pg_temp.gid('spring-dst')),'spring gap round has 167 hours');
 
 -- Read RPC uses invoker RLS; no shared data leaks through a definer snapshot.
+select pg_temp.set_clock('2026-10-14 16:00+03');
+select pg_temp.draft(6,'long-waiting'); select pg_temp.publish(6,'long-waiting','2026-10-19');
+select pg_temp.draft(6,'old-paused'); select pg_temp.publish(6,'old-paused','2026-10-19'); select pg_temp.join_user(6,7,'old-paused');
+select pg_temp.set_clock('2026-10-21 12:00+03');
+select pg_temp.command(7,'leave',jsonb_build_object('group_id',pg_temp.gid('old-paused')));
+select pg_temp.set_clock('2027-01-18 12:00+03');
+insert into sg_fixture values('cold-lifecycle',pg_temp.as_user(6,$q$select public.facta_shared_snapshot('2026-12-01','2027-01-31')$q$));
+select pg_temp.check_true((select l->'first_scored_round'='null'::jsonb from sg_fixture,jsonb_array_elements(v->'lifecycle') l where k='cold-lifecycle' and l->>'group_id'=pg_temp.gid('long-waiting')::text),'long waiting is explicitly never activated outside bounded score history');
+select pg_temp.check_true((select l->>'first_scored_round'='2026-10-19' from sg_fixture,jsonb_array_elements(v->'lifecycle') l where k='cold-lifecycle' and l->>'group_id'=pg_temp.gid('old-paused')::text),'old paused activation is returned outside bounded score history');
+select pg_temp.check_true(not exists(select 1 from sg_fixture,jsonb_array_elements(v->'rounds') r where k='cold-lifecycle' and r->>'group_id' in (pg_temp.gid('long-waiting')::text,pg_temp.gid('old-paused')::text)),'lifecycle summary does not expand bounded round history');
+select pg_temp.check_true((select jsonb_array_length(v->'lifecycle')=jsonb_array_length(v->'groups') from sg_fixture where k='cold-lifecycle'),'one activation summary per authorized group');
+select pg_temp.check_true(pg_temp.as_user(7,format('select to_jsonb(count(*)) from jsonb_array_elements(public.facta_shared_snapshot(''2026-12-01'',''2027-01-31'')->''lifecycle'') l where l->>''group_id''=%L',pg_temp.gid('old-paused')))='0','departed member cannot read activation summary');
 select pg_temp.check_true(pg_temp.as_user(4,format('select to_jsonb(count(*)) from jsonb_array_elements(public.facta_shared_snapshot(''2026-10-01'',''2026-11-30'')->''groups'') g where g->>''id''=%L',pg_temp.gid('lifecycle')))='0','snapshot removes departed group');
 select pg_temp.check_true(pg_temp.denied(3,$q$select public.facta_shared_snapshot('2020-01-01','2026-11-30')$q$,'22023'),'snapshot rejects unbounded history');
 

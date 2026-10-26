@@ -24,6 +24,8 @@ export interface HistoryRange {
   until: string;
 }
 export interface SharedSnapshot {
+  /** Missing in legacy saved snapshots; null date explicitly means never activated. */
+  lifecycle?: { groupId: string; firstScoredRound: string | null }[];
   groups: SharedGroup[];
   profiles: SharedProfile[];
   memberships: SharedMembership[];

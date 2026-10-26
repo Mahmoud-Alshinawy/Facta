@@ -65,6 +65,17 @@ export function sharedGroupView(
   const anchorCovered =
     !!group.firstRoundDate &&
     roundConfirmation(state, group, group.firstRoundDate) !== null;
+  // A recent score page can be empty for both never-active and long-paused
+  // groups. The server's complete activation summary distinguishes them.
+  // Legacy caches retain their conservative coverage/history fallback.
+  const lifecycle = s.lifecycle?.find((l) => l.groupId === id);
+  const everActivated = lifecycle
+    ? lifecycle.firstScoredRound !== null
+    : rounds.length
+      ? true
+      : anchorCovered
+        ? false
+        : null;
   const slotConfirmedAt = slot ? roundConfirmation(state, group, slot) : null;
   const boundaryConfirmed =
     !!slot &&
@@ -77,9 +88,9 @@ export function sharedGroupView(
       : active
         ? "active"
         : current?.endReason === "paused" ||
-            (rounds.length && boundaryConfirmed)
+            (everActivated === true && boundaryConfirmed)
           ? "paused"
-          : (anchorCovered && boundaryConfirmed && !rounds.length) ||
+          : (everActivated === false && boundaryConfirmed) ||
               (group.firstRoundDate && today < group.firstRoundDate)
             ? "waiting"
             : "unconfirmed";

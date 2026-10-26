@@ -1,8 +1,54 @@
 # Shared goals: Step 4 checkpoint
 
 The owner approved **c882ad5**, completing Step 3, and authorized Step 4 only
-of the approved 5337807 plan. Stop for review before Step 5. No migrations,
-dependencies, native changes, Today/widget integration or live Supabase access.
+of the approved 5337807 plan. Stop for review before Step 5. The original
+checkpoint made no migration changes. The review follow-up below updates the
+existing shared RPC definitions and generated SQL copies. No dependencies,
+native changes, Today/widget integration or live Supabase access.
+
+## Review follow-up to ccece44
+
+- **First eligible Gym target:** cancelling a pending change restores the most
+  recent earlier target version, falling back to the immutable membership
+  `initial_gym_target`. A late joiner's original row shares the pending boundary,
+  so an earlier version may not exist. Cancellation still upserts that same
+  future boundary and keeps receipt/lock behavior unchanged.
+- **Lifecycle independent of score history:** the invoker snapshot RPC adds one
+  `lifecycle` row per authorized group: `{group_id, first_scored_round}`. The
+  date is the minimum actual server-view scored round across history; explicit
+  null means never activated. Round/score/check-in arrays retain their requested
+  bounds. A successful current-slot read distinguishes long waiting from old
+  paused even with no recent round rows. Offline unconfirmed next boundaries
+  remain unconfirmed; score freshness still requires matching round/revision
+  coverage. The client validates, persists and purges the summary with the group.
+  Missing metadata in legacy saved/older-server snapshots remains unknown and
+  uses the prior conservative history/coverage fallback, never “never active.”
+- Observed red before green: SQL `late joiner cancellation restores original
+  target without earlier version`; mounted fresh read `resolves waiting lifecycle
+  without bounded score history`; and the codec's new-field acceptance test.
+- **177 combined UI assertions passed:** all 85 creation/recovery, 74 Step 4,
+  and 18 new review assertions. The review test mounts a next-round joiner,
+  changes 2 → 4, cancels through the dialog and checks the persisted 2/no pending
+  control; then opens newly created IndexedDB stores on 18 January for groups
+  anchored 19 October and checks Waiting/Paused with no recent scored rounds.
+  **94 data integration assertions** also passed with the extended snapshot.
+- Required checks passed: frozen install; desktop/widgets/calendar tsc;
+  **433 desktop / 184 calendar** tests; both builds (desktop PORT=1420,
+  BASE_PATH=/); both Windows cargo check --offline. Main-chunk warning remains.
+- **421 checked SQL assertions plus exception assertions, 22 independent-session
+  races passed** on disposable PostgreSQL 17.5. The suite applies/reruns the
+  migration and tests real database roles/RLS and denied operations; generated
+  standalone copies are synchronized. New assertions cover the persisted
+  restored target, never-activated/old-activation summaries outside history,
+  unchanged bounded rounds, one summary per visible group and denied departed
+  member access. The new race serializes a first-target edit and cancellation
+  from different sessions, observes the lock wait and checks the restored 2.
+  Personal-schema coexistence and a six-year history query plan also passed.
+  An intermediate run reached all races but failed its old expected total of
+  21; that harness count was updated and the full suite rerun successfully.
+
+Full Auth/JWT/PostgREST and packaged native UI/link limits remain unchanged;
+real SQL role checks do not establish those integration properties.
 
 ## Implemented behavior
 
@@ -39,7 +85,7 @@ dependencies, native changes, Today/widget integration or live Supabase access.
   focus, and restore their opener. Invitation return restores its newly mounted
   detail opener and stops the same Escape from closing two panels.
 
-## Verification actually run
+## Initial ccece44 verification (historical)
 
 The existing disposable runner uses PostgreSQL **17.5**, the real Supabase SDK
 over a loopback SQL bridge, and Edge **156.0.4314.42** with native IndexedDB.
@@ -99,9 +145,10 @@ The comprehensive state/short-window/native comparison remains Step 6.
 
 Full **Supabase Auth/JWT/PostgREST**, deployed HTTP authorization, packaged
 native links and a native UI smoke test were **not** verified here. Cargo checks
-are compilation evidence only. No standalone schema/RLS/security/concurrency
-suite was rerun, and these browser/baseline passes do not establish those
-properties. Today, Mine and companion behavior were not changed or claimed as
+are compilation evidence only. At the initial ccece44 checkpoint no standalone
+SQL/security/concurrency suite was rerun; the review follow-up above reruns it.
+Browser/baseline passes alone do not establish those properties. Today, Mine
+and companion behavior were not changed or claimed as
 newly verified. No installed planner data or live backend was touched.
 
 ## Reproduction
@@ -109,7 +156,8 @@ newly verified. No installed planner data or live backend was touched.
 With the existing owned local fixture runtime and its documented environment
 variables, `scripts/run-shared-client-tests.mjs <local-port>` runs data tests;
 `--ui` runs existing creation/recovery plus Step 4; `--ui --step4` focuses the new
-74 assertions. Each invocation creates/drops its own disposable test database.
+74 assertions plus the 18 review assertions; `--ui --step4-review` focuses the
+18 review assertions. Each invocation creates/drops its own disposable database.
 The owned temporary PostgreSQL cluster is stopped after verification.
 
 **Next checkpoint: owner review of Step 4. Step 5 is not authorized.**

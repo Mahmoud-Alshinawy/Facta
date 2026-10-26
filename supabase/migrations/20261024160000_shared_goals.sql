@@ -608,6 +608,9 @@ begin
         value:=(payload->>'target')::integer;
         if value is null then
           select target into value from public.shared_targets where membership_id=m.id and effective_round<effective and deleted_at is null order by effective_round desc limit 1;
+          -- Before first eligibility the original row and the pending change
+          -- share a boundary. The immutable join target is the baseline then.
+          value:=coalesce(value,m.initial_gym_target);
           if value is null then return jsonb_build_object('ok',false,'code','initial_target_required'); end if;
         end if;
         if value not between 2 and 7 then raise exception 'Invalid target' using errcode='22023'; end if;
@@ -721,6 +724,11 @@ begin
     select distinct group_id,round_start,round_end,activity_start,scheduled_end,activity_end,roster_size,end_reason,is_active from scores
   ) select jsonb_build_object(
     'groups',coalesce((select jsonb_agg(to_jsonb(g)) from public.shared_groups g),'[]'::jsonb),
+    -- One compact authoritative activation fact per visible group, independent
+    -- of the requested score window. RLS still scopes both tables and view.
+    'lifecycle',coalesce((select jsonb_agg(jsonb_build_object('group_id',g.id,'first_scored_round',
+      (select min(r.round_start) from public.shared_goal_rounds r where r.group_id=g.id)))
+      from public.shared_groups g),'[]'::jsonb),
     'memberships',coalesce((select jsonb_agg(to_jsonb(m)) from public.shared_memberships m),'[]'::jsonb),
     'profiles',coalesce((select jsonb_agg(to_jsonb(p)) from public.shared_profiles p),'[]'::jsonb),
     'targets',coalesce((select jsonb_agg(to_jsonb(t)) from public.shared_targets t),'[]'::jsonb),

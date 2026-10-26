@@ -1,6 +1,36 @@
 # Handoff: branch 3 Step 4 — shared progress and membership
 
-## Current decision (26 October 2026)
+## Current decision / Step 4 review fixes (26 October 2026)
+
+- Owner requested two fixes on **ccece44**; **Step 5 remains unapproved**.
+  Cancellation before first eligibility now falls back to the immutable original
+  join target when no earlier target version exists. Effective boundaries,
+  current/historical targets and command receipt rules stay intact.
+- A fresh successful read distinguishes long waiting from old paused history
+  using a compact SQL-derived snapshot `lifecycle` summary (first scored round,
+  or explicit null for never activated), independent of bounded score pages.
+  Invoker RLS scopes it to visible groups. Matching current-slot coverage remains
+  required; unrelated reads do not freshen scores. Legacy snapshots decode
+  conservatively; summaries persist with the existing record and purge on leave.
+- Reproduced the late-cancellation SQL failure and fresh-device Waiting failure
+  before fixing them. Added mounted cancellation/fresh-store lifecycle tests,
+  strict codec/legacy/coverage tests, SQL summary privacy assertions and a real
+  first-target edit versus cancellation race. Generated SQL copies synchronized.
+- Required checks passed: frozen install, all three tsc checks, **433 desktop /
+  184 calendar** Vitest tests, desktop PORT=1420 BASE_PATH=/ and widgets builds,
+  both Windows cargo check --offline. Existing chunk warning remains.
+  **177 UI assertions** (85 creation/recovery + 74 Step 4 + 18 review) and
+  **94 data assertions** passed on real Edge/native IndexedDB and disposable SQL.
+- **421 checked SQL assertions plus exception assertions, 22 independent-session
+  races** passed. Migration apply/rerun/generated-copy checks, real-role RLS,
+  personal-schema coexistence and history query-plan checks ran. See
+  `docs/shared-goals-step4.md` and `docs/shared-goals-data.md` for exact scope.
+  Full Auth/JWT/PostgREST, deployed HTTP and packaged native UI/link verification
+  remain outstanding. No live Supabase access. Unrelated `.agents/` and
+  `skills-lock.json` remain untouched. STOP after commit/push for review;
+  **do not begin Step 5**.
+
+## Initial Step 4 checkpoint (26 October 2026; historical)
 
 - Owner approved **c882ad5**, completing Step 3, and authorized **Step 4 only**:
   shared overview/detail, check-in/undo, pending Gym targets, membership/history,

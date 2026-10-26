@@ -168,6 +168,8 @@ try {
     const { runDraftReloadTests } =
       await import("./shared-draft-reload-tests.mjs");
     const { runSharedStep4Tests } = await import("./shared-step4-tests.mjs");
+    const { runSharedStep4ReviewTests } =
+      await import("./shared-step4-review-tests.mjs");
     const uiOptions = {
       page,
       context,
@@ -175,7 +177,8 @@ try {
       fixture: ready.url,
       root,
     };
-    const step4Only = process.argv.includes("--step4");
+    const reviewOnly = process.argv.includes("--step4-review");
+    const step4Only = process.argv.includes("--step4") || reviewOnly;
     const reloadOnly = process.argv.includes("--draft-reload");
     const focused = process.argv.includes("--draft-recovery") || reloadOnly;
     const original =
@@ -209,11 +212,14 @@ try {
           recoveryAssertions: recovery.assertions,
         }
       : recovery;
-    const step4 = focused ? empty : await runSharedStep4Tests(uiOptions);
+    const step4 =
+      focused || reviewOnly ? empty : await runSharedStep4Tests(uiOptions);
+    const review = focused ? empty : await runSharedStep4ReviewTests(uiOptions);
     const result = {
       ...baseline,
-      assertions: baseline.assertions + step4.assertions,
-      checks: [...baseline.checks, ...step4.checks],
+      assertions: baseline.assertions + step4.assertions + review.assertions,
+      checks: [...baseline.checks, ...step4.checks, ...review.checks],
+      step4ReviewAssertions: review.assertions,
       step4Assertions: step4.assertions,
       step4Screenshots: step4.screenshots ?? [],
     };

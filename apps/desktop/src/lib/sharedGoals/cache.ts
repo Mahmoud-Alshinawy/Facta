@@ -31,6 +31,9 @@ export function forgetGroup(
   const snapshot = {
     ...cache.snapshot,
     groups: cache.snapshot.groups.filter((g) => g.id !== groupId),
+    ...(cache.snapshot.lifecycle && {
+      lifecycle: cache.snapshot.lifecycle.filter((l) => l.groupId !== groupId),
+    }),
     memberships: members,
     invites,
     profiles: cache.snapshot.profiles.filter((p) => profileIds.has(p.userId)),
