@@ -71,7 +71,50 @@ allows a canonical UUID/Goals route and retains existing Notes/Diary focus route
 Remote revocation cannot erase an already-offline device. Previously confirmed
 data remains until the planner learns of revocation and exports the new state.
 
-## Evidence actually run
+## Review fixes (26 October 2026)
+
+The review of bcb8901 requested a fresh action clock and green high-adherence
+bars. Today no longer passes its minute-refresh display time into check-in.
+The shared action captures `Date.now()` once on click, reprojects the latest
+authorized cache at that instant, and uses that projection's group-local day
+and checked state. A midnight click therefore acts on the new day without
+undoing the previous day's completion. An unconfirmed new round, rest day or
+known inactive state blocks the action with a visible message. An unseen peer
+pause still reaches the server with the actual click instant and is rejected
+as `inactive_period`; it cannot inherit eligibility from the older display.
+The captured instant stays in the existing durable intent/immutable command
+through transport and receipt retries.
+
+High-adherence bars use `--event-green` on Shared, Today and Progress;
+below-threshold bars retain `--text-2`. Scores and the >=70% classification
+remain server-confirmed. Personal accents/statistics are unchanged.
+
+The new mounted regression advances browser/engine/server clocks independently
+of Today's display clock. It covers the 09:00 render / 09:00:30 pause / 09:00:45
+click, Riyadh midnight with an already-completed previous day, lost committed
+reply and same-UUID/body replay after the clock advances, and crossing into an
+unconfirmed next round without sending a backdated check-in. It uses actual
+SQL 100%/0% rows to assert computed green/grey colors on both Today and Progress
+in Midnight and Ember. Both captures in ignored
+`tmp/shared-goals-runtime/step5-review-shots/` were visually inspected.
+
+Review checks actually rerun: frozen install; all three TypeScript checks;
+**437 desktop / 194 calendar tests**; desktop PORT=1420 BASE_PATH=/ build;
+widgets build; both Windows `cargo check --offline`; **28 focused mounted
+review assertions** and **94 data integration assertions**. The focused pause
+regression failed against the old code. The test harness now keeps its live
+engine/server/browser clocks aligned while advancing them independently from
+the display clock; browser Date is fixed at each test instant so milliseconds
+of wall time cannot falsely appear to be a future capture. An existing
+invitation Escape regression also waits for the mounted heading's focus before
+sending the real key, rather than racing its next-frame focus effect.
+The final full browser run passed **243 assertions**: 85 creation/recovery,
+74 Step 4, 18 Step 4 review, 38 Step 5 and 28 new review assertions, on Edge
+156.0.4314.42 with native IndexedDB and disposable PostgreSQL 17.5. All mounted
+creation/publication/restart recovery regressions remain passing. This uses the
+same synthetic identity bridge and preserves every Auth/native limitation below.
+
+## Initial Step 5 evidence (bcb8901)
 
 - Frozen-lockfile install; TypeScript in desktop/widgets/calendar;
   **437 desktop / 194 calendar Vitest tests**; desktop build with PORT=1420,

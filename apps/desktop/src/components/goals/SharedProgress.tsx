@@ -123,11 +123,23 @@ export function CheckinAction({
     setSaving(true);
     setError("");
     try {
+      // The display can be a minute old. Capture once, then derive both the
+      // action's local day and checked state at that instant. The durable
+      // outbox retains this capture unchanged through receipt retries.
+      const captured = now();
+      const action = sharedGroupView(
+        engine.getSnapshot(),
+        engine.userId,
+        view.group.id,
+        captured,
+      );
+      if (!action?.canCheck)
+        throw new Error(action?.reason ?? "Reconnect to confirm this group.");
       await engine.enqueueCheckin({
-        groupId: view.group.id,
-        date: view.today,
-        completed: !view.checked,
-        capturedAt: new Date(now()).toISOString(),
+        groupId: action.group.id,
+        date: action.today,
+        completed: !action.checked,
+        capturedAt: new Date(captured).toISOString(),
       });
       if (navigator.onLine) void engine.syncNow();
     } catch (e) {

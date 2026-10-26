@@ -505,7 +505,7 @@ export async function runSharedStep4Tests({
     (await page
       .locator('[data-percent="100"] .shared-score-bar i:not(.low)')
       .count()) === 1,
-    "N-per-week capped SQL adherence uses the >=70 accent bar",
+    "N-per-week capped SQL adherence uses the >=70 green bar",
   );
   await page.keyboard.press("Escape");
   await button("Open Daily walk").click();
@@ -526,6 +526,11 @@ export async function runSharedStep4Tests({
   );
   await button("Invite people").click();
   await heading("Invite people").waitFor();
+  // Heading visibility precedes SharedHeader's next-frame focus effect. Send
+  // the real key only after the mounted panel owns focus (not BODY).
+  await page.waitForFunction(
+    () => document.activeElement?.textContent === "Invite people",
+  );
   await page.keyboard.press("Escape");
   await heading("Daily walk").waitFor();
   await page.waitForFunction(

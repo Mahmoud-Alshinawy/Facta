@@ -126,7 +126,7 @@
 .progress-scores .progress-bar i {
   display: block;
   height: 100%;
-  background: var(--accent);
+  background: var(--event-green);
   border-radius: 3px;
 }
 .progress-scores .progress-bar i.low {

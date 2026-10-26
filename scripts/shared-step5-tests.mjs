@@ -12,6 +12,7 @@ export async function runSharedStep5Tests({ context, url, fixture, root }) {
       : r.abort(),
   );
   const page = await isolated.newPage();
+  await page.clock.install({ time: new Date("2026-10-14T09:00:00Z") });
   const target = new URL(url);
   target.searchParams.set("step5", "1");
   page.on("pageerror", (e) => console.error("Step 5 runtime:", e.message));
@@ -31,6 +32,7 @@ export async function runSharedStep5Tests({ context, url, fixture, root }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "clock", now: at }),
     });
+    await page.clock.setFixedTime(new Date(at));
     await page.evaluate((at) => window.sharedUi.now(at), at);
   };
   const actor = (id) => page.evaluate((id) => window.sharedUi.setActor(id), id);

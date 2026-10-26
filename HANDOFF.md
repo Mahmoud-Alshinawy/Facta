@@ -1,6 +1,37 @@
-# Handoff: branch 3 Step 5 — Today and Progress integration
+# Handoff: branch 3 Step 5 — review fixes
 
 ## Current decision (26 October 2026)
+
+- Owner reviewed **bcb8901** and requested two fixes only. **Step 6 remains
+  unapproved**; stop after verification, commit/push for owner review.
+- Today captures a fresh click instant independently of the minute-refresh
+  display. Shared check-in reprojects the latest authorized cache at that same
+  instant for the group-local date, checked state and eligibility. Midnight
+  cannot undo the previous day; an unconfirmed new round blocks with a visible
+  message. An unseen peer pause is sent with the real click instant for the
+  server's `inactive_period` rejection. Durable receipt retries keep the original
+  capture, UUID and serialized body.
+- High-adherence Shared/Today/Progress bars now use `--event-green`; below 70%
+  retains `--text-2`. Personal accents/statistics remain independent.
+- Added a mounted real-SDK/IndexedDB/disposable-SQL regression for a frozen
+  09:00 display, 09:00:30 peer pause and 09:00:45 action; Riyadh midnight with
+  yesterday already checked; lost reply/immutable retry; unconfirmed next-round
+  cutoff; and actual SQL 100%/0% rows in Midnight/Ember on Today and Progress.
+  Both new theme captures were inspected. See `docs/shared-goals-step5.md`.
+- Required checks rerun successfully: frozen install; three TypeScript checks;
+  **437 desktop / 194 calendar tests**; both builds (desktop PORT=1420
+  BASE_PATH=/); both Windows cargo checks. Existing chunk warning remains.
+  **243 full mounted assertions** passed (85 creation/recovery + 74 Step 4 +
+  18 Step 4 review + 38 Step 5 + 28 new review); focused 28 and **94 data
+  integration assertions** also passed. The invitation keyboard test now waits
+  for actual mounted focus before Escape. No application change for that race.
+- Auth/JWT/PostgREST, deployed HTTP and packaged native UI/IPC/file-watching
+  verification limits remain unchanged. No installed data/live Supabase, SQL,
+  dependency or unrelated untracked-file changes. No standalone SQL/security/
+  concurrency suite or native helper rerun; original evidence below is historical.
+  Stop for owner review after commit/push; **do not begin Step 6**.
+
+## Initial Step 5 checkpoint (bcb8901; historical)
 
 - Owner approved **867128a**, completing Step 4, and authorized **Step 5 only**
   under the approved plan. Step 6 remains unapproved; STOP after checks,

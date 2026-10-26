@@ -180,6 +180,8 @@ try {
     const { runSharedStep4ReviewTests } =
       await import("./shared-step4-review-tests.mjs");
     const { runSharedStep5Tests } = await import("./shared-step5-tests.mjs");
+    const { runSharedStep5ReviewTests } =
+      await import("./shared-step5-review-tests.mjs");
     const uiOptions = {
       page,
       context,
@@ -187,7 +189,8 @@ try {
       fixture: ready.url,
       root,
     };
-    const step5Only = process.argv.includes("--step5");
+    const step5ReviewOnly = process.argv.includes("--step5-review");
+    const step5Only = process.argv.includes("--step5") || step5ReviewOnly;
     const reviewOnly = process.argv.includes("--step4-review");
     const step4Only =
       process.argv.includes("--step4") || reviewOnly || step5Only;
@@ -231,22 +234,32 @@ try {
     const review =
       focused || step5Only ? empty : await runSharedStep4ReviewTests(uiOptions);
     const step5 =
-      focused || reviewOnly || process.argv.includes("--step4")
+      focused ||
+      reviewOnly ||
+      process.argv.includes("--step4") ||
+      step5ReviewOnly
         ? empty
         : await runSharedStep5Tests(uiOptions);
+    const step5Review =
+      focused || reviewOnly || process.argv.includes("--step4")
+        ? empty
+        : await runSharedStep5ReviewTests(uiOptions);
     const result = {
       ...baseline,
       assertions:
         baseline.assertions +
         step4.assertions +
         review.assertions +
-        step5.assertions,
+        step5.assertions +
+        step5Review.assertions,
       checks: [
         ...baseline.checks,
         ...step4.checks,
         ...review.checks,
         ...step5.checks,
+        ...step5Review.checks,
       ],
+      step5ReviewAssertions: step5Review.assertions,
       step5Assertions: step5.assertions,
       step4ReviewAssertions: review.assertions,
       step4Assertions: step4.assertions,

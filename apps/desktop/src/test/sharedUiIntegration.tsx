@@ -41,8 +41,10 @@ let current: string | null = null,
   store: IndexedDbStore | null = null;
 let personal: PlannerSync | null = null;
 let clock = Date.parse("2026-10-20T09:00:00Z");
+let actionClock = clock;
 let blockedKeys = false;
 const now = () => clock;
+const actionNow = () => actionClock;
 const db =
   new URLSearchParams(location.search).get("database") ??
   `facta-shared-ui-${crypto.randomUUID()}`;
@@ -84,7 +86,7 @@ async function setActor(id: string | null) {
     store,
     remote: remote(id),
     currentUserId: () => current,
-    now,
+    now: actionNow,
     debounceMs: 60_000,
   });
   engine.load();
@@ -106,7 +108,12 @@ function Harness() {
         },
         now: (value: string) => {
           clock = Date.parse(value);
+          actionClock = clock;
           render();
+        },
+        // Advance the live engine clock without the minute-refresh display.
+        actionNow: (value: string) => {
+          actionClock = Date.parse(value);
         },
         route: (raw: string) => {
           const link = parseFactaLink(raw);

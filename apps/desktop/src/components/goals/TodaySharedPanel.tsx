@@ -108,9 +108,7 @@ export function TodaySharedContent({
             >
               Open group
             </button>
-            {engine && view && (
-              <TodayCheck engine={engine} view={view} now={now} />
-            )}
+            {engine && view && <TodayCheck engine={engine} view={view} />}
           </div>
         </>
       ) : (
@@ -158,11 +156,9 @@ export function TodaySharedContent({
 function TodayCheck({
   engine,
   view,
-  now,
 }: {
   engine: SharedSync;
   view: NonNullable<ReturnType<typeof sharedGroupView>>;
-  now: number;
 }) {
   const requests = sharedRequests(engine);
   const pending = useSyncExternalStore(
@@ -174,7 +170,7 @@ function TodayCheck({
       engine={engine}
       view={view}
       locked={pending.length > 0}
-      now={() => now}
+      now={Date.now}
     />
   );
 }
