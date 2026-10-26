@@ -1,0 +1,269 @@
+.progress-card,
+.today-shared-card {
+  font-family: "Geist", sans-serif;
+  color: var(--text);
+  min-width: 0;
+}
+.progress-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+.progress-card.is-trans {
+  background: color-mix(in srgb, var(--surface) 35%, transparent);
+  border-color: var(--border-strong);
+  text-shadow: 0 1px 2px var(--shadow-ink);
+}
+.progress-card .mono,
+.today-shared-card .mono {
+  font-family: "Geist Mono", monospace;
+}
+.progress-card .progress-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--text-2);
+}
+.progress-personal {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+.progress-personal .progress-ring-box {
+  position: relative;
+  flex: none;
+  width: 76px;
+  height: 76px;
+}
+.progress-personal .progress-ring-box > span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+}
+.progress-personal strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+.progress-personal small {
+  display: block;
+  font-size: 12px;
+  color: var(--text-2);
+  margin-top: 4px;
+}
+.progress-divider {
+  height: 1px;
+  flex: none;
+  background: var(--border);
+}
+.progress-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-2);
+  min-width: 0;
+}
+.progress-picker select {
+  width: 100%;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--control-border);
+  border-radius: 7px;
+  padding: 5px 7px;
+  min-width: 0;
+}
+.progress-scores {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.progress-scores li {
+  display: grid;
+  grid-template-columns: 12px minmax(40px, auto) minmax(20px, 1fr) 44px;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+}
+.progress-scores .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.progress-scores .rank {
+  color: var(--subtle);
+  font-size: 11px;
+}
+.progress-scores .percent {
+  text-align: right;
+  font-size: 11px;
+  grid-column: 4;
+  grid-row: 1;
+}
+.progress-scores .progress-bar {
+  grid-column: 3;
+  grid-row: 1;
+  height: 5px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--raised-2);
+}
+.progress-scores .progress-bar i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+}
+.progress-scores .progress-bar i.low {
+  background: var(--text-2);
+}
+.progress-scores .self .name {
+  font-weight: 600;
+}
+.progress-scores.with-counts {
+  gap: 6px;
+}
+.progress-scores.with-counts li {
+  grid-template-columns: 14px minmax(0, 1fr) auto 44px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  margin: 0 -10px;
+  gap: 8px 10px;
+  font-size: 14px;
+}
+.progress-scores.with-counts .self {
+  background: var(--raised);
+}
+.progress-scores.with-counts .name {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.progress-scores.with-counts .name > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.progress-avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--raised-2);
+  font-size: 11px;
+  font-weight: 600;
+}
+.progress-scores .self .progress-avatar {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+.progress-scores.with-counts .counts {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.progress-scores.with-counts .progress-bar {
+  grid-column: 2/-1;
+  grid-row: 2;
+  height: 6px;
+}
+.progress-status {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--text-2);
+  font-size: 11px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.progress-card button,
+.today-shared-card button {
+  font: inherit;
+}
+.progress-open {
+  border: 1px solid var(--control-border);
+  background: var(--raised);
+  color: var(--text);
+  border-radius: 7px;
+  padding: 6px 9px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.progress-card :is(button, select):focus-visible,
+.today-shared-card :is(button, select):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.today-shared-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  padding: 20px 22px;
+}
+.today-shared-card h2 {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.today-shared-card p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.today-shared-card .shared-launchers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.today-shared-card .shared-launchers button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--control-border);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+}
+.today-shared-card .shared-launchers small {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.today-shared-card .today-shared-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.today-shared-actions .shared-check-action {
+  margin-left: auto;
+}
+
+.today-shared-card button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

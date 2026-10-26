@@ -46,6 +46,10 @@ export default function App() {
     appLinks.getSnapshot,
   );
   const [sharedRequest, setSharedRequest] = useState<LinkIntent | null>(null);
+  const [sharedLaunch, setSharedLaunch] = useState<{
+    key: number;
+    template: "gym" | "custom";
+  } | null>(null);
   const [section, setSection] = useState<Section>("today");
   const [view, setView] = useState<CalendarView>("week");
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -276,7 +280,15 @@ export default function App() {
               </button>
             </header>
             <div className="min-h-0 flex-1 overflow-hidden bg-background">
-              <TodayPanel onNewEvent={openNew} onEditEvent={openEdit} />
+              <TodayPanel
+                onNewEvent={openNew}
+                onEditEvent={openEdit}
+                onOpenGroup={(id) => appLinks.receive({ kind: "group", id })}
+                onCreateShared={(template) => {
+                  setSharedLaunch({ key: Date.now(), template });
+                  setSection("goals");
+                }}
+              />
             </div>
           </>
         )}
@@ -295,6 +307,8 @@ export default function App() {
         )}
         {section === "goals" && (
           <GoalsPage
+            launch={sharedLaunch}
+            onLaunchHandled={() => setSharedLaunch(null)}
             request={sharedRequest}
             onRequestHandled={() => {
               appLinks.clear(sharedRequest?.sequence);

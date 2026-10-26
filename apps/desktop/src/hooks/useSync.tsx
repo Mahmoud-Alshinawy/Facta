@@ -42,15 +42,18 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
+    // An unresolved initial auth read is not a confirmed account change.
+    if (loading) return;
     activeUserId = userId;
     setEngine(null);
     setShared(null);
     setOpenError(null);
     setWidgetExportStore(userId, null);
     setWidgetExportUser(userId);
+    const exportClock = setInterval(requestWidgetExport, 30_000);
     if (!userId) {
       setEngine(null);
-      return;
+      return () => clearInterval(exportClock);
     }
     let cancelled = false;
     let next: PlannerSync | null = null;
@@ -131,6 +134,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       }
     })();
     return () => {
+      clearInterval(exportClock);
       cancelled = true;
       if (activeUserId === userId) activeUserId = null;
       setWidgetExportStore(null, null);
@@ -138,7 +142,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       nextShared?.dispose();
       if (store) void store.close().catch(() => {});
     };
-  }, [userId, attempt]);
+  }, [userId, attempt, loading]);
 
   if (userId && (!engine || engine.userId !== userId))
     return (

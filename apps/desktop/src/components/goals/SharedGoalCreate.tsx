@@ -30,6 +30,7 @@ export default function SharedGoalCreate({
   engine,
   data,
   savedId,
+  initialTemplate,
   locked,
   weekStart,
   now,
@@ -39,6 +40,7 @@ export default function SharedGoalCreate({
   engine: SharedSync;
   data: SharedState;
   savedId?: string;
+  initialTemplate?: "gym" | "custom";
   locked: boolean;
   weekStart: number;
   now: () => number;
@@ -73,11 +75,20 @@ export default function SharedGoalCreate({
       };
     return {
       ...defaults,
+      ...(initialTemplate
+        ? {
+            template: initialTemplate,
+            icon: initialTemplate === "gym" ? "dumbbell" : "goals",
+            schedule_kind:
+              initialTemplate === "gym" ? ("n" as const) : ("every" as const),
+            target: initialTemplate === "gym" ? defaults.target : null,
+          }
+        : {}),
       ...data.drafts.find((d) => d.id === savedId)?.fields,
     };
   });
   const [step, setStep] = useState(
-      initialGroup ? 2 : initialDraft?.server ? 1 : 0,
+      initialGroup ? 2 : initialDraft?.server || initialTemplate ? 1 : 0,
     ),
     [message, setMessage] = useState("");
   const [firstDate, setFirstDate] = useState<string | null>(null),

@@ -1,6 +1,40 @@
-# Handoff: branch 3 Step 4 — shared progress and membership
+# Handoff: branch 3 Step 5 — Today and Progress integration
 
-## Current decision / Step 4 review fixes (26 October 2026)
+## Current decision (26 October 2026)
+
+- Owner approved **867128a**, completing Step 4, and authorized **Step 5 only**
+  under the approved plan. Step 6 remains unapproved; STOP after checks,
+  verification report, commit/push for review.
+- Implemented Today shared panel/selector/check-in and Gym/Custom launchers into
+  the existing wizard; Open group routes to Shared detail. The Progress widget
+  retains a separate personal ring and adds a confirmed, read-only leaderboard,
+  stable per-account/widget selection and Open group. Settings selects/previews
+  Progress groups. Today's other personal content/now line stay intact.
+- `shared_goals` export: version 1, at most **16 groups / 64 KiB / four rows per
+  group**, exact server scores/ranks/counts plus group-local dates/status. No
+  tokens/raw sync data. Configured groups are prioritized; truncation is explicit.
+  Export flushes/rechecks its captured store/account; account/access cleanup
+  removes old rows and scoped config choices. Startup keeps known identity while
+  clearing data, so same-account selection survives reopening. Unknown initial
+  auth is not sign-out. Native file timestamps strictly increase; preference
+  storage failure cannot block account cleanup.
+- Required checks passed: frozen install; all three tsc checks; **437 desktop /
+  194 calendar** tests; both builds (desktop PORT=1420 BASE_PATH=/); both Windows
+  cargo checks. Existing main-chunk warning remains. **215 combined UI assertions
+  / 94 data assertions**, plus final focused **38 Step 5** assertions passed.
+  Three native helper tests passed (export contract/order and group URL rules).
+  Coverage includes traveller group dates, SQL parity, independent personal
+  stats/completion, pointer navigation/focus, launchers, pending/stale/inactive,
+  bounded/token-free stored export, selection and account/leave cleanup.
+- See `docs/shared-goals-step5.md` for exact coverage and limits. Four card-theme
+  captures generated; default/light inspected. Full Today/Settings/native visual
+  comparison remains Step 6. Auth/JWT/PostgREST, deployed HTTP and packaged native
+  UI/file watching/warm-cold links remain unverified. No installed data, live
+  Supabase, SQL, dependencies or unrelated untracked files changed. No standalone
+  SQL/security/concurrency rerun; prior 421/22 evidence remains historical.
+  STOP after commit/push for review; **do not begin Step 6**.
+
+## Step 4 review fixes (26 October 2026; historical)
 
 - Owner requested two fixes on **ccece44**; **Step 5 remains unapproved**.
   Cancellation before first eligibility now falls back to the immutable original

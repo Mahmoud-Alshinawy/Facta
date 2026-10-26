@@ -22,7 +22,7 @@ import "./shared-progress.css";
 const realNow = () => Date.now();
 type Panel =
   | { kind: "home" }
-  | { kind: "create"; id?: string; key: number }
+  | { kind: "create"; id?: string; key: number; template?: "gym" | "custom" }
   | { kind: "paste" }
   | { kind: "join"; source: JoinSource }
   | { kind: "people"; id: string }
@@ -146,6 +146,8 @@ export default function SharedGoalsPage({
   onRequestHandled,
   keyboardBlocked = false,
   now = realNow,
+  launch,
+  onLaunchHandled,
 }: {
   engine: SharedSync;
   weekStart: number;
@@ -154,6 +156,8 @@ export default function SharedGoalsPage({
   onRequestHandled?: () => void;
   keyboardBlocked?: boolean;
   now?: () => number;
+  launch?: { key: number; template: "gym" | "custom" } | null;
+  onLaunchHandled?: () => void;
 }) {
   const data = useSyncExternalStore(engine.subscribe, engine.getSnapshot),
     status = useSyncExternalStore(engine.subscribe, engine.getStatus);
@@ -181,6 +185,11 @@ export default function SharedGoalsPage({
   const groups =
     data.cache?.snapshot.groups.filter((g) => !g.deletedAt && !g.archivedAt) ??
     [];
+  useEffect(() => {
+    if (!launch || !profile) return;
+    setPanel({ kind: "create", key: launch.key, template: launch.template });
+    onLaunchHandled?.();
+  }, [launch, !!profile, onLaunchHandled]);
   const open = (next: Panel) => {
     returnFocus.current = document.activeElement as HTMLElement;
     returnFocusId.current = returnFocus.current.id || null;
@@ -374,6 +383,7 @@ export default function SharedGoalsPage({
       engine={engine}
       data={data}
       savedId={panel.id}
+      initialTemplate={panel.template}
       locked={locked}
       weekStart={weekStart}
       now={now}

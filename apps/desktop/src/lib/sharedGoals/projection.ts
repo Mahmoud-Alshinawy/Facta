@@ -1,121 +1,75 @@
+import {
+  emptySharedWidgetExport,
+  SHARED_EXPORT_BYTES,
+  SHARED_EXPORT_GROUPS,
+  type SharedProgress,
+  type SharedWidgetExport,
+} from "@facta/calendar";
 import type { SharedState } from "@/lib/sync/shared/state";
-
-export interface SharedProgress {
-  groupId: string;
-  name: string;
-  timeZone: string;
-  confirmedAt: number | null;
-  archived: boolean;
-  pending: boolean;
-  stale: boolean;
-  round: {
-    start: string;
-    end: string;
-    activityEnd: string;
-    endReason: string;
-    active: boolean;
-    averagePct: number;
-  } | null;
-  rows: {
-    userId: string;
-    name: string;
-    rank: number;
-    adherencePct: number;
-    isAtLeast70: boolean;
-    self: boolean;
-    left: boolean;
-  }[];
+import { sharedGroupView, type SharedGroupView } from "./view";
+export type { SharedProgress } from "@facta/calendar";
+export function sharedProgressChoices(
+  state: SharedState,
+  userId: string,
+  now: number,
+) {
+  if (state.userId !== userId || !state.cache) return [];
+  return state.cache.snapshot.groups
+    .filter((g) => g.publishedAt && !g.deletedAt)
+    .flatMap((g) => {
+      const v = sharedGroupView(state, userId, g.id, now);
+      return v ? [v] : [];
+    })
+    .sort(
+      (a, b) =>
+        Number(b.phase === "active") - Number(a.phase === "active") ||
+        a.group.createdAt.localeCompare(b.group.createdAt) ||
+        a.group.id.localeCompare(b.group.id),
+    );
 }
-
-/** Data-only handoff for Today/Progress. Call after store.flush and recheck the
- * active account before exporting. Native/widget wiring belongs to Step 5.
- * Missing rounds never become synthetic 0% rows; all scores/ranks come from SQL. */
+/** Same lifecycle/coverage as Shared. Only server values enter the small handoff. */
 export function projectSharedProgress(
   state: SharedState,
   userId: string,
   now: number,
   selectedGroupId?: string,
 ): SharedProgress | null {
-  if (state.userId !== userId || !state.cache) return null;
-  const { snapshot, windows } = state.cache;
-  const active = (id: string) =>
-    snapshot.rounds.some(
-      (r) =>
-        r.groupId === id &&
-        r.isActive &&
-        Date.parse(r.activityStart) <= now &&
-        now < Date.parse(r.activityEnd),
-    );
-  const groups = snapshot.groups.filter(
-    (g) =>
-      g.publishedAt &&
-      !g.deletedAt &&
-      snapshot.memberships.some(
-        (m) =>
-          m.groupId === g.id &&
-          m.userId === userId &&
-          !m.leftAt &&
-          !m.deletedAt,
-      ),
-  );
-  groups.sort(
-    (a, b) =>
-      Number(active(b.id)) - Number(active(a.id)) ||
-      a.createdAt.localeCompare(b.createdAt) ||
-      a.id.localeCompare(b.id),
-  );
-  const group = selectedGroupId
-    ? groups.find((g) => g.id === selectedGroupId)
-    : groups[0];
-  if (!group) return null;
-  const latest = snapshot.rounds
-    .filter((r) => r.groupId === group.id && Date.parse(r.activityStart) <= now)
-    .sort((a, b) => b.roundStart.localeCompare(a.roundStart))[0];
-  const confirmedAt = windows.reduce<number | null>((newest, window) => {
-    if (
-      !latest ||
-      window.versions[group.id] !== group.revision ||
-      window.from > latest.roundStart ||
-      window.until < latest.roundStart
-    )
-      return newest;
-    return newest === null
-      ? window.confirmedAt
-      : Math.max(newest, window.confirmedAt);
-  }, null);
-  const scores = latest
-    ? snapshot.scores
-        .filter(
-          (s) => s.groupId === group.id && s.roundStart === latest.roundStart,
-        )
-        .sort((a, b) => a.rank - b.rank || a.userId.localeCompare(b.userId))
-    : [];
-  const rows = scores.slice(0, 3);
-  const own = scores.find((s) => s.userId === userId);
+  const choices = sharedProgressChoices(state, userId, now);
+  const view = selectedGroupId
+    ? choices.find((v) => v.group.id === selectedGroupId)
+    : choices[0];
+  if (!view) return null;
+  return projectSharedView(view, userId);
+}
+export function projectSharedView(
+  view: SharedGroupView,
+  userId: string,
+): SharedProgress {
+  const rows = view.scores.slice(0, 3),
+    own = view.scores.find((s) => s.userId === userId);
   if (own && !rows.includes(own)) rows.push(own);
-  const pending = state.outbox.some((e) => e.groupId === group.id);
   return {
-    groupId: group.id,
-    name: group.name.slice(0, 120),
-    timeZone: group.timeZone,
-    confirmedAt,
-    archived: group.archivedAt !== null,
-    pending,
-    stale:
-      state.needsRefresh ||
-      !latest ||
-      confirmedAt === null ||
-      now < confirmedAt ||
-      now - confirmedAt > 120_000 ||
-      (latest.isActive && now >= Date.parse(latest.activityEnd)),
-    round: latest
+    groupId: view.group.id,
+    revision: view.group.revision,
+    name: view.group.name.slice(0, 120),
+    timeZone: view.group.timeZone,
+    today: view.today,
+    phase: view.phase as SharedProgress["phase"],
+    reason: view.reason,
+    confirmedAt: view.confirmedAt,
+    archived: !!view.group.archivedAt,
+    pending: view.intentions.length > 0,
+    stale: view.stale,
+    round: view.round
       ? {
-          start: latest.roundStart,
-          end: latest.roundEnd,
-          activityEnd: latest.activityEnd,
-          endReason: latest.endReason,
-          active: active(group.id),
-          averagePct: scores[0].groupAveragePct,
+          start: view.round.roundStart,
+          end: view.round.roundEnd,
+          activityEnd: view.round.activityEnd,
+          endReason: view.round.endReason,
+          active:
+            view.phase === "active" &&
+            view.round.roundStart === view.current?.roundStart,
+          averagePct: view.scores[0]?.groupAveragePct ?? 0,
         }
       : null,
     rows: rows.map((s) => ({
@@ -126,6 +80,47 @@ export function projectSharedProgress(
       isAtLeast70: s.isAtLeast70,
       self: s.userId === userId,
       left: s.leftAt !== null,
+      completedDays: s.completedDays,
+      target: s.target,
     })),
   };
+}
+export function projectSharedWidgetExport(
+  state: SharedState | null,
+  userId: string | null,
+  now: number,
+  preferred: readonly string[] = [],
+  offline = false,
+): SharedWidgetExport {
+  const data = emptySharedWidgetExport(userId);
+  if (!userId || !state || state.userId !== userId || !state.cache)
+    return { ...data, unavailable: !!userId };
+  const choices = sharedProgressChoices(state, userId, now);
+  const defaultId = choices[0]?.group.id ?? null;
+  const preferredSet = new Set(preferred);
+  const ordered = [
+    ...choices.filter((v) => preferredSet.has(v.group.id)),
+    ...choices.filter((v) => !preferredSet.has(v.group.id)),
+  ];
+  for (const v of ordered) {
+    if (data.groups.length === SHARED_EXPORT_GROUPS) {
+      data.truncated = true;
+      break;
+    }
+    const group = projectSharedView(v, userId);
+    group.stale ||= offline;
+    const next = { ...data, groups: [...data.groups, group] };
+    if (
+      new TextEncoder().encode(JSON.stringify(next)).length >
+      SHARED_EXPORT_BYTES - 128
+    ) {
+      data.truncated = true;
+      break;
+    }
+    data.groups.push(group);
+  }
+  data.defaultGroupId = data.groups.some((g) => g.groupId === defaultId)
+    ? defaultId
+    : (data.groups[0]?.groupId ?? null);
+  return data;
 }

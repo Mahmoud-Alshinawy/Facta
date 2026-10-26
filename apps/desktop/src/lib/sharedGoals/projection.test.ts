@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 import { mapSnapshot } from "./contracts";
 import { reconcileSnapshot } from "./cache";
 import { emptySharedState } from "@/lib/sync/shared/state";
-import { projectSharedProgress } from "./projection";
+import { projectSharedProgress, projectSharedWidgetExport } from "./projection";
+import { parseSharedWidgetExport } from "@facta/calendar";
+import { resolveProgressSelection } from "@facta/calendar";
+import { storedSharedWidgetExport } from "./widgetExport";
+import { encodeSharedState, sharedStorageKey } from "@/lib/sync/shared/state";
+import { memoryStore } from "@/lib/sync/storage";
 import {
   sharedRpcFixture,
   SHARED_USER,
@@ -26,6 +31,11 @@ describe("shared Progress handoff", () => {
     const saved = state();
     const view = projectSharedProgress(saved, SHARED_USER, SHARED_NOW)!;
     expect(view.groupId).toBe(SHARED_GROUP);
+    expect(view).toMatchObject({
+      today: "2026-10-20",
+      phase: "active",
+      revision: 1,
+    });
     expect(view.rows).toHaveLength(2);
     expect(view.rows[0]).toMatchObject({
       rank: 1,
@@ -55,6 +65,99 @@ describe("shared Progress handoff", () => {
     ])
       expect(json).not.toContain(privateField);
     expect(new TextEncoder().encode(json).length).toBeLessThan(4096);
+  });
+  it("builds an account-scoped bounded export while retaining original server counts and group-local date", () => {
+    const saved = state();
+    const now = Date.parse("2026-10-20T21:30:00Z");
+    const data = projectSharedWidgetExport(saved, SHARED_USER, now);
+    expect(data.userId).toBe(SHARED_USER);
+    expect(data.defaultGroupId).toBe(SHARED_GROUP);
+    expect(data.groups[0]).toMatchObject({
+      today: "2026-10-21",
+      rows: [
+        { completedDays: 0, target: 2 },
+        { completedDays: 0, target: 2 },
+      ],
+    });
+    expect(projectSharedWidgetExport(saved, SHARED_OTHER, now).groups).toEqual(
+      [],
+    );
+    expect(new TextEncoder().encode(JSON.stringify(data)).length).toBeLessThan(
+      65536,
+    );
+  });
+  it("reads the durable shared record through the widget export boundary", () => {
+    const saved = state();
+    const store = memoryStore({
+      [sharedStorageKey(SHARED_USER)]: encodeSharedState(saved),
+    });
+    const exported = storedSharedWidgetExport(store, SHARED_USER, SHARED_NOW);
+    expect(exported.data.groups.map((g) => g.groupId)).toEqual([SHARED_GROUP]);
+    expect(exported.allowed?.has(SHARED_GROUP)).toBe(true);
+    const opening = storedSharedWidgetExport(
+      null,
+      SHARED_USER,
+      SHARED_NOW,
+    ).data;
+    expect(opening).toMatchObject({
+      userId: SHARED_USER,
+      groups: [],
+      unavailable: true,
+    });
+    expect(
+      resolveProgressSelection(opening, {
+        userId: SHARED_USER,
+        groupId: SHARED_GROUP,
+        configuredId: null,
+      })?.groupId,
+    ).toBe(SHARED_GROUP);
+  });
+  it("bounds many groups, prioritizes configured selections and never exports raw sync state", () => {
+    const saved = state(),
+      base = saved.cache!.snapshot;
+    const groups = Array.from({ length: 30 }, (_, i) => ({
+      ...base.groups[0],
+      id: crypto.randomUUID(),
+      name: "界".repeat(120),
+      createdAt: new Date(SHARED_NOW + i).toISOString(),
+    }));
+    saved.cache = {
+      ...saved.cache!,
+      snapshot: {
+        ...base,
+        groups,
+        memberships: groups.flatMap((g) =>
+          base.memberships.map((m) => ({ ...m, groupId: g.id })),
+        ),
+        rounds: groups.map((g) => ({ ...base.rounds[0], groupId: g.id })),
+        scores: groups.flatMap((g) =>
+          base.scores.map((s) => ({ ...s, groupId: g.id })),
+        ),
+      },
+    };
+    const bundle = projectSharedWidgetExport(saved, SHARED_USER, SHARED_NOW, [
+      groups[29].id,
+    ]);
+    expect(bundle.groups).toHaveLength(16);
+    expect(bundle.truncated).toBe(true);
+    expect(bundle.groups.some((g) => g.groupId === groups[29].id)).toBe(true);
+    expect(
+      new TextEncoder().encode(JSON.stringify(bundle)).length,
+    ).toBeLessThanOrEqual(65536);
+    expect(parseSharedWidgetExport(bundle, SHARED_USER).groups).toHaveLength(
+      16,
+    );
+    for (const forbidden of [
+      "memberships",
+      "invites",
+      "drafts",
+      "outbox",
+      "receipts",
+      "eligibleRound",
+      "capturedAt",
+      "token",
+    ])
+      expect(JSON.stringify(bundle)).not.toContain(forbidden);
   });
   it("never fabricates a score for absent history and clears invalid selections/accounts", () => {
     const saved = state();

@@ -269,18 +269,39 @@ fn quit_app(app: tauri::AppHandle, state: tauri::State<WidgetState>) {
     app.exit(0);
 }
 
-#[tauri::command]
-fn open_main_app(app: tauri::AppHandle, section: Option<String>, note_id: Option<String>) -> Result<(), String> {
+fn main_app_url(section: Option<String>, note_id: Option<String>, group_id: Option<String>) -> Result<String, String> {
     let mut url = "facta://focus".to_string();
+    if let Some(id)=group_id {
+        if section.as_deref()!=Some("goals") || id.len()!=36 || !id.chars().enumerate().all(|(i,c)| if [8,13,18,23].contains(&i) {c=='-'} else {c.is_ascii_hexdigit()}) {
+            return Err("Invalid group link".into());
+        }
+        url=format!("facta://group/{}",id.to_lowercase());
+    } else
     if let Some(section) = section.filter(|s| s == "notes" || s == "diary") {
         url.push_str(&format!("?section={}", section));
         if let Some(id) = note_id.filter(|id| id.len() == 36 && id.chars().all(|c| c.is_ascii_hexdigit() || c == '-')) {
             url.push_str(&format!("&note={}", id));
         }
     }
+    Ok(url)
+}
+#[tauri::command]
+fn open_main_app(app: tauri::AppHandle, section: Option<String>, note_id: Option<String>, group_id: Option<String>) -> Result<(), String> {
+    let url=main_app_url(section,note_id,group_id)?;
     app.opener()
         .open_url(url, None::<&str>)
         .map_err(|e| e.to_string())
+}
+#[cfg(test)] mod progress_link_tests {
+    use super::main_app_url;
+    #[test] fn opens_only_canonical_group_routes_and_preserves_note_routes() {
+        let id="ABCDEFAB-1234-4567-8910-ABCDEFABCDEF";
+        assert_eq!(main_app_url(Some("goals".into()),None,Some(id.into())).unwrap(),format!("facta://group/{}",id.to_lowercase()));
+        assert!(main_app_url(Some("notes".into()),None,Some(id.into())).is_err());
+        assert!(main_app_url(Some("goals".into()),None,Some("bad?token=secret".into())).is_err());
+        assert_eq!(main_app_url(Some("notes".into()),Some(id.into()),None).unwrap(),format!("facta://focus?section=notes&note={}",id));
+        assert_eq!(main_app_url(None,None,None).unwrap(),"facta://focus");
+    }
 }
 
 #[tauri::command]
@@ -573,7 +594,7 @@ fn spawn_or_update_widgets(app: &tauri::AppHandle, state: &tauri::State<WidgetSt
         let y = saved_pos.map(|p| p.y).unwrap_or(default_y);
         
         let (default_w, default_h) = match widget_type.as_str() {
-            "progress" => (240.0, 260.0),
+            "progress" => (300.0, 400.0),
             "events" => (280.0, 300.0),
             "calendar" => (260.0, 280.0),
             "dayview" => (300.0, 400.0),

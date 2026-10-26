@@ -79,7 +79,16 @@ try {
     root,
     envDir,
     envPrefix: "FACTA_TEST_UNUSED_",
-    resolve: { alias: { "@": path.join(root, "apps/desktop/src") } },
+    resolve: {
+      alias: {
+        "@": path.join(root, "apps/desktop/src"),
+        react: path.dirname(desktopRequire.resolve("react/package.json")),
+        "react-dom": path.dirname(
+          desktopRequire.resolve("react-dom/package.json"),
+        ),
+      },
+      dedupe: ["react", "react-dom"],
+    },
     esbuild: { jsx: "automatic" },
     server: {
       host: "127.0.0.1",
@@ -170,6 +179,7 @@ try {
     const { runSharedStep4Tests } = await import("./shared-step4-tests.mjs");
     const { runSharedStep4ReviewTests } =
       await import("./shared-step4-review-tests.mjs");
+    const { runSharedStep5Tests } = await import("./shared-step5-tests.mjs");
     const uiOptions = {
       page,
       context,
@@ -177,8 +187,10 @@ try {
       fixture: ready.url,
       root,
     };
+    const step5Only = process.argv.includes("--step5");
     const reviewOnly = process.argv.includes("--step4-review");
-    const step4Only = process.argv.includes("--step4") || reviewOnly;
+    const step4Only =
+      process.argv.includes("--step4") || reviewOnly || step5Only;
     const reloadOnly = process.argv.includes("--draft-reload");
     const focused = process.argv.includes("--draft-recovery") || reloadOnly;
     const original =
@@ -213,12 +225,29 @@ try {
         }
       : recovery;
     const step4 =
-      focused || reviewOnly ? empty : await runSharedStep4Tests(uiOptions);
-    const review = focused ? empty : await runSharedStep4ReviewTests(uiOptions);
+      focused || reviewOnly || step5Only
+        ? empty
+        : await runSharedStep4Tests(uiOptions);
+    const review =
+      focused || step5Only ? empty : await runSharedStep4ReviewTests(uiOptions);
+    const step5 =
+      focused || reviewOnly || process.argv.includes("--step4")
+        ? empty
+        : await runSharedStep5Tests(uiOptions);
     const result = {
       ...baseline,
-      assertions: baseline.assertions + step4.assertions + review.assertions,
-      checks: [...baseline.checks, ...step4.checks, ...review.checks],
+      assertions:
+        baseline.assertions +
+        step4.assertions +
+        review.assertions +
+        step5.assertions,
+      checks: [
+        ...baseline.checks,
+        ...step4.checks,
+        ...review.checks,
+        ...step5.checks,
+      ],
+      step5Assertions: step5.assertions,
       step4ReviewAssertions: review.assertions,
       step4Assertions: step4.assertions,
       step4Screenshots: step4.screenshots ?? [],

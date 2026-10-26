@@ -1,4 +1,5 @@
 import { isThemeId, type ThemeId } from "./theme";
+import { progressUuid } from "@facta/calendar";
 
 export const WIDGET_TYPES = [
   "tasks",
@@ -18,6 +19,8 @@ export interface WidgetConfig {
   translucent: boolean;
   theme: WidgetTheme;
   noteStyle?: "sticky" | "stack";
+  sharedGroupId?: string;
+  sharedUserId?: string;
 }
 export const WIDGET_CONFIG_KEY = "facta_widget_config";
 export const WIDGET_LABELS: Record<WidgetType, string> = {
@@ -54,7 +57,19 @@ export function parseWidgetConfig(raw: unknown): WidgetConfig[] {
       {
         id: w.id,
         type: w.type as WidgetType,
-        ...(w.type === "notes" ? {noteStyle: w.noteStyle === "stack" ? "stack" as const : "sticky" as const} : {}),
+        ...(w.type === "progress" &&
+        progressUuid(w.sharedGroupId) &&
+        progressUuid(w.sharedUserId)
+          ? { sharedGroupId: w.sharedGroupId, sharedUserId: w.sharedUserId }
+          : {}),
+        ...(w.type === "notes"
+          ? {
+              noteStyle:
+                w.noteStyle === "stack"
+                  ? ("stack" as const)
+                  : ("sticky" as const),
+            }
+          : {}),
         enabled: w.enabled !== false,
         translucent: w.translucent !== false,
         theme: isThemeId(w.theme) ? w.theme : "midnight",
@@ -77,4 +92,30 @@ export function readWidgetConfig(
 
 export function widgetConfigJson(widgets: readonly WidgetConfig[]): string {
   return JSON.stringify({ widgets });
+}
+/** Remove only account/access-bound choices; preserve all other config fields. */
+export function cleanWidgetSharedSelections(
+  config: Record<string, unknown>,
+  userId: string | null,
+  allowed?: ReadonlySet<string>,
+): Record<string, unknown> {
+  if (!Array.isArray(config.widgets)) return config;
+  return {
+    ...config,
+    widgets: config.widgets.map((raw) => {
+      if (!raw || typeof raw !== "object") return raw;
+      const w = { ...raw };
+      if (
+        w.type !== "progress" ||
+        !userId ||
+        w.sharedUserId !== userId ||
+        !progressUuid(w.sharedGroupId) ||
+        (allowed && !allowed.has(w.sharedGroupId))
+      ) {
+        delete w.sharedUserId;
+        delete w.sharedGroupId;
+      }
+      return w;
+    }),
+  };
 }

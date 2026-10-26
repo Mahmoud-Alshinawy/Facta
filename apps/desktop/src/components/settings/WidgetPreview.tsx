@@ -10,13 +10,16 @@ import { useGoals } from "@/hooks/useGoals";
 import { useEvents } from "@/hooks/useEvents";
 import { usePrefs } from "@/hooks/usePrefs";
 import { useNow } from "@/hooks/useNow";
-import { goalsForDay, isCompletedToday, PRIORITY_ORDER } from "@/lib/goalDates";
+import { goalsForDay, isCompletedToday } from "@/lib/goalDates";
 import { eventColorVar } from "@/lib/eventColors";
 import { splitDay } from "@/lib/calendarData";
 import { WIDGET_LABELS, type WidgetConfig } from "@/lib/widgetConfig";
 import { IconCheck } from "../shell/Icons";
 import { Calendar, Clock, LayoutGrid, Sun, Target } from "lucide-react";
 
+import ProgressCard from "../../../../widgets/src/components/ProgressCard";
+import { useSharedGoals } from "@/hooks/useSharedGoals";
+import { projectSharedWidgetExport } from "@/lib/sharedGoals/projection";
 import JournalPreview from "./JournalPreview";
 
 const PREVIEW_ICONS = {
@@ -32,7 +35,15 @@ const PREVIEW_ICONS = {
 export default function WidgetPreview({
   widget,
 }: {
-  widget: Pick<WidgetConfig, "theme" | "type" | "translucent" | "noteStyle">;
+  widget: Pick<
+    WidgetConfig,
+    | "theme"
+    | "type"
+    | "translucent"
+    | "noteStyle"
+    | "sharedGroupId"
+    | "sharedUserId"
+  >;
 }) {
   const now = useNow(),
     prefs = usePrefs(),
@@ -55,11 +66,16 @@ export default function WidgetPreview({
       const start = parseClock(goal.time);
       return start === null ? [] : [{ id: goal.id, start }];
     }),
-    dayEvents.timed.map(({id,start,end}) => ({id,start,end})),
+    dayEvents.timed.map(({ id, start, end }) => ({ id, start, end })),
     nowMin,
     { height: 280, taskHeight: 28 },
   );
-  if(widget.type === "notes" || widget.type === "diary") return <JournalPreview widget={widget}/>;
+  if (widget.type === "progress")
+    return (
+      <ProgressPreview widget={widget} goals={goals} now={now.getTime()} />
+    );
+  if (widget.type === "notes" || widget.type === "diary")
+    return <JournalPreview widget={widget} />;
   return (
     <div
       className="widget-preview-stage"
@@ -86,11 +102,9 @@ export default function WidgetPreview({
                 ? "EVENTS · TODAY"
                 : widget.type === "calendar"
                   ? format(now, "MMMM yyyy").toUpperCase()
-                  : widget.type === "progress"
-                    ? "PROGRESS"
-                    : `DAY · ${format(now, "EEE d MMM").toUpperCase()}`}
+                  : `DAY · ${format(now, "EEE d MMM").toUpperCase()}`}
           </span>
-          {widget.type !== "calendar" && widget.type !== "progress" && (
+          {widget.type !== "calendar" && (
             <span>
               {widget.type === "events"
                 ? events.length
@@ -154,57 +168,6 @@ export default function WidgetPreview({
             {!events.length && <p>No events today</p>}
           </div>
         )}
-        {widget.type === "progress" && (
-          <div className="widget-preview-list">
-            <div className="preview-progress">
-              <div className="preview-ring">
-                <svg width="76" height="76" viewBox="0 0 76 76">
-                  <circle
-                    cx="38"
-                    cy="38"
-                    r="32"
-                    fill="none"
-                    strokeWidth="8"
-                    className="preview-ring-track"
-                  />
-                  <circle
-                    cx="38"
-                    cy="38"
-                    r="32"
-                    fill="none"
-                    strokeWidth="8"
-                    strokeLinecap="round"
-                    stroke="var(--accent)"
-                    strokeDasharray={`${due.length ? (done / due.length) * 201.062 : 0} 201.062`}
-                  />
-                </svg>
-                <span className="mono">
-                  {done}/{due.length}
-                </span>
-              </div>
-              <strong>
-                {done} of {due.length} done today
-              </strong>
-            </div>
-            {PRIORITY_ORDER.map((category) => {
-              const inGroup = due.filter((goal) => goal.category === category),
-                completed = inGroup.filter((goal) =>
-                  isCompletedToday(goal, now),
-                ).length;
-              return (
-                <div className="widget-preview-row" key={category}>
-                  <span className="capitalize">
-                    {category.replaceAll("-", " ")}
-                  </span>
-                  <span className="flex-1" />
-                  <span className="mono">
-                    {completed}/{inGroup.length}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        )}
         {widget.type === "calendar" && (
           <div className="preview-month">
             <div className="preview-month-grid">
@@ -249,7 +212,9 @@ export default function WidgetPreview({
             ))}
             {timeline.items.map((item) => {
               const goal = due.find((goal) => goal.id === item.id),
-                event = dayEvents.timed.find((event) => event.id === item.id)?.event;
+                event = dayEvents.timed.find(
+                  (event) => event.id === item.id,
+                )?.event;
               return (
                 <div
                   key={`${item.kind}:${item.id}`}
@@ -274,6 +239,40 @@ export default function WidgetPreview({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function ProgressPreview({
+  widget,
+  goals,
+  now,
+}: {
+  widget: Pick<
+    WidgetConfig,
+    "theme" | "type" | "translucent" | "sharedGroupId" | "sharedUserId"
+  >;
+  goals: import("@/types/planner").Goal[];
+  now: number;
+}) {
+  const { engine, data } = useSharedGoals();
+  const bundle = projectSharedWidgetExport(data, engine?.userId ?? null, now);
+  return (
+    <div className="widget-preview-stage" aria-label="Progress widget preview">
+      <ProgressCard
+        preview
+        data={bundle}
+        goals={goals}
+        now={now}
+        widgetId="preview"
+        theme={widget.theme}
+        translucent={widget.translucent}
+        configuredId={
+          widget.sharedUserId === bundle.userId
+            ? (widget.sharedGroupId ?? null)
+            : null
+        }
+      />
     </div>
   );
 }

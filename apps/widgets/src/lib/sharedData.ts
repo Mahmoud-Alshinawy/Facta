@@ -8,6 +8,7 @@ export interface SharedData {
   user_id?: string | null;
   journal?: WidgetJournal;
   action_results?: WidgetActionResult[];
+  shared_goals?: unknown;
   goals?: unknown[];
   events?: unknown[];
   config?: { widgets?: unknown[] };

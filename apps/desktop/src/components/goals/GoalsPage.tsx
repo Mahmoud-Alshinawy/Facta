@@ -43,10 +43,14 @@ export default function GoalsPage({
   keyboardBlocked = false,
   request,
   onRequestHandled,
+  launch,
+  onLaunchHandled,
 }: {
   keyboardBlocked?: boolean;
   request?: LinkIntent | null;
   onRequestHandled?: () => void;
+  launch?: { key: number; template: "gym" | "custom" } | null;
+  onLaunchHandled?: () => void;
 }) {
   const sharedEngine = useSharedSyncEngine();
   const { goals, addGoal, updateGoal, deleteGoal } = useGoals();
@@ -57,8 +61,8 @@ export default function GoalsPage({
   const [tab, setTab] = useState<"mine" | "shared">("mine"),
     [view, setView] = useState<"list" | "board">("list");
   useEffect(() => {
-    if (request) setTab("shared");
-  }, [request]);
+    if (request || launch) setTab("shared");
+  }, [request, launch]);
   const [filter, setFilter] = useState<GoalCategory | "all">("all"),
     [sort, setSort] = useState<GoalSort>("time");
   const [doneOpen, setDoneOpen] = useState(false),
@@ -270,9 +274,14 @@ export default function GoalsPage({
   if (tab === "shared" && sharedEngine)
     return (
       <SharedGoalsPage
+        launch={launch}
+        onLaunchHandled={onLaunchHandled}
         engine={sharedEngine}
         weekStart={prefs.weekStart}
-        onMine={() => setTab("mine")}
+        onMine={() => {
+          setTab("mine");
+          onLaunchHandled?.();
+        }}
         request={request}
         onRequestHandled={onRequestHandled}
         keyboardBlocked={keyboardBlocked}

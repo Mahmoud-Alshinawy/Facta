@@ -34,9 +34,20 @@ export default function App() {
     return <div className="w-full h-full bg-transparent" />;
   }
 
-  if (urlWidget === "notes" || urlWidget === "diary") return <JournalWidget
-    type={urlWidget} theme={theme} translucent={translucent}
-    noteStyle={new URLSearchParams(window.location.search).get("noteStyle") === "stack" ? "stack" : "sticky"} />;
+  if (urlWidget === "notes" || urlWidget === "diary")
+    return (
+      <JournalWidget
+        type={urlWidget}
+        theme={theme}
+        translucent={translucent}
+        noteStyle={
+          new URLSearchParams(window.location.search).get("noteStyle") ===
+          "stack"
+            ? "stack"
+            : "sticky"
+        }
+      />
+    );
 
   // The Day widget draws its own card (theme tokens, transparent plate) and
   // its header is the drag handle.
@@ -47,6 +58,8 @@ export default function App() {
       </div>
     );
   }
+  if (urlWidget === "progress")
+    return <ProgressWidget theme={theme} translucent={translucent} />;
 
   const themeClass = `theme-${theme}`;
   const containerBg = translucent
@@ -56,14 +69,18 @@ export default function App() {
       : "bg-black/60 backdrop-blur-md rounded-lg";
 
   return (
-    <div className={`w-full h-full relative overflow-hidden select-none flex flex-col ${themeClass} ${containerBg}`}>
+    <div
+      className={`w-full h-full relative overflow-hidden select-none flex flex-col ${themeClass} ${containerBg}`}
+    >
       <div
         data-tauri-drag-region
         className="shrink-0 h-5 w-full cursor-grab active:cursor-grabbing"
         style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
       />
-      <div className="overflow-hidden flex-1 px-3 pb-3" onDoubleClick={handleOpenMain}>
-        {urlWidget === "progress" && <ProgressWidget />}
+      <div
+        className="overflow-hidden flex-1 px-3 pb-3"
+        onDoubleClick={handleOpenMain}
+      >
         {urlWidget === "tasks" && <TaskWidget />}
         {urlWidget === "events" && <EventsWidget />}
         {urlWidget === "calendar" && <CalendarWidget />}
