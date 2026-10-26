@@ -1,6 +1,39 @@
-# Handoff: branch 3 Step 3 — restart durability review checkpoint
+# Handoff: branch 3 Step 4 — shared progress and membership
 
-## Current decision / restart review fix (25 October 2026)
+## Current decision (26 October 2026)
+
+- Owner approved **c882ad5**, completing Step 3, and authorized **Step 4 only**:
+  shared overview/detail, check-in/undo, pending Gym targets, membership/history,
+  leave, ownership transfer and archive. Step 5 remains unapproved.
+- Implemented overview/cards and detail leaderboard/check-ins/targets/history,
+  Gym pending changes/cancellation, explicit offline review, leave/ownership
+  transfer/archive. Scores/ranks/rounds stay SQL-confirmed. Rest/future/inactive/
+  not-yet-eligible days remain distinct; archived/waiting gaps add no scores.
+  Freshness and older pagination use matching group-revision coverage. Unknown
+  next boundaries disable check-in until read; no inferred active/paused state.
+- Focus regressions found/fixed: disabling a modal submit can move focus to BODY;
+  Escape/Tab now remain scoped and focus stays inside. Escape returning from
+  invitations is stopped before it can reach the newly mounted detail listener.
+  Card/dialog/invitation opener focus is restored after mounting.
+- Required checks: frozen install; desktop/widgets/calendar tsc; **431 desktop /
+  184 calendar** Vitest tests; desktop PORT=1420 BASE_PATH=/ and widgets builds;
+  both Windows cargo check --offline. Existing main-chunk warning remains.
+- **94 data assertions** and combined **157 UI assertions** passed (85 existing,
+  including all mounted/reload recovery cases, plus 72 initial Step 4 checks).
+  Final Step 4 suite: **74 assertions**, adding fresh-device history pagination.
+  Real pointer/keyboard, SQL score parity, targets, Custom schedules, offline
+  conflict, pause/resume, archive, transfer/leave, account/access changes covered.
+  24 captures: overview/detail, four themes, 1440/1280/1100; representative
+  captures inspected, no page-width overflow. See `docs/shared-goals-step4.md`.
+- Only disposable PostgreSQL 17.5, real SDK/SQL RPCs and Edge 156/native IndexedDB
+  with synthetic identity claims. Full Auth/JWT/PostgREST, deployed HTTP/native
+  links and native UI smoke remain unverified. No standalone SQL/security/
+  concurrency rerun; baseline/browser checks do not prove these properties.
+  No live Supabase, migrations, dependencies, native/Today/widgets changes or
+  unrelated `.agents/` / `skills-lock.json` changes. STOP for Step 4 review after
+  commit/push; **do not begin Step 5**.
+
+## Restart review fix (25 October 2026; historical)
 
 - Owner requested the confirmed-create/read-outage/restart fix on **e87d281**.
   **Step 4 is still unapproved. STOP after this focused commit/push for review.**

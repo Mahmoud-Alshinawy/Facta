@@ -14,6 +14,11 @@ import { chooseTheme, type ThemeId } from "@/lib/theme";
 import SharedGoalsPage, {
   SignedOutInvitation,
 } from "@/components/goals/SharedGoalsPage";
+import Sidebar, {
+  nextSidebarMode,
+  sidebarRootClass,
+  type SidebarMode,
+} from "@/components/shell/Sidebar";
 import "@fontsource/geist/latin-400.css";
 import "@fontsource/geist/latin-600.css";
 import "@fontsource/geist-mono/latin-400.css";
@@ -25,6 +30,7 @@ let current: string | null = null,
   engine: SharedSync | null = null,
   store: IndexedDbStore | null = null;
 let clock = Date.parse("2026-10-20T09:00:00Z");
+let blockedKeys = false;
 const now = () => clock;
 const db =
   new URLSearchParams(location.search).get("database") ??
@@ -62,6 +68,7 @@ async function setActor(id: string | null) {
   render();
 }
 function Harness() {
+  const [sidebar, setSidebar] = useState<SidebarMode>("");
   const [, tick] = useState(0),
     intent = useSyncExternalStore(appLinks.subscribe, appLinks.getSnapshot);
   render = () => tick((n) => n + 1);
@@ -85,6 +92,11 @@ function Harness() {
           payload: never,
         ) => remote(id).command(makeCommand(op, payload)),
         snapshot: () => engine?.getSnapshot(),
+        sync: () => engine?.syncNow(),
+        keyboardBlocked: (value: boolean) => {
+          blockedKeys = value;
+          render();
+        },
         legacyDraft: async (id: string) => {
           if (!store || !current) throw new Error("Isolated store required");
           const key = sharedStorageKey(current);
@@ -112,7 +124,15 @@ function Harness() {
     });
   }, []);
   return (
-    <div className="fx">
+    <div className={`fx ${sidebarRootClass(sidebar)}`}>
+      {new URLSearchParams(location.search).has("shell") && (
+        <Sidebar
+          section="goals"
+          onSection={() => {}}
+          onSearch={() => {}}
+          onToggle={() => setSidebar((v) => nextSidebarMode(v, innerWidth))}
+        />
+      )}
       <main style={{ display: "flex", flex: 1, minWidth: 0 }}>
         {engine ? (
           <SharedGoalsPage
@@ -120,6 +140,7 @@ function Harness() {
             engine={engine}
             weekStart={1}
             now={now}
+            keyboardBlocked={blockedKeys}
             request={appLinks.ready(current, true)}
             onRequestHandled={() => appLinks.clear(intent?.sequence)}
             onMine={() => {

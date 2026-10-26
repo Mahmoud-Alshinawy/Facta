@@ -99,7 +99,7 @@ export class SharedRequests {
         command.command_id,
       );
     if (
-      command.operation === "publish" &&
+      (command.operation === "publish" || command.operation === "archive") &&
       (outcome.ok || outcome.code === "already_published")
     )
       await this.engine.completeDraft(command.payload.group_id);

@@ -167,6 +167,7 @@ try {
       await import("./shared-draft-recovery-tests.mjs");
     const { runDraftReloadTests } =
       await import("./shared-draft-reload-tests.mjs");
+    const { runSharedStep4Tests } = await import("./shared-step4-tests.mjs");
     const uiOptions = {
       page,
       context,
@@ -174,15 +175,21 @@ try {
       fixture: ready.url,
       root,
     };
+    const step4Only = process.argv.includes("--step4");
     const reloadOnly = process.argv.includes("--draft-reload");
     const focused = process.argv.includes("--draft-recovery") || reloadOnly;
-    const original = focused ? null : await runSharedUiTests(uiOptions);
-    const mounted = reloadOnly ? null : await runDraftRecoveryTests(uiOptions);
-    const reload = await runDraftReloadTests(uiOptions);
-    const legacyReload = await runDraftReloadTests({
-      ...uiOptions,
-      legacy: true,
-    });
+    const original =
+      focused || step4Only ? null : await runSharedUiTests(uiOptions);
+    const empty = { ok: true, assertions: 0, checks: [] };
+    const mounted =
+      reloadOnly || step4Only ? null : await runDraftRecoveryTests(uiOptions);
+    const reload = step4Only ? empty : await runDraftReloadTests(uiOptions);
+    const legacyReload = step4Only
+      ? empty
+      : await runDraftReloadTests({
+          ...uiOptions,
+          legacy: true,
+        });
     const restarts = {
       assertions: reload.assertions + legacyReload.assertions,
       checks: [...reload.checks, ...legacyReload.checks],
@@ -194,7 +201,7 @@ try {
           checks: [...mounted.checks, ...restarts.checks],
         }
       : { ...reload, ...restarts };
-    const result = original
+    const baseline = original
       ? {
           ...original,
           assertions: original.assertions + recovery.assertions,
@@ -202,6 +209,14 @@ try {
           recoveryAssertions: recovery.assertions,
         }
       : recovery;
+    const step4 = focused ? empty : await runSharedStep4Tests(uiOptions);
+    const result = {
+      ...baseline,
+      assertions: baseline.assertions + step4.assertions,
+      checks: [...baseline.checks, ...step4.checks],
+      step4Assertions: step4.assertions,
+      step4Screenshots: step4.screenshots ?? [],
+    };
     if (external.length) throw new Error("Unexpected external UI request");
     const report = {
       ...result,

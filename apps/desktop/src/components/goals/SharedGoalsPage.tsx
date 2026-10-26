@@ -15,7 +15,10 @@ import { SharedHeader, SharedFoot, ResultCard, Callout } from "./SharedParts";
 import SharedGoalCreate from "./SharedGoalCreate";
 import SharedGoalJoin, { type JoinSource } from "./SharedGoalJoin";
 import SharedPeople from "./SharedPeople";
+import { SharedOverview, PendingReview } from "./SharedProgress";
+import SharedGoalDetail from "./SharedGoalDetail";
 import "./shared-goals.css";
+import "./shared-progress.css";
 const realNow = () => Date.now();
 type Panel =
   | { kind: "home" }
@@ -23,7 +26,8 @@ type Panel =
   | { kind: "paste" }
   | { kind: "join"; source: JoinSource }
   | { kind: "people"; id: string }
-  | { kind: "result"; id: string; eligible?: string | null };
+  | { kind: "result"; id: string; eligible?: string | null }
+  | { kind: "detail"; id: string; focusId?: string };
 export function SignedOutInvitation({ onDismiss }: { onDismiss: () => void }) {
   return (
     <aside role="status" className="shared-auth-notice">
@@ -163,7 +167,14 @@ export default function SharedGoalsPage({
     [refresh, setRefresh] = useState(0);
   const title = useRef<HTMLHeadingElement>(null),
     returnFocus = useRef<HTMLElement | null>(null),
+    returnFocusId = useRef<string | null>(null),
+    returnDetail = useRef<string | null>(null),
     handled = useRef<number | null>(null);
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => tick((n) => n + 1), 30_000);
+    return () => clearInterval(timer);
+  }, []);
   const profile = data.cache?.snapshot.profiles.find(
     (p) => p.userId === engine.userId && !p.deletedAt,
   );
@@ -172,14 +183,27 @@ export default function SharedGoalsPage({
     [];
   const open = (next: Panel) => {
     returnFocus.current = document.activeElement as HTMLElement;
+    returnFocusId.current = returnFocus.current.id || null;
     setMessage("");
     setPanel(next);
   };
   const close = () => {
-    setPanel({ kind: "home" });
+    const detail = returnDetail.current;
+    returnDetail.current = null;
+    setPanel(
+      detail
+        ? { kind: "detail", id: detail, focusId: `shared-invite-${detail}` }
+        : { kind: "home" },
+    );
     setRefresh((n) => n + 1);
     requestAnimationFrame(() => {
-      if (returnFocus.current?.isConnected) returnFocus.current.focus();
+      if (detail) document.getElementById(`shared-invite-${detail}`)?.focus();
+      else if (
+        returnFocusId.current &&
+        document.getElementById(returnFocusId.current)
+      )
+        document.getElementById(returnFocusId.current)?.focus();
+      else if (returnFocus.current?.isConnected) returnFocus.current.focus();
       else title.current?.focus();
     });
   };
@@ -193,7 +217,7 @@ export default function SharedGoalsPage({
     if (request.route.kind === "join")
       setPanel({ kind: "join", source: { token: request.route.token } });
     else if (request.route.kind === "group")
-      setPanel({ kind: "result", id: request.route.id });
+      setPanel({ kind: "detail", id: request.route.id });
     onRequestHandled?.();
   }, [request, onRequestHandled]);
   useEffect(() => {
@@ -224,7 +248,9 @@ export default function SharedGoalsPage({
     const r = requestAnimationFrame(() =>
       (returnFocus.current?.isConnected
         ? returnFocus.current
-        : title.current
+        : (returnFocusId.current &&
+            document.getElementById(returnFocusId.current)) ||
+          title.current
       )?.focus({ preventScroll: true }),
     );
     return () => cancelAnimationFrame(r);
@@ -325,6 +351,23 @@ export default function SharedGoalsPage({
       />
       <SharedFoot />
     </div>
+  ) : panel.kind === "detail" ? (
+    <SharedGoalDetail
+      key={panel.id}
+      engine={engine}
+      data={data}
+      status={status}
+      id={panel.id}
+      focusId={panel.focusId}
+      locked={locked}
+      now={now}
+      keyboardBlocked={keyboardBlocked}
+      onBack={close}
+      onInvite={() => {
+        returnDetail.current = panel.id;
+        open({ kind: "people", id: panel.id });
+      }}
+    />
   ) : panel.kind === "create" ? (
     <SharedGoalCreate
       key={panel.key}
@@ -354,7 +397,11 @@ export default function SharedGoalsPage({
     <div
       className="gmain shared-page"
       onKeyDown={(e) => {
-        if (e.key === "Escape") close();
+        if (e.key === "Escape") {
+          e.preventDefault();
+          e.stopPropagation();
+          close();
+        }
       }}
     >
       <SharedHeader
@@ -516,6 +563,24 @@ export default function SharedGoalsPage({
               {message}
             </p>
           )}
+          <SharedOverview
+            engine={engine}
+            data={data}
+            locked={locked}
+            now={now}
+            onOpen={(id) => open({ kind: "detail", id })}
+            onInvite={(id) => open({ kind: "people", id })}
+          />
+          <PendingReview
+            engine={engine}
+            unavailable
+            intentions={data.outbox.filter(
+              (i) =>
+                !data.cache?.snapshot.memberships.some(
+                  (m) => m.id === i.membershipId && !m.leftAt && !m.deletedAt,
+                ),
+            )}
+          />
           {invites.map((i) => (
             <section
               className="shared-invitation"
@@ -574,7 +639,7 @@ export default function SharedGoalsPage({
               </Commit>
             </section>
           ))}
-          {!groups.length && (
+          {!data.cache.snapshot.groups.length && (
             <div className="gempty">
               <h2>No shared goals yet</h2>
               <p>
@@ -597,36 +662,38 @@ export default function SharedGoalsPage({
               </div>
             </div>
           )}
-          {!!groups.length && (
+          {groups.some((g) => !g.publishedAt) && (
             <section className="shared-saved">
               <h2>Your shared goals and drafts</h2>
-              {groups.map((g) => (
-                <div className="shared-person" key={g.id}>
-                  <span className="flex-1">
-                    <strong>{g.name}</strong>
-                    <small>
-                      {g.publishedAt
-                        ? `Published · first round ${dateLabel(g.firstRoundDate!)}`
-                        : "Private draft · finish creation"}
-                    </small>
-                  </span>
-                  {g.ownerId === engine.userId && (
-                    <button
-                      type="button"
-                      className="ctl"
-                      onClick={() =>
-                        open(
-                          g.publishedAt
-                            ? { kind: "people", id: g.id }
-                            : { kind: "create", id: g.id, key: Date.now() },
-                        )
-                      }
-                    >
-                      {g.publishedAt ? "Invite people" : "Resume draft"}
-                    </button>
-                  )}
-                </div>
-              ))}
+              {groups
+                .filter((g) => !g.publishedAt)
+                .map((g) => (
+                  <div className="shared-person" key={g.id}>
+                    <span className="flex-1">
+                      <strong>{g.name}</strong>
+                      <small>
+                        {g.publishedAt
+                          ? `Published · first round ${dateLabel(g.firstRoundDate!)}`
+                          : "Private draft · finish creation"}
+                      </small>
+                    </span>
+                    {g.ownerId === engine.userId && (
+                      <button
+                        type="button"
+                        className="ctl"
+                        onClick={() =>
+                          open(
+                            g.publishedAt
+                              ? { kind: "people", id: g.id }
+                              : { kind: "create", id: g.id, key: Date.now() },
+                          )
+                        }
+                      >
+                        {g.publishedAt ? "Invite people" : "Resume draft"}
+                      </button>
+                    )}
+                  </div>
+                ))}
             </section>
           )}
           {data.drafts

@@ -117,7 +117,7 @@ export function scheduleText(
       : f.schedule_kind === "days"
         ? (f.weekdays ?? []).map((d) => WEEKDAYS[d].slice(0, 3)).join(", ") +
           " · same for everyone"
-        : `${f.times_per_week} days a week · same for everyone`;
+        : `${f.times_per_week} ${f.times_per_week === 1 ? "day" : "days"} a week · same for everyone`;
 }
 export function dateLabel(date: string) {
   return new Intl.DateTimeFormat("en-GB", {

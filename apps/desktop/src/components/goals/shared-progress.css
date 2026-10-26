@@ -1,0 +1,404 @@
+/* GS/GD surfaces; scores and activity intervals come from the shared RPC. */
+.fx .shared-overview {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 1fr;
+  margin: 20px 0;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.fx .shared-overview > div {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px 20px;
+  min-width: 0;
+  border-left: 1px solid var(--border);
+}
+.fx .shared-overview > div:first-child {
+  border-left: 0;
+}
+.fx .shared-overview strong {
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.1;
+}
+.fx .shared-overview small {
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--text-2);
+}
+.fx .shared-overview-rank {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  font-size: 13px;
+}
+.fx .shared-overview-rank > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fx .shared-goals-heading {
+  margin: 24px 0 12px;
+}
+.fx .shared-goals-heading h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.fx .shared-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(440px, 100%), 1fr));
+  gap: 16px;
+}
+.fx .shared-sc.shared-person {
+  display: flex;
+  align-items: stretch;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 20px;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  min-width: 0;
+}
+.fx .shared-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.fx .shared-card-head > div {
+  min-width: 0;
+  flex: 1;
+}
+.fx .shared-card-head h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+.fx .shared-card-head .tile {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--raised-2);
+}
+.fx .shared-ranking {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.fx .shared-rank {
+  display: grid;
+  grid-template-columns: 20px 26px 80px minmax(24px, 1fr) 84px 52px;
+  gap: 10px;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 8px;
+  margin: 0 -8px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+.fx .shared-ranking.compact .shared-rank {
+  grid-template-columns: 20px 26px 72px minmax(24px, 1fr) 52px;
+  min-height: 32px;
+}
+.fx .shared-rank.is-you {
+  background: var(--raised);
+}
+.fx .shared-rank .rank {
+  font-size: 11px;
+  color: var(--subtle);
+  text-align: right;
+}
+.fx .shared-rank .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.fx .shared-rank .counts {
+  font-size: 12px;
+  color: var(--text-2);
+  text-align: right;
+}
+.fx .shared-rank .pc {
+  font-size: 12px;
+  text-align: right;
+}
+.fx .shared-score-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--raised-2);
+  overflow: hidden;
+}
+.fx .shared-score-bar i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+}
+.fx .shared-score-bar i.low {
+  background: var(--text-2);
+}
+.fx .shared-ci {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--raised);
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+.fx .shared-ci > div:first-child {
+  flex: 1;
+  min-width: 130px;
+}
+.fx .shared-ci p {
+  margin: 5px 0 0;
+}
+.fx .shared-check-action {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.fx .shared-check-action p {
+  font-size: 12px;
+  margin: 0;
+  max-width: 260px;
+}
+.fx .shared-detail-header {
+  gap: 12px;
+}
+.fx .shared-detail-title {
+  min-width: 140px;
+  max-width: 360px;
+  overflow-wrap: anywhere;
+}
+.fx .shared-detail-title .sec {
+  font-size: 10px;
+}
+.fx .shared-detail h1:focus-visible {
+  outline: 1px solid var(--accent-border);
+  outline-offset: 4px;
+  border-radius: 3px;
+}
+.fx .shared-status-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding-top: 16px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.fx .shared-round-picker {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0 0;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+.fx .shared-round-picker .inp {
+  max-width: 340px;
+}
+.fx .shared-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 20px;
+  align-items: start;
+  padding: 20px 0;
+}
+.fx .shared-panel-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+.fx .shared-panel {
+  padding: 18px 20px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.fx .shared-panel h2,
+.fx .shared-pending-panel h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.fx .shared-panel p {
+  margin: 0;
+}
+.fx .shared-target-row {
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+.fx .shared-target-row small {
+  width: 100%;
+  text-align: right;
+}
+.fx .shared-table-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+.fx .shared-check-table {
+  border-collapse: separate;
+  border-spacing: 0 2px;
+  width: 100%;
+  min-width: 490px;
+  font-size: 13px;
+}
+.fx .shared-check-table th {
+  text-align: left;
+  font-weight: 500;
+  max-width: 105px;
+  overflow-wrap: anywhere;
+  padding: 6px 2px;
+}
+.fx .shared-check-table thead th {
+  font:
+    10px "Geist Mono",
+    monospace;
+  color: var(--subtle);
+  text-align: center;
+}
+.fx .shared-check-table td {
+  text-align: center;
+  height: 34px;
+  padding: 0 2px;
+}
+.fx .shared-day {
+  border: 0;
+  background: transparent;
+  color: var(--subtle);
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+.fx .shared-day.done {
+  background: var(--accent);
+  color: var(--accent-text);
+  box-shadow: none;
+}
+.fx .shared-day.today {
+  box-shadow: inset 0 0 0 1.5px var(--text);
+  color: var(--text);
+}
+.fx .shared-day.pending,
+.fx .shared-day.pending-undo {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent-border);
+  color: var(--text);
+}
+.fx .shared-day.conflict {
+  color: var(--warning);
+  box-shadow: inset 0 0 0 1px var(--warning);
+}
+.fx .shared-day.rest,
+.fx .shared-day.inactive,
+.fx .shared-day.ineligible {
+  box-shadow: none;
+}
+.fx .shared-day.future {
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.fx .shared-history-row {
+  display: grid;
+  grid-template-columns: auto minmax(20px, 1fr) auto;
+  gap: 8px 10px;
+  align-items: center;
+  font-size: 12px;
+}
+.fx .shared-history-row .ctl {
+  font:
+    10px "Geist Mono",
+    monospace;
+  padding: 0 6px;
+  height: 28px;
+}
+.fx .shared-history-row small {
+  grid-column: 1/-1;
+  color: var(--text-2);
+  font-size: 11.5px;
+}
+.fx .shared-pending-panel {
+  padding: 16px;
+  margin-top: 16px;
+  border: 1px solid var(--accent-border);
+  border-radius: 12px;
+  background: var(--raised);
+}
+.fx .shared-modal-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  background: var(--dialog-scrim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.fx .shared-modal {
+  max-width: 540px;
+  width: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+  box-shadow: 0 24px 60px var(--dialog-shadow);
+}
+.fx .shared-modal select {
+  max-width: 100%;
+}
+.fx .shared-modal input[type="radio"] {
+  accent-color: var(--accent);
+  margin-right: 8px;
+}
+.fx .shared-modal button:disabled,
+.fx .shared-detail button:disabled,
+.fx .shared-sc button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+@container app (max-width:1200px) {
+  .fx .shared-detail-grid {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+  .fx .shared-rank {
+    grid-template-columns: 18px 24px 68px minmax(24px, 1fr) 70px 48px;
+    gap: 6px;
+  }
+}
+@container app (max-width:950px) {
+  .fx .shared-detail-grid {
+    grid-template-columns: 1fr;
+  }
+  .fx .shared-overview {
+    grid-template-columns: 1fr;
+  }
+  .fx .shared-overview > div {
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+  .fx .shared-overview > div:first-child {
+    border-top: 0;
+  }
+}
