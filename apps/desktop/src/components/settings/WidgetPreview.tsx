@@ -71,9 +71,7 @@ export default function WidgetPreview({
     { height: 280, taskHeight: 28 },
   );
   if (widget.type === "progress")
-    return (
-      <ProgressPreview widget={widget} goals={goals} now={now.getTime()} />
-    );
+    return <ProgressPreview widget={widget} goals={goals} />;
   if (widget.type === "notes" || widget.type === "diary")
     return <JournalPreview widget={widget} />;
   return (
@@ -246,24 +244,28 @@ export default function WidgetPreview({
 function ProgressPreview({
   widget,
   goals,
-  now,
 }: {
   widget: Pick<
     WidgetConfig,
     "theme" | "type" | "translucent" | "sharedGroupId" | "sharedUserId"
   >;
   goals: import("@/types/planner").Goal[];
-  now: number;
 }) {
   const { engine, data } = useSharedGoals();
-  const bundle = projectSharedWidgetExport(data, engine?.userId ?? null, now);
+  // A cache confirmation can be newer than useNow's last minute tick.
+  const confirmedNow = Date.now();
+  const bundle = projectSharedWidgetExport(
+    data,
+    engine?.userId ?? null,
+    confirmedNow,
+  );
   return (
     <div className="widget-preview-stage" aria-label="Progress widget preview">
       <ProgressCard
         preview
         data={bundle}
         goals={goals}
-        now={now}
+        now={confirmedNow}
         widgetId="preview"
         theme={widget.theme}
         translucent={widget.translucent}

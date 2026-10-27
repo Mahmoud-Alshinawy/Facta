@@ -29,6 +29,25 @@ let activeUserId: string | null = null;
 const SyncContext = createContext<PlannerSync | null>(null);
 const SharedSyncContext = createContext<SharedSync | null>(null);
 
+/** Bind already-opened account engines, including isolated acceptance profiles. */
+export function SyncEngines({
+  engine,
+  shared,
+  children,
+}: {
+  engine: PlannerSync | null;
+  shared: SharedSync | null;
+  children: ReactNode;
+}) {
+  return (
+    <SyncContext.Provider value={engine}>
+      <SharedSyncContext.Provider value={shared}>
+        {children}
+      </SharedSyncContext.Provider>
+    </SyncContext.Provider>
+  );
+}
+
 /**
  * Creates the sync engine once auth has resolved and a user is signed in.
  * Until then there is no engine, so nothing is read or written under "anon".
@@ -168,13 +187,11 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     );
 
   return (
-    <SyncContext.Provider value={engine}>
-      <SharedSyncContext.Provider value={shared}>
-        {engine && <SyncErrorToasts engine={engine} />}
-        {shared && <SharedErrorToasts engine={shared} />}
-        {children}
-      </SharedSyncContext.Provider>
-    </SyncContext.Provider>
+    <SyncEngines engine={engine} shared={shared}>
+      {engine && <SyncErrorToasts engine={engine} />}
+      {shared && <SharedErrorToasts engine={shared} />}
+      {children}
+    </SyncEngines>
   );
 }
 

@@ -379,6 +379,9 @@
   cursor: default;
 }
 @container app (max-width:1200px) {
+  .fx .shared-cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .fx .shared-detail-grid {
     grid-template-columns: minmax(0, 1fr) 300px;
   }

@@ -29,9 +29,12 @@ type Props = {
 export default function TodaySharedPanel(props: Props) {
   const { engine, data, status } = useSharedGoals();
   const { user } = useAuth();
+  // Reads can arrive between the parent's minute ticks. Evaluate freshness
+  // at this render, independently of the separate click-time capture.
   return (
     <TodaySharedContent
       {...props}
+      now={Date.now()}
       userId={user?.id ?? null}
       engine={engine}
       data={data}

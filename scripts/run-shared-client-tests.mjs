@@ -19,6 +19,7 @@ const { createServer, build, preview } = await import(
 );
 const pgPort = process.argv[2];
 const ui = process.argv.includes("--ui");
+const acceptance = process.argv.includes("--step6");
 const desktopRequire = createRequire(
   path.join(root, "apps/desktop/package.json"),
 );
@@ -81,6 +82,14 @@ try {
     envPrefix: "FACTA_TEST_UNUSED_",
     resolve: {
       alias: {
+        ...(acceptance
+          ? {
+              "@/hooks/useAuth": path.join(
+                root,
+                "apps/desktop/src/test/sharedAcceptanceBridge.tsx",
+              ),
+            }
+          : {}),
         "@": path.join(root, "apps/desktop/src"),
         react: path.dirname(desktopRequire.resolve("react/package.json")),
         "react-dom": path.dirname(
@@ -123,12 +132,13 @@ try {
       throw new Error("Test build must stay in workspace");
     await writeFile(
       input,
-      '<!doctype html><html><head><title>Shared flow tests</title></head><body><div id="root"></div><script type="module" src="/apps/desktop/src/test/sharedUiIntegration.tsx"></script></body></html>',
+      `<!doctype html><html><head><title>Shared flow tests</title></head><body><div id="root"></div><script type="module" src="/apps/desktop/src/test/${acceptance ? "sharedAcceptance" : "sharedUiIntegration"}.tsx"></script></body></html>`,
     );
-    await build({
-      ...config,
-      build: { outDir, emptyOutDir: true, rollupOptions: { input } },
-    });
+    if (!(acceptance && process.argv.includes("--reuse-ui-build")))
+      await build({
+        ...config,
+        build: { outDir, emptyOutDir: true, rollupOptions: { input } },
+      });
     const server = await preview({
       configFile: false,
       root,
@@ -170,7 +180,27 @@ try {
     return route.continue();
   });
   const page = await context.newPage();
-  if (ui) {
+  if (ui && acceptance) {
+    const { runSharedAcceptance } = await import("./shared-step6-tests.mjs");
+    const result = await runSharedAcceptance({
+      page,
+      context,
+      fixture: ready.url,
+      root,
+      url: `http://127.0.0.1:${address.port}/tmp/shared-goals-runtime/ui-test.html?fixture=${encodeURIComponent(ready.url)}`,
+    });
+    await writeFile(
+      path.join(root, "tmp/shared-goals-runtime/step6-result.json"),
+      JSON.stringify(result, null, 2),
+    );
+    console.log(
+      JSON.stringify(
+        { ...result, screenshots: result.screenshots.length },
+        null,
+        2,
+      ),
+    );
+  } else if (ui) {
     const { runSharedUiTests } = await import("./shared-ui-tests.mjs");
     const { runDraftRecoveryTests } =
       await import("./shared-draft-recovery-tests.mjs");

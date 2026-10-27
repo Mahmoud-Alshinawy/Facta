@@ -280,7 +280,7 @@ export default function SharedGoalDetail({
                   </span>
                 </div>
                 <div className="shared-note">
-                  Accent: 70% or more · Grey: under 70% · All ranks from server
+                  Green: 70% or more · Grey: under 70% · All ranks from server
                 </div>
                 <SharedRanking view={view} userId={engine.userId} />
                 {view.members

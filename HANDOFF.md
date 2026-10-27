@@ -1,6 +1,53 @@
-# Handoff: branch 3 Step 5 — review fixes
+# Handoff: branch 3 Step 6 — final review checkpoint
 
-## Current decision (26 October 2026)
+## Current decision (28 October 2026)
+
+- Owner approved **9d54740**, completing Step 5, and authorized Step 6 only.
+  Step 6 independent work is complete; **STOP for final branch review. Do not
+  merge. Full acceptance remains incomplete** because the disposable Supabase
+  Auth/JWT/PostgREST prerequisite could not start.
+- Fixed Shared cards to stack at <=1200px and the detail legend to say Green.
+  Fixed Today/Settings incorrectly marking a fresh read stale when it arrived
+  between minute-display ticks. Action capture/retry identity is unchanged.
+  Extracted the two existing engine context providers for a full-App harness;
+  production initialization and account gates retain their behavior.
+- Full App: **567 assertions / 284 captures**, four themes × 1440/1280/1100 ×
+  920/600, Shared overview/detail/wizard, Today and Settings Progress preview.
+  Local approved-component references and all nine contact sheets inspected.
+  Avatar/header spacing and taller server-state labels remain explicit visual
+  deltas; no pixel-identical or hosted-canvas acceptance claim.
+- Integration reruns: **243 mounted / 94 data assertions**, real IndexedDB,
+  SDK and disposable SQL. Two independent browser profiles covered offline
+  competing revisions, eligibility/pause/archive, leave/account cleanup and
+  personal independence; not two separate physical devices.
+- SQL/security rerun: **421 checked assertions plus exception assertions**,
+  migration apply/rerun/personal coexistence and **22 independent-session
+  concurrency cases** passed on PostgreSQL 17.5. SQL roles/claims scaffold
+  establishes no Auth/JWT/PostgREST HTTP properties.
+- Native isolated desktop/companion observed: confirmed 50%/100% parity;
+  Settings Progress creation; actual bounded token-free export/watch; pointer
+  Open group; warm/cold test-scheme links; write→normal quit→restart durability;
+  account/sign-out/leave cleanup with personal goal/widget config preserved.
+  Final native theme/pointer checks used a foreground override in test copies.
+  Identity/engine opening was synthetic/manual, so production Auth startup,
+  literal tray menus and normal bottom-stacking remain unverified.
+- Required checks passed: frozen install; all three TypeScript checks;
+  **437 desktop / 194 calendar tests**; both builds (desktop PORT=1420
+  BASE_PATH=/); both production Windows cargo checks. Existing desktop chunk
+  warning remains. No dependency, migration or SQL source changes.
+- Docker Desktop fails renaming `sailor-ingest.sock` to `.stale`; engine pipe
+  stays absent. No reset/security workaround. Outstanding: full disposable
+  Auth/JWT/PostgREST, installer/production facta:// links, native OS-network
+  offline/reconnect, literal tray and physical-device checks. See
+  **docs/shared-goals-step6.md** for exact evidence, reproductions and limits.
+- All isolated app processes closed; only test scheme unregistered; clock/
+  fixture exited and owned PostgreSQL stopped. Ignored test artifacts remain
+  under tmp/shared-step6 and tmp/shared-goals-runtime. Installed planner data,
+  production handler, live Supabase, .agents/ and skills-lock.json untouched.
+
+## Step 5 review fixes (9d54740; approved, historical)
+
+### Decision at that checkpoint (26 October 2026)
 
 - Owner reviewed **bcb8901** and requested two fixes only. **Step 6 remains
   unapproved**; stop after verification, commit/push for owner review.
