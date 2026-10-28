@@ -6,7 +6,7 @@
   "description": "Calendar settings, time formatting and layout maths shared by the desktop app and the widgets.",
   "exports": {
     ".": "./src/index.ts",
-    "./groupDeadlines": "./src/groupDeadlines.ts",
+    "./zoneTime": "./src/zoneTime.ts",
     "./theme-tokens.css": "./src/theme-tokens.css"
   },
   "scripts": {

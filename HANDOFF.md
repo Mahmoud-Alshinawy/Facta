@@ -1,6 +1,38 @@
 # Handoff: branch 3 — accepted claim risk, local-time deadlines
 
-## Current state (28 October 2026, after 3eda18c)
+## Current state (28 October 2026, review fixes after f77e60b)
+
+- Owner/reviewer approved **f77e60b** except one should-fix. Fixed here, then
+  continue with task 5 on the real install. **Do not merge.**
+- **Should-fix: deadline lines follow the 12h/24h Calendar setting.**
+  `groupDeadlineText` takes `timeFormat` and formats the viewer's wall time
+  with the existing `formatClock` (prefs.ts). Desktop passes `usePrefs()`;
+  the widget passes `prefsFrom(config)` from widgets.json. Default 24h:
+  "Today's check-in closes at 14:00 your time (midnight Asia/Riyadh)".
+- Nit: the round end carries its date ("Round ends Sun 8 Nov at 13:00 your
+  time"), so a round ending exactly a week away is not ambiguous.
+- Nit (report): the deadline UI is covered by the browser suite
+  (`--ui --deadlines`), not by Vitest component tests. Desktop stays at
+  **452**; the new unit tests are in packages/calendar.
+- The import-free midnight code moved to packages/calendar/src/zoneTime.ts
+  (subpath `@facta/calendar/zoneTime`). groupDeadlines.ts now imports
+  prefs.ts, and Node's TypeScript loader in the fixture scripts can't
+  resolve extensionless imports.
+- **Publishable key, steps 1–3 done:** supabase.ts reads
+  `VITE_SUPABASE_PUBLISHABLE_KEY`, falling back to `VITE_SUPABASE_ANON_KEY`;
+  release.yml passes the new secret (the anon one stays, marked as a legacy
+  fallback); docs/supabase.md updated; new empty `.env.example`. Owner's
+  `.env` untouched; it has only the anon key, so builds use the fallback.
+- Results: calendar **212** (9 deadline cases × 2 TZ = 18; was 14), desktop
+  **452**, all three tsc, both builds (known chunk warning), both cargo
+  checks, frozen install. Browser `--ui --deadlines`: **48 assertions,
+  20 captures**, incl. switching Settings → Appearance → Time format to
+  12-hour and rechecking all four surfaces. `--verify-boundaries`: ok **29**.
+  HTTP suites not rerun for this fix (no Auth/RPC code touched; reviewer
+  reran both at 64). The grey Settings Light capture is the existing
+  transparent-background preview, the same as in Step 6.
+
+## Accepted risk and deadlines (f77e60b; approved with one fix, historical)
 
 - Owner instructions: tasks 1–4 below, then checks, commit and push, then STOP
   for review. Task 5 (production-native checks on the real install) comes

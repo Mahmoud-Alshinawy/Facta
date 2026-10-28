@@ -2,6 +2,7 @@ import { Target } from "lucide-react";
 import {
   currentSharedProgress,
   type SharedWidgetExport,
+  type TimeFormat,
 } from "@facta/calendar";
 import { goalsToday, isDoneToday, type WidgetGoal } from "../lib/today";
 import { useProgressSelection } from "../lib/progressSelection";
@@ -14,6 +15,7 @@ export default function ProgressCard({
   data,
   goals,
   now,
+  timeFormat,
   widgetId,
   theme,
   translucent,
@@ -25,6 +27,8 @@ export default function ProgressCard({
   data: SharedWidgetExport;
   goals: WidgetGoal[];
   now: number;
+  /** The planner's 12h/24h setting, for the deadline lines. */
+  timeFormat: TimeFormat;
   widgetId: string;
   theme: string;
   translucent: boolean;
@@ -111,7 +115,7 @@ export default function ProgressCard({
                 {group.name} · weekly round
               </span>
               <ProgressScores group={group} />
-              <ProgressState group={group} now={now} />
+              <ProgressState group={group} now={now} timeFormat={timeFormat} />
               {onOpen && (
                 <button
                   className="progress-open"

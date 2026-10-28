@@ -7,8 +7,11 @@ connection.
 ## Setup
 
 1. Copy `.env.example` to `.env` in the repo root and fill in
-   `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (Project Settings → API).
-   Without them the app runs in "This device only" mode and nothing syncs.
+   `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` (Project Settings →
+   API Keys, the `sb_publishable_...` key). Without them the app runs in
+   "This device only" mode and nothing syncs. `VITE_SUPABASE_ANON_KEY` (the
+   legacy anon JWT) is still read as a fallback when no publishable key is
+   set; see `docs/supabase-publishable-key.md` for retiring it.
 2. In **Authentication → URL Configuration**, add `facta://auth/callback` to
    **Redirect URLs**. Email confirmation and magic links come back to the
    desktop app through this deep link.
@@ -155,12 +158,12 @@ on load and queued, so they upload on the first sync. This works offline too.
 
 - **Repeating goals can lose a tick across devices.** `completed_dates` is
   one column, and the whole row follows "newer wins". If two devices tick off
-  *different* days of the same repeating goal while both are offline, the
+  _different_ days of the same repeating goal while both are offline, the
   later sync wins and the other tick is lost. The fix is a per-day
   completions table, which will come with the rivalry work, since scores need
   per-day data anyway.
 - **Edit times come from device clocks.** The server caps them at its own
-  time, but a device whose clock runs *behind* will lose conflicts it should
+  time, but a device whose clock runs _behind_ will lose conflicts it should
   win.
 - **Never hard-DELETE rows.** If a row is removed with `DELETE` (in the
   dashboard's table editor, in SQL, or by a future tombstone purge), any
@@ -175,5 +178,6 @@ on load and queued, so they upload on the first sync. This works offline too.
   A device that was away longer than that must not upload records the server
   doesn't know. That needs a "last synced" cut-off, which doesn't exist yet,
   so build it before any purge.
+
 - **No realtime.** Other devices see changes on their next pull (focus,
   reconnect, or within 60 seconds).

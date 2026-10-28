@@ -29,7 +29,7 @@ Stop for final review; do not merge.** No application or migration changes.
 | `run-supabase-acceptance.mjs --publishable-key`       | 0    | ok, **64** assertions        |
 | `prepare-native-auth-fixture.mjs --verify-boundaries` | 0    | ok, **29** (9 cases, 50→100) |
 | `prepare-native-auth-fixture.mjs` (current day)       | 0    | ok, **2**                    |
-| `run-shared-client-tests.mjs 55439 --ui --deadlines`  | 0    | ok, **44**, 16 captures      |
+| `run-shared-client-tests.mjs 55439 --ui --deadlines`  | 0    | ok, **48**, 20 captures      |
 
 Not rerun: `--native-background` (12 assertions). It needs the isolated native
 window open, and its polling/export code did not change. Publishable-key readiness is

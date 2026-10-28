@@ -11,10 +11,15 @@ const THEMES = {
   light: "Light",
 };
 // Riyadh group on Tue 27 Oct (round Mon 26 Oct – Sun 1 Nov). Los Angeles is
-// on PDT today but PST when the round ends, after US clocks go back.
+// on PDT today but PST when the round ends, after US clocks go back. The
+// app's default clock setting is 24-hour.
 const LA_LINES = [
-  "Today's check-in closes at 2:00pm your time (midnight Asia/Riyadh)",
-  "Round ends Sun 1:00pm your time",
+  "Today's check-in closes at 14:00 your time (midnight Asia/Riyadh)",
+  "Round ends Sun 1 Nov at 13:00 your time",
+];
+const LA_LINES_12H = [
+  "Today's check-in closes at 2:00 PM your time (midnight Asia/Riyadh)",
+  "Round ends Sun 1 Nov at 1:00 PM your time",
 ];
 
 export async function runSharedDeadlineTests({
@@ -76,6 +81,7 @@ export async function runSharedDeadlineTests({
     },
     settings: async (p) => {
       await nav(p, "Settings");
+      await p.getByRole("tab", { name: "Widgets", exact: true }).click();
       await p.getByRole("button", { name: "Add widget", exact: true }).click();
       await p.getByRole("radio", { name: "Progress", exact: true }).click();
       await p
@@ -154,9 +160,26 @@ export async function runSharedDeadlineTests({
           `${name}/${theme}: deadline lines are visible`,
         );
         const file = path.join(folder, `${name}-${theme}.png`);
-        await area.screenshot({ path: file });
+        await area.screenshot({ path: file, animations: "disabled" });
         screenshots.push(file);
       }
+    }
+    // Switch the real Calendar setting; every surface follows it.
+    await nav(la, "Settings");
+    await la.getByRole("tab", { name: "Appearance", exact: true }).click();
+    await la
+      .getByRole("radiogroup", { name: "Time format", exact: true })
+      .getByRole("radio", { name: "12-hour (1:00 PM)", exact: true })
+      .click();
+    for (const [name, reach] of Object.entries(surfaces)) {
+      const area = await reach(la);
+      check(
+        JSON.stringify(await lines(area)) === JSON.stringify(LA_LINES_12H),
+        `Los Angeles viewer, 12-hour setting: ${name} follows it`,
+      );
+      const file = path.join(folder, `${name}-12h.png`);
+      await area.screenshot({ path: file, animations: "disabled" });
+      screenshots.push(file);
     }
   } finally {
     await traveller.close();
@@ -168,6 +191,7 @@ export async function runSharedDeadlineTests({
     checks: [
       "Riyadh group viewed in Riyadh: no deadline lines on Shared card, detail, Today or Settings Progress preview",
       "same group viewed from Los Angeles: check-in close and round end in local time (PDT today, PST at round end), group zone visible, four themes",
+      "12-hour Calendar setting switched in Settings: all four surfaces follow it",
     ],
   };
 }

@@ -2,6 +2,7 @@ import {
   groupDeadlineText,
   type SharedProgress,
   type SharedWidgetExport,
+  type TimeFormat,
 } from "@facta/calendar";
 import "./progress-card.css";
 export function ProgressGroupPicker({
@@ -97,9 +98,11 @@ export function ProgressScores({
 }
 export function ProgressState({
   group,
+  timeFormat,
   now = Date.now(),
 }: {
   group: SharedProgress;
+  timeFormat: TimeFormat;
   now?: number;
 }) {
   const deadlines =
@@ -109,6 +112,7 @@ export function ProgressState({
           timeZone: group.timeZone,
           roundEnd: group.round.end,
           now,
+          timeFormat,
         })
       : [];
   return (

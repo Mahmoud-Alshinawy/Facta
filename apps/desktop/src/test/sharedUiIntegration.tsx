@@ -298,6 +298,7 @@ function Step5Surface({ engine }: { engine: SharedSync }) {
               data={bundle}
               goals={goals}
               now={clock}
+              timeFormat="24h"
               widgetId="test-progress"
               theme={document.documentElement.dataset.theme ?? "default"}
               translucent={false}

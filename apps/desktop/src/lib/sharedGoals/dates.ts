@@ -1,7 +1,7 @@
 // Group midnight mirrors PostgreSQL's conversion; it lives in the shared
 // package so the widgets resolve the same day boundary. The direct subpath
 // keeps this file loadable by Node in the acceptance fixture scripts.
-import { zoneMidnight as midnight } from "@facta/calendar/groupDeadlines";
+import { zoneMidnight as midnight } from "@facta/calendar/zoneTime";
 
 const DAY = 86_400_000;
 const formatters = new Map<string, Intl.DateTimeFormat>();

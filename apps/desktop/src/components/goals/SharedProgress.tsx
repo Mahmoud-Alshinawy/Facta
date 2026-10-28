@@ -10,6 +10,7 @@ import { dateLabel, scheduleText } from "@/lib/sharedGoals/creation";
 import { SharedIcon } from "./SharedParts";
 import { addDays } from "@/lib/sharedGoals/dates";
 import { groupDeadlineText } from "@facta/calendar";
+import { usePrefs } from "@/hooks/usePrefs";
 import type { CheckinIntent } from "@/lib/sync/shared/outbox";
 
 export function PendingReview({
@@ -254,6 +255,7 @@ export function RoundStatus({
   view: SharedGroupView;
   now?: number;
 }) {
+  const { timeFormat } = usePrefs();
   const deadlines =
     view.phase === "active" && view.current
       ? groupDeadlineText({
@@ -261,6 +263,7 @@ export function RoundStatus({
           timeZone: view.group.timeZone,
           roundEnd: view.current.roundEnd,
           now,
+          timeFormat,
         })
       : [];
   return (

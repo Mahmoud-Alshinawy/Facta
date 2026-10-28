@@ -6,6 +6,7 @@ import {
 } from "@facta/calendar";
 import { useSharedGoals } from "@/hooks/useSharedGoals";
 import { useAuth } from "@/hooks/useAuth";
+import { usePrefs } from "@/hooks/usePrefs";
 import type { SharedSync } from "@/lib/sync/shared/engine";
 import type { SharedState } from "@/lib/sync/shared/state";
 import {
@@ -57,6 +58,7 @@ export function TodaySharedContent({
   error?: string | null;
   userId?: string | null;
 }) {
+  const { timeFormat } = usePrefs();
   const choices =
     data && userId ? sharedProgressChoices(data, userId, now) : [];
   const bundle = {
@@ -103,7 +105,7 @@ export function TodaySharedContent({
             label="Today shared group"
           />
           <ProgressScores group={group} counts />
-          <ProgressState group={group} now={now} />
+          <ProgressState group={group} now={now} timeFormat={timeFormat} />
           <div className="today-shared-actions">
             <button
               className="progress-open"

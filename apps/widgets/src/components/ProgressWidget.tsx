@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { parseSharedWidgetExport } from "@facta/calendar";
 import type { SharedData } from "@/lib/sharedData";
-import type { WidgetGoal } from "@/lib/today";
+import { prefsFrom, type WidgetGoal } from "@/lib/today";
 import ProgressCard from "./ProgressCard";
 export default function ProgressWidget({
   theme,
@@ -83,6 +83,7 @@ export default function ProgressWidget({
           data={bundle}
           goals={(data?.goals ?? []) as WidgetGoal[]}
           now={now}
+          timeFormat={prefsFrom(data.config).timeFormat}
           widgetId={id}
           theme={config?.theme ?? theme}
           translucent={config?.translucent ?? translucent}

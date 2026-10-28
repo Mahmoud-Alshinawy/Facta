@@ -1,9 +1,10 @@
-# Moving to a publishable key (proposal)
+# Moving to a publishable key
 
-**Proposal only, 28 October 2026. No code, `.env` or project setting changed.**
+28 October 2026. **Code change done on `feat/shared-goals` (steps 1–3 below);
+no `.env` or project setting changed.** The owner steps further down remain.
 
-Today the desktop app reads `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
-(`apps/desktop/src/lib/supabase.ts`). The anon key is a legacy JWT signed with
+The desktop app used to read only `VITE_SUPABASE_URL` and
+`VITE_SUPABASE_ANON_KEY` (`apps/desktop/src/lib/supabase.ts`). The anon key is a legacy JWT signed with
 the project's HS256 secret, so revoking that secret also kills the key. A
 publishable key (`sb_publishable_...`) is not a JWT and survives the revocation.
 
@@ -21,7 +22,7 @@ publishable key (`sb_publishable_...`) is not a JWT and survives the revocation.
   HS256 secret (no `signing_keys_path`), so "legacy secret revoked, ECC only"
   is untested here. The live project already signs with ECC P-256.
 
-## Minimal change
+## The change (implemented)
 
 1. `supabase.ts`: read `VITE_SUPABASE_PUBLISHABLE_KEY`, falling back to
    `VITE_SUPABASE_ANON_KEY` so existing `.env` files and CI keep building.
@@ -33,7 +34,7 @@ publishable key (`sb_publishable_...`) is not a JWT and survives the revocation.
 4. `scripts/prepare-shared-native.mjs` can stay as it is: it injects the
    disposable stack's key into the isolated test app.
 
-## Steps for the owner (after that change is merged)
+## Steps for the owner (after the branch is merged)
 
 1. Dashboard → **Project Settings → API Keys**. Copy the publishable key, or
    create one if none is listed.
