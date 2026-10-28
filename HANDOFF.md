@@ -1,6 +1,60 @@
-# Handoff: branch 3 — acceptance-test review corrections
+# Handoff: branch 3 — accepted claim risk, local-time deadlines
 
-## Current decision (28 October 2026)
+## Current state (28 October 2026, after 3eda18c)
+
+- Owner instructions: tasks 1–4 below, then checks, commit and push, then STOP
+  for review. Task 5 (production-native checks on the real install) comes
+  after that review. **Do not merge.**
+- **1. Audience/issuer: owner accepts the risk.** The policy proposal was
+  replaced by a short accepted-risk note in
+  docs/shared-goals-deployment-policy.md. The acceptance suite still runs both
+  probes and reports them under `acceptedGaps` (Auth 200 / REST 200) without
+  failing the run. Signed expired and future-`nbf` rejections became explicit
+  required assertions. No gateway, no deployment policy.
+- **2. Deadlines in the viewer's local time.** `groupDeadlineText` in
+  packages/calendar/src/groupDeadlines.ts. The group-midnight resolver moved
+  there unchanged (as `zoneMidnight`); dates.ts imports it, so the desktop
+  and the widgets resolve the same boundary. Shown on the Shared card and
+  detail (`RoundStatus`), and on Today, the Progress widget and the Settings
+  preview (`ProgressState`), only while a round is active, e.g. "Today's
+  check-in closes at 1:00pm your time (midnight Asia/Riyadh)" and "Round ends
+  Sun 1:00pm your time". The widget export contract is unchanged. Nothing is
+  added when the viewer's clock already reads the group's midnight; this
+  includes same-offset aliases such as Asia/Kuwait.
+  14 calendar test runs (7 cases × Riyadh/New York TZ): same zone, Los
+  Angeles viewing Riyadh, Kiritimati, group a day ahead, viewer DST, group
+  DST, PostgreSQL-style midnight gap. Browser suite
+  `run-shared-client-tests.mjs 55439 --ui --deadlines`: **44 assertions,
+  16 captures**. Riyadh viewer: no lines on any surface. Los Angeles viewer:
+  exact lines, group zone visible, no overflow, in all four themes. I
+  inspected captures of all four surfaces across the themes.
+- **3. Publishable key:** supabase-js 2.110.0 works with `sb_publishable_`.
+  The full HTTP suite with `--publishable-key` gives ok, 64 assertions. The
+  proposal and your exact steps are in docs/supabase-publishable-key.md.
+  No code or .env change.
+- **4. Reviewer nits:** (a) real-server cases at 20:59:59Z / 21:00:00Z, with
+  `invalid_date` on the other side of midnight; (b) HTTP publication uses the
+  server's `confirmation_required` first_round_date; (c) the native fixture's
+  round weekday follows the run date (seed day's weekday), now noted in
+  docs/shared-goals-auth-native.md.
+- Acceptance runs (all exit 0): HTTP anon **64**, HTTP publishable **64**,
+  boundaries **29** (9 cases 50→100), current-day fixture **2**. The native
+  background suite (12) was not rerun: it needs the isolated window, and its
+  polling/export code did not change. Domain clocks restored; Auth/JWT
+  clocks unchanged.
+- Required checks: frozen install; desktop/widgets/calendar tsc; **452
+  desktop / 208 calendar tests** (194 + 14 new); desktop build (PORT=1420
+  BASE_PATH=/) and widgets build; both `cargo check --offline`. Existing
+  chunk-size warning only.
+- Still open: task 5, all production-native gates
+  (docs/shared-goals-auth-native.md), two physical devices, and the live
+  migration, which you run yourself. Real install, live Supabase, .env,
+  .agents/ and skills-lock.json untouched. Disposable PostgreSQL on 55439
+  stopped; the disposable Supabase stack is still running.
+
+## Acceptance-test review corrections (3eda18c; historical)
+
+### Decision at that checkpoint (28 October 2026)
 
 - Owner reviewed **4b59939**; keep branch unmerged. Fix only acceptance DML/date
   issues, rerun affected suites/required checks, propose a deployment-side claim

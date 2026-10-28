@@ -32,6 +32,13 @@ const { runSupabaseAcceptance, runNativeBackgroundAcceptance } = await import(
   pathToFileURL(path.join(outDir, "acceptance.mjs")).href
 );
 const native = process.argv.includes("--native-background");
+// Same suite with the new-style public key in place of the legacy anon JWT.
+const publishable = process.argv.includes("--publishable-key");
+if (publishable) {
+  if (!settings.PUBLISHABLE_KEY?.startsWith("sb_publishable_"))
+    throw Error("Disposable stack has no publishable key");
+  settings.ANON_KEY = settings.PUBLISHABLE_KEY;
+}
 const result = native
   ? await runNativeBackgroundAcceptance(
       settings,
@@ -43,7 +50,11 @@ await mkdir(area, { recursive: true });
 await writeFile(
   path.join(
     area,
-    native ? "native-background-result.json" : "http-result.json",
+    native
+      ? "native-background-result.json"
+      : publishable
+        ? "http-publishable-result.json"
+        : "http-result.json",
   ),
   JSON.stringify(result, null, 2),
 );

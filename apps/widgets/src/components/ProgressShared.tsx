@@ -1,4 +1,8 @@
-import type { SharedProgress, SharedWidgetExport } from "@facta/calendar";
+import {
+  groupDeadlineText,
+  type SharedProgress,
+  type SharedWidgetExport,
+} from "@facta/calendar";
 import "./progress-card.css";
 export function ProgressGroupPicker({
   data,
@@ -91,7 +95,22 @@ export function ProgressScores({
     </ol>
   );
 }
-export function ProgressState({ group }: { group: SharedProgress }) {
+export function ProgressState({
+  group,
+  now = Date.now(),
+}: {
+  group: SharedProgress;
+  now?: number;
+}) {
+  const deadlines =
+    group.phase === "active" && group.round?.active
+      ? groupDeadlineText({
+          today: group.today,
+          timeZone: group.timeZone,
+          roundEnd: group.round.end,
+          now,
+        })
+      : [];
   return (
     <div className="progress-status" role="status">
       <span>
@@ -111,6 +130,11 @@ export function ProgressState({ group }: { group: SharedProgress }) {
             .slice(0, 10)}
         </span>
       )}
+      {deadlines.map((line) => (
+        <span key={line} data-deadline>
+          {line}
+        </span>
+      ))}
       {group.reason && <span>{group.reason}</span>}
       {!group.rows.length && (
         <span>No confirmed scored round. No ranks assigned.</span>

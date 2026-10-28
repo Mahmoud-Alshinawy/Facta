@@ -6,3 +6,4 @@ export * from "./spans";
 export * from "./eventSchedule";
 export * from "./widgetJournal";
 export * from "./sharedProgress";
+export * from "./groupDeadlines";

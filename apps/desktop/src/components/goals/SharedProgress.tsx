@@ -9,6 +9,7 @@ import {
 import { dateLabel, scheduleText } from "@/lib/sharedGoals/creation";
 import { SharedIcon } from "./SharedParts";
 import { addDays } from "@/lib/sharedGoals/dates";
+import { groupDeadlineText } from "@facta/calendar";
 import type { CheckinIntent } from "@/lib/sync/shared/outbox";
 
 export function PendingReview({
@@ -246,7 +247,34 @@ export function SharedRanking({
     </div>
   );
 }
-export function RoundStatus({ view }: { view: SharedGroupView }) {
+export function RoundStatus({
+  view,
+  now = Date.now(),
+}: {
+  view: SharedGroupView;
+  now?: number;
+}) {
+  const deadlines =
+    view.phase === "active" && view.current
+      ? groupDeadlineText({
+          today: view.today,
+          timeZone: view.group.timeZone,
+          roundEnd: view.current.roundEnd,
+          now,
+        })
+      : [];
+  return (
+    <>
+      <RoundPhase view={view} />
+      {deadlines.map((line) => (
+        <span key={line} className="shared-note" data-deadline>
+          {line}
+        </span>
+      ))}
+    </>
+  );
+}
+function RoundPhase({ view }: { view: SharedGroupView }) {
   return (
     <span className="shared-note">
       {view.phase === "active"
@@ -379,7 +407,7 @@ export function SharedOverview({
                   {v.members.filter((m) => !m.leftAt).length} people
                 </span>
               </div>
-              <RoundStatus view={v} />
+              <RoundStatus view={v} now={now()} />
               <SharedRanking view={v} userId={engine.userId} compact />
               {v.pendingTarget && (
                 <p className="shared-note">

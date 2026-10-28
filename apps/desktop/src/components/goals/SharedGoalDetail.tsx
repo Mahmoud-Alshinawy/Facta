@@ -191,7 +191,7 @@ export default function SharedGoalDetail({
       <div className="gscroll">
         <div className="gwrap">
           <div className="shared-status-strip" role="status">
-            <RoundStatus view={view} />
+            <RoundStatus view={view} now={now()} />
             <span>
               {view.group.timeZone} · Today {dateLabel(view.today)}
             </span>

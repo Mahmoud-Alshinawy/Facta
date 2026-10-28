@@ -63,15 +63,19 @@ const admin = createClient(
 );
 const users = saved?.users ?? [];
 const clients = [];
-const command = async (client, operation, payload) => {
+const attempt = async (client, operation, payload) => {
   const result = await client.rpc("facta_shared_command", {
     command_id: randomUUID(),
     operation,
     payload,
   });
-  if (result.error || !result.data?.ok)
-    throw Error(`Disposable fixture ${operation} failed`);
+  if (result.error) throw Error(`Disposable fixture ${operation} errored`);
   return result.data;
+};
+const command = async (client, operation, payload) => {
+  const data = await attempt(client, operation, payload);
+  if (!data?.ok) throw Error(`Disposable fixture ${operation} failed`);
+  return data;
 };
 try {
   for (let n = 0; n < 2; n++) {
@@ -128,10 +132,17 @@ try {
         "2026-10-30",
         "2026-10-31",
         "2026-11-01",
-      ].map((day) => Date.parse(`${day}T09:00:00Z`))
-    : [Date.now()];
+      ]
+        .map((day) => ({ now: Date.parse(`${day}T09:00:00Z`) }))
+        // Last and first second around Riyadh midnight (UTC+3). The action
+        // instant belongs to one group date; the other side must be refused.
+        .concat(
+          { now: Date.parse("2026-10-28T20:59:59Z"), otherSide: "2026-10-29" },
+          { now: Date.parse("2026-10-28T21:00:00Z"), otherSide: "2026-10-28" },
+        )
+    : [{ now: Date.now() }];
   const results = [];
-  for (const now of cases) {
+  for (const { now, otherSide } of cases) {
     const plan = nativeScoringPlan(now);
     let groupId;
     try {
@@ -196,6 +207,20 @@ try {
         `fixture ${plan.today}: actual server seed is 1 of 2 / 50% in the current round`,
       );
       if (verifyBoundaries) {
+        if (otherSide) {
+          const refused = await attempt(clients[0], "set_checkin", {
+            group_id: groupId,
+            membership_id: own.id,
+            date: otherSide,
+            captured_at: plan.actionCapturedAt,
+            completed: true,
+            base_revision: 0,
+          });
+          check(
+            refused?.ok === false && refused.code === "invalid_date",
+            `fixture ${plan.actionCapturedAt}: server refuses ${otherSide} across Riyadh midnight`,
+          );
+        }
         await command(clients[0], "set_checkin", {
           group_id: groupId,
           membership_id: own.id,
@@ -217,6 +242,7 @@ try {
           `fixture ${plan.today}: actual server action reaches 2 of 2 / 100% in the same round`,
         );
         results.push({
+          at: plan.actionCapturedAt,
           today: plan.today,
           creationDate: plan.creationDate,
           firstRoundDate: plan.firstRoundDate,

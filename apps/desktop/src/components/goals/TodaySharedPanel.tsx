@@ -103,7 +103,7 @@ export function TodaySharedContent({
             label="Today shared group"
           />
           <ProgressScores group={group} counts />
-          <ProgressState group={group} />
+          <ProgressState group={group} now={now} />
           <div className="today-shared-actions">
             <button
               className="progress-open"

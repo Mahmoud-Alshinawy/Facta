@@ -5,7 +5,6 @@ import { setTimeout as delay } from "node:timers/promises";
 import { readFile } from "node:fs/promises";
 import { createSharedRemote } from "@/lib/sync/shared/remote";
 import { makeCommand } from "@/lib/sharedGoals/contracts";
-import { publicationDate } from "./sharedAcceptanceDates";
 import { eligibleRound, groupDate } from "@/lib/sharedGoals/dates";
 
 type Settings = {
@@ -224,6 +223,11 @@ export async function runSupabaseAcceptance(settings: Settings) {
           const auth = await request("/auth/v1/user", token),
             rest = await request("/rest/v1/shared_groups?select=id", token);
           jwt.push({ kind, auth: auth.status, postgrest: rest.status });
+          if (kind === "expired" || kind === "future nbf")
+            check(
+              deniedToken(auth.status) && deniedToken(rest.status),
+              `signed ${kind} token rejected by Auth and PostgREST (Auth ${auth.status}, REST ${rest.status})`,
+            );
         }
     }
     checks.push(
@@ -244,6 +248,27 @@ export async function runSupabaseAcceptance(settings: Settings) {
         ).ok,
         "real PostgREST command maps profile outcome",
       );
+    // The server picks the first round from its own publish instant. Like the
+    // wizard, propose a stale date and confirm the one it returns, rather than
+    // predicting it from this machine's clock.
+    const serverFirstRound = async (groupId: string, createdAt: string) => {
+      const ask = await remotes[0].command(
+        makeCommand("publish", {
+          group_id: groupId,
+          expected_revision: 1,
+          first_round_date: "2000-01-03",
+        }),
+      );
+      check(
+        ask.code === "confirmation_required" && ask.firstRoundDate,
+        "server answers a stale proposal with its own first round date",
+      );
+      check(
+        ask.firstRoundDate! > groupDate(createdAt, "Asia/Riyadh"),
+        "server first round is strictly after the group-local creation date",
+      );
+      return ask.firstRoundDate!;
+    };
     const draftCommand = makeCommand("create_draft", {
       name: "HTTP · gym \u2713",
       template: "gym",
@@ -271,15 +296,7 @@ export async function runSupabaseAcceptance(settings: Settings) {
       !createdRow.error && createdRow.data?.created_at,
       "read authoritative creation instant before publication",
     );
-    const first = publicationDate(
-      Math.max(Date.now(), Date.parse(createdRow.data!.created_at)),
-      "Asia/Riyadh",
-      1,
-    );
-    check(
-      first > groupDate(createdRow.data!.created_at, "Asia/Riyadh"),
-      "publication is strictly after the group-local creation date",
-    );
+    const first = await serverFirstRound(gid, createdRow.data!.created_at);
     check(
       (
         await remotes[0].command(
@@ -290,7 +307,7 @@ export async function runSupabaseAcceptance(settings: Settings) {
           }),
         )
       ).ok,
-      "real publication accepts validated upcoming round",
+      "real publication accepts the server-confirmed upcoming round",
     );
     const invitation = await remotes[0].command(
       makeCommand("issue_link", { group_id: gid }),
@@ -403,14 +420,9 @@ export async function runSupabaseAcceptance(settings: Settings) {
       !dmlCreated.error && dmlCreated.data?.created_at,
       "read Custom DML fixture creation instant",
     );
-    const dmlFirst = publicationDate(
-      Math.max(Date.now(), Date.parse(dmlCreated.data!.created_at)),
-      "Asia/Riyadh",
-      1,
-    );
-    check(
-      dmlFirst > groupDate(dmlCreated.data!.created_at, "Asia/Riyadh"),
-      "Custom DML publication is strictly after local creation",
+    const dmlFirst = await serverFirstRound(
+      dmlGroup.groupId!,
+      dmlCreated.data!.created_at,
     );
     check(
       (
@@ -581,12 +593,22 @@ export async function runSupabaseAcceptance(settings: Settings) {
     checks.push(
       "natural access-token expiration on Auth and PostgREST, followed by real refresh recovery",
     );
+    // Wrong audience/issuer acceptance is an owner-accepted risk (it needs the
+    // project signing key); see docs/shared-goals-deployment-policy.md. The
+    // probes still run and are reported, but only time claims gate the result.
+    const accepted = ["wrong audience", "wrong issuer"];
+    const unrejected = (r: Record<string, unknown>) =>
+      !deniedToken(r.auth as number) || !deniedToken(r.postgrest as number);
     const claimGaps = jwt.filter(
       (r) =>
-        ["wrong audience", "wrong issuer", "future nbf", "expired"].includes(
-          r.kind as string,
-        ) &&
-        (!deniedToken(r.auth as number) || !deniedToken(r.postgrest as number)),
+        ["future nbf", "expired"].includes(r.kind as string) && unrejected(r),
+    );
+    const acceptedGaps = jwt
+      .filter((r) => accepted.includes(r.kind as string))
+      .map((r) => ({ ...r, stillAccepted: unrejected(r) }));
+    check(
+      acceptedGaps.length === accepted.length,
+      "both accepted-risk audience/issuer probes ran and were recorded",
     );
     return {
       ok: claimGaps.length === 0,
@@ -595,6 +617,7 @@ export async function runSupabaseAcceptance(settings: Settings) {
       jwt,
       dml,
       claimGaps,
+      acceptedGaps,
       identity:
         "real local GoTrue-issued users and JWTs; Kong/PostgREST HTTP; no synthetic identity bridge",
       limits: [

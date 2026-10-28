@@ -111,7 +111,7 @@ export default function ProgressCard({
                 {group.name} · weekly round
               </span>
               <ProgressScores group={group} />
-              <ProgressState group={group} />
+              <ProgressState group={group} now={now} />
               {onOpen && (
                 <button
                   className="progress-open"

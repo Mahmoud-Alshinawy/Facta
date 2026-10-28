@@ -1,3 +1,8 @@
+// Group midnight mirrors PostgreSQL's conversion; it lives in the shared
+// package so the widgets resolve the same day boundary. The direct subpath
+// keeps this file loadable by Node in the acceptance fixture scripts.
+import { zoneMidnight as midnight } from "@facta/calendar/groupDeadlines";
+
 const DAY = 86_400_000;
 const formatters = new Map<string, Intl.DateTimeFormat>();
 
@@ -78,30 +83,6 @@ export function eligibleRound(
   return next < anchor ? anchor : next;
 }
 
-// Match PostgreSQL's local timestamp conversion: the later (standard-time)
-// occurrence at a fold, and the forward-shifted instant at a midnight gap.
-function midnight(date: string, zone: string): number {
-  const wall = dateMs(date);
-  const offsets = new Set<number>();
-  const localWall = (t: number) => {
-    const p = parts(t, zone);
-    return Date.parse(
-      `${p.year.padStart(4, "0")}-${p.month}-${p.day}T${p.hour}:${p.minute}:${p.second}Z`,
-    );
-  };
-  for (let hours = -48; hours <= 48; hours += 6) {
-    const sample = wall + hours * 3_600_000;
-    offsets.add(localWall(sample) - sample);
-  }
-  const candidates = [...offsets].map((offset) => wall - offset);
-  const exact = candidates.filter((t) => localWall(t) === wall);
-  if (exact.length) return Math.max(...exact);
-  const forward = candidates
-    .filter((t) => localWall(t) > wall)
-    .sort((a, b) => localWall(a) - localWall(b));
-  if (!forward.length) throw new Error("Could not resolve group midnight");
-  return forward[0];
-}
 export function roundInterval(
   start: string,
   zone: string,

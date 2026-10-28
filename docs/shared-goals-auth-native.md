@@ -4,7 +4,38 @@
 authorized remaining acceptance only. **Full acceptance remains incomplete.
 Stop for final review; do not merge.** No application or migration changes.
 
-## Review of 4b59939: corrected acceptance tests
+## Accepted claim risk, local-time deadlines, publishable key (after 3eda18c)
+
+- **Audience/issuer: owner-accepted risk.** See the rewritten
+  [accepted-risk note](shared-goals-deployment-policy.md). The suite still
+  sends both probes and records them under `acceptedGaps` (Auth 200 /
+  PostgREST 200 on local defaults) without failing the run. Signed expired and
+  future-`nbf` rejections are now explicit required assertions (Auth 403 /
+  PostgREST 401), alongside tampered/unsigned rejection and the valid control.
+- HTTP publication now asks the server for its first round: a stale proposal
+  must return `confirmation_required` with the server's date, which is then
+  published. No client-clock prediction remains in the HTTP suite.
+- `--verify-boundaries` adds real-server cases at **2026-10-28T20:59:59Z**
+  (Riyadh 28 Oct) and **21:00:00Z** (Riyadh 29 Oct). Each scores 50→100 in
+  one round, and the server refuses the date on the other side of midnight
+  with `invalid_date`.
+- The native fixture's round weekday is the seed day's weekday, so it follows
+  the run date (Sunday rounds when run on a Monday, and so on). Each
+  `--verify-boundaries` case lists its `roundWeekday`.
+
+| Run (disposable stack, 28 Oct 2026)                   | Exit | Result                       |
+| ----------------------------------------------------- | ---- | ---------------------------- |
+| `run-supabase-acceptance.mjs` (legacy anon key)       | 0    | ok, **64** assertions        |
+| `run-supabase-acceptance.mjs --publishable-key`       | 0    | ok, **64** assertions        |
+| `prepare-native-auth-fixture.mjs --verify-boundaries` | 0    | ok, **29** (9 cases, 50→100) |
+| `prepare-native-auth-fixture.mjs` (current day)       | 0    | ok, **2**                    |
+| `run-shared-client-tests.mjs 55439 --ui --deadlines`  | 0    | ok, **44**, 16 captures      |
+
+Not rerun: `--native-background` (12 assertions). It needs the isolated native
+window open, and its polling/export code did not change. Publishable-key readiness is
+in [supabase-publishable-key.md](supabase-publishable-key.md).
+
+## Review of 4b59939: corrected acceptance tests (historical)
 
 **Current result remains incomplete; branch stays unmerged.** No audience/issuer
 policy was applied. [Deployment-side policy proposal](shared-goals-deployment-policy.md)
@@ -207,7 +238,8 @@ launching are disabled in copies. No installer or installed handler was changed.
 
 ## Open gates and environment left for resumption
 
-- Strict audience/issuer policy/verification above remains open.
+- Strict audience/issuer enforcement: closed as an owner-accepted risk
+  (28 October 2026); see the accepted-risk note.
 - Windows Sandbox is absent and the owner has no known disposable Windows VM.
   Production installation/autostart registration, `facta://` handler, packaged
   warm/cold/auth links and production companion launching need an isolated
