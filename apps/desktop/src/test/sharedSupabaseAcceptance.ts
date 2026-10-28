@@ -5,8 +5,15 @@ import { setTimeout as delay } from "node:timers/promises";
 import { readFile } from "node:fs/promises";
 import { createSharedRemote } from "@/lib/sync/shared/remote";
 import { makeCommand } from "@/lib/sharedGoals/contracts";
+import { publicationDate } from "./sharedAcceptanceDates";
+import { eligibleRound, groupDate } from "@/lib/sharedGoals/dates";
 
-type Settings = { API_URL: string; ANON_KEY: string; JWT_SECRET?: string };
+type Settings = {
+  API_URL: string;
+  ANON_KEY: string;
+  JWT_SECRET?: string;
+  SERVICE_ROLE_KEY: string;
+};
 export async function runSupabaseAcceptance(settings: Settings) {
   const base = settings.API_URL;
   if (base !== "http://127.0.0.1:56421")
@@ -18,6 +25,7 @@ export async function runSupabaseAcceptance(settings: Settings) {
   let assertions = 0;
   const checks: string[] = [],
     jwt: Record<string, unknown>[] = [],
+    dml: Record<string, unknown>[] = [],
     clients: SupabaseClient[] = [];
   const deniedToken = (status: number) => status === 401 || status === 403;
   const check = (ok: unknown, label: string) => {
@@ -254,11 +262,24 @@ export async function runSupabaseAcceptance(settings: Settings) {
       "real HTTP same-UUID receipt replay preserves group identity and mapped outcome",
     );
     const gid = draft.groupId!;
-    const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
-    const nextMonday = new Date(`${tomorrow}T00:00:00Z`);
-    while (nextMonday.getUTCDay() !== 1)
-      nextMonday.setUTCDate(nextMonday.getUTCDate() + 1);
-    const first = nextMonday.toISOString().slice(0, 10);
+    const createdRow = await resumed
+      .from("shared_groups")
+      .select("created_at")
+      .eq("id", gid)
+      .single();
+    check(
+      !createdRow.error && createdRow.data?.created_at,
+      "read authoritative creation instant before publication",
+    );
+    const first = publicationDate(
+      Math.max(Date.now(), Date.parse(createdRow.data!.created_at)),
+      "Asia/Riyadh",
+      1,
+    );
+    check(
+      first > groupDate(createdRow.data!.created_at, "Asia/Riyadh"),
+      "publication is strictly after the group-local creation date",
+    );
     check(
       (
         await remotes[0].command(
@@ -354,13 +375,116 @@ export async function runSupabaseAcceptance(settings: Settings) {
       !!anonRows.error || anonRows.data?.length === 0,
       "anonymous HTTP obtains no group rows",
     );
-    const direct = await b
-      .from("shared_memberships")
-      .insert({ group_id: gid, user_id: users[2].id });
-    check(
-      !!direct.error,
-      "authenticated direct membership writes cannot bypass RPC constraints",
+    const privileged = createClient(base, settings.SERVICE_ROLE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    clients.push(privileged);
+    // Custom membership is a complete one-row INSERT. A Gym membership also
+    // needs an initial target-version row in the same transaction.
+    const dmlGroup = await remotes[0].command(
+      makeCommand("create_draft", {
+        name: "HTTP DML control",
+        template: "custom",
+        schedule_kind: "every",
+        time_zone: "Asia/Riyadh",
+        round_weekday: 1,
+      }),
     );
+    check(
+      dmlGroup.ok && dmlGroup.groupId,
+      "create the valid Custom membership DML fixture",
+    );
+    const dmlCreated = await resumed
+      .from("shared_groups")
+      .select("created_at")
+      .eq("id", dmlGroup.groupId!)
+      .single();
+    check(
+      !dmlCreated.error && dmlCreated.data?.created_at,
+      "read Custom DML fixture creation instant",
+    );
+    const dmlFirst = publicationDate(
+      Math.max(Date.now(), Date.parse(dmlCreated.data!.created_at)),
+      "Asia/Riyadh",
+      1,
+    );
+    check(
+      dmlFirst > groupDate(dmlCreated.data!.created_at, "Asia/Riyadh"),
+      "Custom DML publication is strictly after local creation",
+    );
+    check(
+      (
+        await remotes[0].command(
+          makeCommand("publish", {
+            group_id: dmlGroup.groupId!,
+            expected_revision: 1,
+            first_round_date: dmlFirst,
+          }),
+        )
+      ).ok,
+      "publish the valid Custom membership DML fixture",
+    );
+    const joinedAt = new Date().toISOString();
+    const membershipBody = {
+      group_id: dmlGroup.groupId!,
+      user_id: users[2].id,
+      joined_at: joinedAt,
+      eligible_round: eligibleRound(dmlFirst, joinedAt, "Asia/Riyadh"),
+      initial_gym_target: null,
+    };
+    const controlId = randomUUID();
+    // Retain this valid B membership in the disposable fixture: permanent
+    // membership deletion is forbidden. Negative attempts use nonmember C.
+    const control = await privileged
+      .from("shared_memberships")
+      .insert({ ...membershipBody, user_id: users[1].id, id: controlId });
+    check(
+      control.status === 201 && !control.error,
+      `membership body passes constraints under the disposable privileged control (${control.status}, ${control.error?.code ?? "ok"})`,
+    );
+    const controlRows = await privileged
+      .from("shared_memberships")
+      .select("id")
+      .eq("id", controlId);
+    check(
+      !controlRows.error && controlRows.data.length === 1,
+      "privileged validity control actually inserted its fixture row",
+    );
+    dml.push({
+      actor: "privileged validity control",
+      status: control.status,
+      sqlstate: null,
+      rows: controlRows.data!.length,
+    });
+    for (const [actor, expectedStatus, label] of [
+      [b, 403, "authenticated member"],
+      [anonymous, 401, "anonymous caller"],
+    ] as const) {
+      const id = randomUUID();
+      const direct = await actor
+        .from("shared_memberships")
+        .insert({ ...membershipBody, id });
+      check(
+        direct.status === expectedStatus &&
+          direct.error?.code === "42501" &&
+          /permission denied|row-level security/i.test(direct.error.message),
+        `${label} valid membership INSERT is rejected by permission/RLS, not a malformed payload`,
+      );
+      const rows = await privileged
+        .from("shared_memberships")
+        .select("id")
+        .eq("id", id);
+      check(
+        !rows.error && rows.data.length === 0,
+        `${label} unauthorized INSERT created no row (privileged read)`,
+      );
+      dml.push({
+        actor: label,
+        status: direct.status,
+        sqlstate: direct.error!.code,
+        rows: rows.data!.length,
+      });
+    }
     const privateRead = await b
       .schema("facta_private")
       .from("shared_invite_tokens")
@@ -469,6 +593,7 @@ export async function runSupabaseAcceptance(settings: Settings) {
       assertions,
       checks,
       jwt,
+      dml,
       claimGaps,
       identity:
         "real local GoTrue-issued users and JWTs; Kong/PostgREST HTTP; no synthetic identity bridge",

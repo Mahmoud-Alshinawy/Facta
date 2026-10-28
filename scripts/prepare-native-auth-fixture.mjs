@@ -6,6 +6,7 @@ import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { nativeScoringPlan } from "../apps/desktop/src/test/sharedAcceptanceDates.ts";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const area = path.join(root, "tmp/supabase-acceptance");
 const settings = JSON.parse(
@@ -45,10 +46,11 @@ const sql = (source) =>
 const require = createRequire(path.join(root, "apps/desktop/package.json"));
 const { createClient } = require("@supabase/supabase-js");
 const options = { auth: { persistSession: false, autoRefreshToken: false } };
+const verifyBoundaries = process.argv.includes("--verify-boundaries");
 const file = path.join(area, "native-users.json");
 let saved;
 try {
-  saved = JSON.parse(await readFile(file, "utf8"));
+  if (!verifyBoundaries) saved = JSON.parse(await readFile(file, "utf8"));
 } catch (error) {
   if (error.code !== "ENOENT") throw error;
 }
@@ -98,95 +100,179 @@ try {
         display_name: `Native person ${n}`,
       });
   }
-  const past = new Date(Date.now() - 14 * 86400000),
-    first = new Date(past);
-  while (first.getUTCDay() !== 1) first.setUTCDate(first.getUTCDate() + 1);
-  let groupId;
-  try {
+  const setClock = (instant, read = false) => {
+    const expression = instant
+      ? `'${instant}'::timestamptz`
+      : "clock_timestamp()";
+    const names = read ? ["sg_now", "sg_read_now"] : ["sg_now"];
     sql(
-      `create or replace function facta_private.sg_now() returns timestamptz language sql volatile set search_path='' as $$ select '${past.toISOString()}'::timestamptz $$;`,
+      names
+        .map(
+          (name) =>
+            `create or replace function facta_private.${name}() returns timestamptz language sql volatile set search_path='' as $$ select ${expression} $$;`,
+        )
+        .join("\n"),
     );
-    const draft = await command(clients[0], "create_draft", {
-      name: "Real Auth native group",
-      template: "gym",
-      schedule_kind: "n",
-      target: 2,
-      time_zone: "Asia/Riyadh",
-      round_weekday: 1,
-    });
-    groupId = draft.group_id;
-    await command(clients[0], "publish", {
-      group_id: groupId,
-      expected_revision: 1,
-      first_round_date: first.toISOString().slice(0, 10),
-    });
-    const invite = await command(clients[0], "issue_link", {
-      group_id: groupId,
-    });
-    await command(clients[1], "join", { token: invite.token, target: 2 });
-  } finally {
-    sql(
-      "create or replace function facta_private.sg_now() returns timestamptz language sql volatile set search_path='' as $$ select clock_timestamp() $$;",
-    );
+  };
+  const check = (ok, label) => {
+    if (!ok) throw Error(label);
+    assertions++;
+  };
+  let assertions = 0;
+  const cases = verifyBoundaries
+    ? [
+        "2026-10-26",
+        "2026-10-27",
+        "2026-10-28",
+        "2026-10-29",
+        "2026-10-30",
+        "2026-10-31",
+        "2026-11-01",
+      ].map((day) => Date.parse(`${day}T09:00:00Z`))
+    : [Date.now()];
+  const results = [];
+  for (const now of cases) {
+    const plan = nativeScoringPlan(now);
+    let groupId;
+    try {
+      check(
+        plan.firstRoundDate > plan.creationDate,
+        "first round is strictly after group-local fixture creation",
+      );
+      setClock(plan.createdAt);
+      const draft = await command(clients[0], "create_draft", {
+        name: "Real Auth native group",
+        template: "gym",
+        schedule_kind: "n",
+        target: 2,
+        time_zone: plan.zone,
+        round_weekday: plan.roundWeekday,
+      });
+      groupId = draft.group_id;
+      await command(clients[0], "publish", {
+        group_id: groupId,
+        expected_revision: 1,
+        first_round_date: plan.firstRoundDate,
+      });
+      const invite = await command(clients[0], "issue_link", {
+        group_id: groupId,
+      });
+      await command(clients[1], "join", { token: invite.token, target: 2 });
+      // Boundary cases move only domain command/view clocks, never Auth/JWT.
+      setClock(
+        verifyBoundaries ? plan.actionCapturedAt : null,
+        verifyBoundaries,
+      );
+      const snapshot = async () => {
+        const r = await clients[0].rpc("facta_shared_snapshot", {
+          history_from: plan.seedDate,
+          history_until: plan.today,
+        });
+        if (r.error) throw Error("Disposable snapshot failed");
+        return r.data;
+      };
+      const before = await snapshot();
+      const own = before.memberships.find(
+        (m) => m.group_id === groupId && m.user_id === users[0].id,
+      );
+      await command(clients[0], "set_checkin", {
+        group_id: groupId,
+        membership_id: own.id,
+        date: plan.seedDate,
+        captured_at: plan.seedCapturedAt,
+        completed: true,
+        base_revision: 0,
+      });
+      const seeded = await snapshot();
+      const score50 = seeded.scores.find(
+        (r) => r.group_id === groupId && r.user_id === users[0].id,
+      );
+      check(
+        score50 &&
+          score50.round_start === plan.seedDate &&
+          score50.completed_days === 1 &&
+          score50.target === 2 &&
+          Number(score50.adherence_pct) === 50,
+        `fixture ${plan.today}: actual server seed is 1 of 2 / 50% in the current round`,
+      );
+      if (verifyBoundaries) {
+        await command(clients[0], "set_checkin", {
+          group_id: groupId,
+          membership_id: own.id,
+          date: plan.today,
+          captured_at: plan.actionCapturedAt,
+          completed: true,
+          base_revision: 0,
+        });
+        const after = await snapshot();
+        const score100 = after.scores.find(
+          (r) => r.group_id === groupId && r.user_id === users[0].id,
+        );
+        check(
+          score100 &&
+            score100.round_start === score50.round_start &&
+            score100.completed_days === 2 &&
+            score100.target === 2 &&
+            Number(score100.adherence_pct) === 100,
+          `fixture ${plan.today}: actual server action reaches 2 of 2 / 100% in the same round`,
+        );
+        results.push({
+          today: plan.today,
+          creationDate: plan.creationDate,
+          firstRoundDate: plan.firstRoundDate,
+          roundWeekday: plan.roundWeekday,
+          roundStart: score50.round_start,
+          before: 50,
+          after: 100,
+        });
+      } else {
+        if (!saved) {
+          const goal = await clients[0].from("goals").insert({
+            id: randomUUID(),
+            user_id: users[0].id,
+            title: "Native independent personal goal",
+            category: "must-do",
+            date: plan.today,
+            completed: false,
+            repeat: "none",
+            notifications_enabled: false,
+            notification_message: "",
+          });
+          if (goal.error) throw Error("Disposable personal goal failed");
+        }
+        await writeFile(
+          file,
+          JSON.stringify({
+            api: settings.API_URL,
+            key: settings.ANON_KEY,
+            groupId,
+            today: plan.today,
+            plan,
+            users,
+          }),
+        );
+        results.push({ today: plan.today, groupId, before: 50 });
+      }
+    } finally {
+      setClock(null, true);
+    }
   }
-  const today = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Riyadh",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
-  const yesterday = new Date(Date.parse(`${today}T00:00:00Z`) - 86400000)
-    .toISOString()
-    .slice(0, 10);
-  const snapshot = await clients[0].rpc("facta_shared_snapshot", {
-    history_from: yesterday,
-    history_until: today,
-  });
-  if (snapshot.error) throw Error("Disposable snapshot failed");
-  const own = snapshot.data.memberships.find(
-    (m) => m.group_id === groupId && m.user_id === users[0].id,
-  );
-  await command(clients[0], "set_checkin", {
-    group_id: groupId,
-    membership_id: own.id,
-    date: yesterday,
-    captured_at: `${yesterday}T09:00:00Z`,
-    completed: true,
-    base_revision: 0,
-  });
-  if (!saved) {
-    const goal = await clients[0].from("goals").insert({
-      id: randomUUID(),
-      user_id: users[0].id,
-      title: "Native independent personal goal",
-      category: "must-do",
-      date: today,
-      completed: false,
-      repeat: "none",
-      notifications_enabled: false,
-      notification_message: "",
-    });
-    if (goal.error) throw Error("Disposable personal goal failed");
-  }
+  const result = {
+    ok: true,
+    assertions,
+    cases: results,
+    clocks: "domain clocks restored; Auth/JWT clocks unchanged",
+    nativeAccounts: 2,
+    reusedAccounts: !!saved,
+  };
   await writeFile(
-    file,
-    JSON.stringify({
-      api: settings.API_URL,
-      key: settings.ANON_KEY,
-      groupId,
-      today,
-      users,
-    }),
+    path.join(
+      area,
+      verifyBoundaries ? "boundary-result.json" : "native-fixture-result.json",
+    ),
+    JSON.stringify(result, null, 2),
   );
-  console.log(
-    JSON.stringify({
-      nativeAccounts: 2,
-      reusedAccounts: !!saved,
-      groupId,
-      today,
-      clocks: "domain setup only; restored; Auth/JWT clocks unchanged",
-    }),
-  );
+  console.log(JSON.stringify(result, null, 2));
 } finally {
   for (const client of [admin, ...clients]) {
     await client.auth.stopAutoRefresh();

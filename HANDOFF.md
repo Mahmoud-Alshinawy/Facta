@@ -1,6 +1,52 @@
-# Handoff: branch 3 — real Auth/native acceptance checkpoint
+# Handoff: branch 3 — acceptance-test review corrections
 
 ## Current decision (28 October 2026)
+
+- Owner reviewed **4b59939**; keep branch unmerged. Fix only acceptance DML/date
+  issues, rerun affected suites/required checks, propose a deployment-side claim
+  policy, commit/push and STOP for review. **Full acceptance remains incomplete.**
+- Membership INSERT is now complete/valid for Custom (Gym needs a target version
+  in the same transaction). Privileged B-row control returns **201**, stored row
+  count **1**. Authenticated member and anonymous C-row attempts require actual
+  permission/RLS errors: **403/42501** and **401/42501**, then privileged reads
+  prove **zero rows** for each attempted UUID. No any-error success assertion.
+  Control rows stay in the disposable fixture; no immutable history deletion.
+  Red control exposed old malformed shape as **400/23514**.
+- Shared acceptance date planner uses existing group-local date helpers. Both
+  HTTP publication fixtures read authoritative creation instants and choose
+  strictly later local round dates. Native fixture starts its round yesterday,
+  keeping seed/action in one round even on Monday; seed capture is local noon.
+- **15 focused boundary cases pass** (six initially failed old calculations):
+  Riyadh midnight, Los Angeles/Kiritimati, year boundary, all seven weekdays and
+  Monday rollover and exact DML eligibility cutoffs. **21 real Auth/HTTP scoring
+  boundary assertions pass** with
+  controlled domain dates 26 Oct–1 Nov: actual 50→100 rows in the same round.
+  These are server domain-date replays, not seven-day native visual acceptance.
+- Final **59 Auth/HTTP assertions pass**; dml status/code/row evidence is saved.
+  Overall **ok:false / exit 1** deliberately retains the unchanged signed
+  wrong-audience/issuer findings. **2** current-day preparation assertions and
+  **12** native background assertions pass with the corrected fixture.
+  Both domain clocks restored in finally; Auth/JWT clocks unchanged.
+- Deployment-side proposal: docs/shared-goals-deployment-policy.md. Mandatory
+  issuer/audience contract, PostgREST audience plus pre-request guard, Auth
+  enforcement and direct-origin bypass constraints, explicit public/admin
+  routing and staging negative/positive verification. **Proposal only**; no
+  live/local deployment policy applied, no client-side substitution.
+- Required checks rerun: frozen install; desktop/widgets/calendar TypeScript;
+  **452 desktop / 194 calendar tests**; both builds (desktop PORT=1420
+  BASE_PATH=/); both production Windows cargo checks. Existing chunk warning.
+  No app, dependency, migration/RLS or scoring source changes. No standalone
+  SQL/concurrency or full visual rerun; older evidence below is historical.
+- Computer Use authorized again for isolated apps; these focused tests needed
+  no UI input. All production-native gates remain open, as detailed in
+  docs/shared-goals-auth-native.md. No installer/production handler change.
+- Isolated native app/test handler and core disposable stack remain available
+  for resumption. Installed planner/live Supabase and unrelated .agents/ and
+  skills-lock.json untouched. STOP for review after push. Do not merge.
+
+## Initial real Auth/native checkpoint (4b59939; historical)
+
+### Decision at that checkpoint (28 October 2026)
 
 - Owner approved **dcfe07a**; Settings preview finding is resolved. Authorized
   remaining acceptance only, then checks/report/commit/push and STOP for final

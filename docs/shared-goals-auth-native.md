@@ -4,6 +4,74 @@
 authorized remaining acceptance only. **Full acceptance remains incomplete.
 Stop for final review; do not merge.** No application or migration changes.
 
+## Review of 4b59939: corrected acceptance tests
+
+**Current result remains incomplete; branch stays unmerged.** No audience/issuer
+policy was applied. [Deployment-side policy proposal](shared-goals-deployment-policy.md)
+defines the proposed claims, server enforcement, origin-bypass requirements and
+verification matrix. It is not client-side validation or a verified gate.
+
+- Replaced the malformed membership INSERT/any-error assertion. A Custom group
+  makes the membership a valid single-row INSERT; Gym membership additionally
+  requires a target-version row in the same transaction. The complete body has
+  a valid joined instant, strictly future eligible round and null Custom target.
+  A separate privileged B-row control proves the constraints accept this shape;
+  unauthorized attempts target nonmember C with fresh UUIDs. The control stays
+  in the disposable fixture, respecting immutable membership history.
+- The red validity control rejected the previous malformed shape with HTTP
+  **400 / SQLSTATE 23514**. Final real HTTP evidence is explicit, not “any error”:
+
+  | Caller                      | HTTP | SQLSTATE                      | Privileged read of its UUID |
+  | --------------------------- | ---- | ----------------------------- | --------------------------- |
+  | Privileged validity control | 201  | none                          | one inserted control row    |
+  | Authenticated group member  | 403  | 42501, permission/RLS message | zero rows                   |
+  | Anonymous caller            | 401  | 42501, permission/RLS message | zero rows                   |
+
+- Both publication fixtures now use the group-local date, the authoritative
+  server creation instant and a strictly later round date. No UTC date slicing
+  determines the publication weekday. The native seed/action pair starts its
+  round on yesterday, so both days count even when today is Monday. The seed
+  capture resolves group-local noon; creation/publication and replay use the
+  same shared test planner.
+- **15 focused Vitest boundary cases passed**, after six reproduced failures
+  with the old calculations. They cover just before/at Riyadh midnight, UTC
+  ahead of Los Angeles, Kiritimati, a year boundary, all seven native weekdays,
+  the Monday midnight transition and join eligibility immediately before/at a
+  round start. The fixture CLI shares the TypeScript planner through the
+  existing Node 24 runtime; no dependency was added.
+- **21 real-server boundary assertions passed** across 26 October–1 November 2026. Each controlled domain-date case publishes strictly after creation and
+  verifies actual scoring-view rows at **1 of 2 / 50%**, then **2 of 2 / 100%**
+  in the same round. Monday uses Sunday 25 October as round/seed start and Monday
+  26 October as the second occurrence. This is a domain-clock replay with real
+  Auth/HTTP, not a claim of native UI testing on seven physical dates.
+- Current-day fixture preparation passed **2 assertions**, then the actual
+  native polling/export/conflict/leave regression passed **12 assertions** with
+  that corrected fixture. Both domain clock functions were restored; Auth/JWT
+  clocks were never moved. Computer Use was reauthorized but no UI input was
+  needed for these focused reruns; production-native gates below remain open.
+- Final full Auth/HTTP run: **59 assertions passed**, with `dml` status/code/row
+  evidence in `http-result.json`. Its overall **`ok:false` / exit 1** still records
+  the unchanged wrong-audience/issuer findings. The prior 48-assertion result
+  did not establish valid unauthorized membership DML or its absence; that claim
+  is superseded by the control and negative checks above.
+- Required checks passed again: frozen install; all three TypeScript checks;
+  **452 desktop / 194 calendar tests**; desktop PORT=1420 BASE_PATH=/ build;
+  widgets build; both production Windows cargo checks. Existing chunk warning
+  remains. No application, migration, deployment configuration or dependency
+  changes, and no standalone SQL/concurrency or full visual rerun for this fix.
+
+Reproduction: the existing HTTP/native entries below, plus
+`node scripts/prepare-native-auth-fixture.mjs --verify-boundaries` for the
+seven-date scoring replay and `vitest run src/test/sharedAcceptanceDates.test.ts`
+in `apps/desktop` for focused logic. `boundary-result.json` and
+`native-fixture-result.json` accompany the existing ignored result files.
+Run clock-moving fixture suites sequentially; they restore both domain clocks
+in `finally` and use only the label-checked disposable container.
+
+The remaining sections record the original 4b59939 checkpoint. The corrected
+evidence above supersedes its affected DML/date claims and counts; all other
+limitations remain unchanged.
+
 ## Docker diagnosis and recovery
 
 - Reproduced with `docker desktop start` and `docker info`: Linux engine pipe
