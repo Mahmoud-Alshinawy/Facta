@@ -31,7 +31,22 @@ describe("strict Facta routes", () => {
       refreshToken: "refresh",
     });
   });
+  it("accepts focus links as Windows forwards them to a running app", () => {
+    // Single-instance forwarding serializes a path-less URL with a "/" path.
+    expect(parseFactaLink("facta://focus/")).toEqual({ kind: "focus" });
+    expect(parseFactaLink("facta://focus/?section=notes")).toEqual({
+      kind: "focus",
+      section: "notes",
+    });
+    expect(parseFactaLink(`facta://focus/?section=notes&note=${id}`)).toEqual({
+      kind: "focus",
+      section: "notes",
+      noteId: id,
+    });
+  });
   it.each([
+    "facta://focus//?section=notes",
+    "facta://focus/notes",
     `https://join/${token}`,
     `facta://join/${token}?x=1`,
     `facta://join/${token}/`,

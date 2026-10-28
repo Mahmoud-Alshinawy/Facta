@@ -16,7 +16,8 @@ export function parseFactaLink(raw: string): FactaLink | null {
   const group = /^facta:\/\/group\/([a-fA-F0-9-]{36})$/.exec(raw);
   if (group && isUuid(group[1]))
     return { kind: "group", id: group[1].toLowerCase() };
-  if (/^facta:\/\/focus(?:\?[^#]*)?$/.test(raw)) {
+  // A running app receives forwarded links re-serialized as facta://focus/?…
+  if (/^facta:\/\/focus\/?(?:\?[^#]*)?$/.test(raw)) {
     const p = new URL(raw).searchParams,
       keys = [...p.keys()];
     if (

@@ -1,6 +1,34 @@
 # Handoff: branch 3 — accepted claim risk, local-time deadlines
 
-## Current state (28 October 2026, review fixes after f77e60b)
+## Current state (28 October 2026, task 5 on the real install)
+
+- After ee244c0 (review fixes), task 5 ran on the owner's real install.
+  Details and the full result table: docs/shared-goals-auth-native.md (top).
+  **Do not merge.**
+- **Bug found and fixed:** warm `facta://focus` links (widget "Open Facta",
+  note links) were ignored when Facta was already running. Single-instance
+  forwarding delivers them as `facta://focus/?…`, which the parser rejected.
+  The parser now accepts an optional `/`; 3 new Vitest cases; rebuilt,
+  reinstalled and rechecked on the real install.
+- Passed on the installed build: silent upgrade of both apps, the `facta://`
+  handler moved from a stale debug exe to the install, signed-in restart, the
+  `--hidden` autostart command (run by hand, not a real logon), cold and warm
+  links, widget auto-launch + bottom-stacking + file watching, and a Wi-Fi
+  outage/reconnect on two networks (offline goals kept and synced).
+- Finding (not fixed): during an outage the footer shows "Synced · just now"
+  for ~49 s, because `navigator.onLine` stays true on this machine. It only
+  switches to "Offline" after a request fails.
+- Open: literal tray Quit with pending writes (right-click needed), UI account
+  switch/sign-out (owner's password), real logon autostart, the live
+  migration for all shared-goal flows, two devices.
+- Backup of the pre-install data: tmp/real-install-backup-20261028. Test goals
+  "Task 5 offline write" / "… 2" and one Tasks widget remain in the owner's
+  account.
+- Checks for the link fix: desktop tsc, **455** desktop tests, desktop build
+  (PORT=1420 BASE_PATH=/), desktop cargo check. Widgets and calendar
+  unchanged since ee244c0 (212 calendar).
+
+## Review fixes after f77e60b (ee244c0; historical)
 
 - Owner/reviewer approved **f77e60b** except one should-fix. Fixed here, then
   continue with task 5 on the real install. **Do not merge.**
