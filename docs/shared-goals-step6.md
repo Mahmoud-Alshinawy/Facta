@@ -4,6 +4,15 @@ Owner approved **9d54740** and authorized Step 6. Work ran on Windows on
 27–28 October 2026, on `feat/shared-goals`. **This is partial acceptance, not
 full backend/native acceptance.** Stop for final branch review; do not merge.
 
+## Remaining acceptance follow-up (after approved dcfe07a)
+
+See [real Auth/HTTP and native-provider evidence](shared-goals-auth-native.md)
+for Docker diagnosis/recovery, actual local GoTrue/JWT/PostgREST checks and
+background native polling/leave cleanup. Full acceptance is still incomplete:
+strict audience/issuer verification and production-native gates remain open.
+The earlier synthetic identity and test-scheme evidence below remains historical
+and separate; the follow-up does not turn it into production installer evidence.
+
 ## Review of 53cd72d: Settings selection beyond the export cap
 
 - The actual export prioritizes configured same-account selections, but Settings

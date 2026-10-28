@@ -8,7 +8,27 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const fixture = process.argv[2];
 if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(fixture ?? ""))
   throw Error("Loopback required");
-const area = path.join(root, "tmp/shared-step6");
+const realAuth = process.argv.includes("--real-auth");
+if (
+  realAuth &&
+  (fixture !== "http://127.0.0.1:56421" ||
+    process.argv.includes("--foreground-companion"))
+)
+  throw Error(
+    "Real Auth checks require the dedicated local stack and normal widget stacking",
+  );
+const areaName = realAuth ? "shared-native-auth" : "shared-step6";
+const scheme = realAuth ? "facta-acceptance" : "facta-step6";
+const area = path.join(root, "tmp", areaName);
+const local = realAuth
+  ? JSON.parse(
+      await readFile(
+        path.join(root, "tmp/supabase-acceptance/status.json"),
+        "utf8",
+      ),
+    )
+  : null;
+if (local && local.API_URL !== fixture) throw Error("Disposable URL mismatch");
 await mkdir(area, { recursive: true });
 const require = createRequire(path.join(root, "apps/desktop/package.json"));
 const { build } = await import(pathToFileURL(require.resolve("vite")).href);
@@ -17,19 +37,36 @@ const tailwind = (
 ).default;
 await writeFile(
   path.join(area, "desktop.html"),
-  '<!doctype html><html><body><div id="root"></div><script type="module" src="/apps/desktop/src/test/sharedAcceptance.tsx"></script></body></html>',
+  `<!doctype html><html><body><div id="root"></div><script type="module" src="/apps/desktop/src/${realAuth ? "main" : "test/sharedAcceptance"}.tsx"></script></body></html>`,
 );
 await build({
   root,
   configFile: false,
   envDir: path.join(root, "tmp/shared-client-empty-env"),
   envPrefix: "FACTA_TEST_UNUSED_",
+  ...(realAuth
+    ? {
+        define: {
+          "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(fixture),
+          "import.meta.env.VITE_SUPABASE_ANON_KEY": JSON.stringify(
+            local.ANON_KEY,
+          ),
+          "import.meta.env.VITE_AUTH_REDIRECT_URL": JSON.stringify(
+            `${scheme}://auth/callback`,
+          ),
+        },
+      }
+    : {}),
   resolve: {
     alias: {
-      "@/hooks/useAuth": path.join(
-        root,
-        "apps/desktop/src/test/sharedAcceptanceBridge.tsx",
-      ),
+      ...(!realAuth
+        ? {
+            "@/hooks/useAuth": path.join(
+              root,
+              "apps/desktop/src/test/sharedAcceptanceBridge.tsx",
+            ),
+          }
+        : {}),
       "@": path.join(root, "apps/desktop/src"),
       react: path.dirname(require.resolve("react/package.json")),
       "react-dom": path.dirname(require.resolve("react-dom/package.json")),
@@ -45,7 +82,7 @@ await build({
         if (id.endsWith("/components/DeepLinkBridge.tsx"))
           return code.replace(
             "parseFactaLink(raw)",
-            'parseFactaLink(raw.replace(/^facta-step6:/, "facta:"))',
+            `parseFactaLink(raw.replace(/^${scheme}:/, "facta:"))`,
           );
       },
     },
@@ -74,21 +111,24 @@ for (const kind of ["desktop", "widgets"]) {
   const manifest = await readFile(path.join(dest, "Cargo.toml"), "utf8");
   await writeFile(
     path.join(dest, "Cargo.toml"),
-    manifest.replace(/^name = ".*"/m, `name = "facta-step6-${kind}"`),
+    manifest.replace(
+      /^name = ".*"/m,
+      `name = "facta-${realAuth ? "acceptance" : "step6"}-${kind}"`,
+    ),
   );
   const lock = await readFile(path.join(dest, "Cargo.lock"), "utf8");
   await writeFile(
     path.join(dest, "Cargo.lock"),
     lock.replace(
       `name = "${kind === "desktop" ? "facta" : "facta-widgets"}"`,
-      `name = "facta-step6-${kind}"`,
+      `name = "facta-${realAuth ? "acceptance" : "step6"}-${kind}"`,
     ),
   );
   const config = JSON.parse(
     await readFile(path.join(source, "tauri.conf.json"), "utf8"),
   );
-  config.identifier = `app.facta.step6.${kind}`;
-  config.productName = `Facta Step6 ${kind}`;
+  config.identifier = `app.facta.${realAuth ? "acceptance" : "step6"}.${kind}`;
+  config.productName = `Facta ${realAuth ? "Acceptance" : "Step6"} ${kind}`;
   // Absolute Windows drive paths can decode as URL schemes in FrontendDist.
   config.build.frontendDist = path
     .relative(
@@ -103,9 +143,9 @@ for (const kind of ["desktop", "widgets"]) {
   config.app.security.csp =
     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:* ipc: http://ipc.localhost; img-src 'self' data: blob:; font-src 'self' data:";
   if (kind === "desktop") {
-    config.plugins["deep-link"].desktop.schemes = ["facta-step6"];
-    config.app.windows[0].url = `tmp/shared-step6/desktop.html?fixture=${fixture}`;
-    config.app.windows[0].title = "Facta Step6 isolated";
+    config.plugins["deep-link"].desktop.schemes = [scheme];
+    config.app.windows[0].url = `tmp/${areaName}/desktop.html${realAuth ? "" : `?fixture=${fixture}`}`;
+    config.app.windows[0].title = `Facta ${realAuth ? "Auth" : "Step6"} isolated`;
     config.app.windows[0].dataDirectory = path.join(area, "webview-desktop");
   }
   await writeFile(
@@ -134,7 +174,7 @@ for (const kind of ["desktop", "widgets"]) {
       `tauri::include_image!("${root.replaceAll("\\", "/")}/apps/desktop/public/`,
     );
     if (kind === "widgets") {
-      text = text.replaceAll("facta://", "facta-step6://");
+      text = text.replaceAll("facta://", `${scheme}://`);
       if (process.argv.includes("--foreground-companion"))
         text = text.replace(".always_on_bottom(true)", ".always_on_top(true)");
       text = text.replace(
@@ -142,14 +182,16 @@ for (const kind of ["desktop", "widgets"]) {
         `.data_directory(std::path::PathBuf::from(${JSON.stringify(path.join(area, "webview-widgets").replaceAll("\\", "/"))})).skip_taskbar(true)`,
       );
     } else if (name === "lib.rs") {
-      text = text.replace(
-        "fn request_quit(",
-        "#[tauri::command]\nfn acceptance_quit(app: tauri::AppHandle) { request_quit(&app, 0); }\n\nfn request_quit(",
-      );
-      text = text.replace(
-        "finish_quit,",
-        "acceptance_quit,\n            finish_quit,",
-      );
+      if (!realAuth)
+        text = text.replace(
+          "fn request_quit(",
+          "#[tauri::command]\nfn acceptance_quit(app: tauri::AppHandle) { request_quit(&app, 0); }\n\nfn request_quit(",
+        );
+      if (!realAuth)
+        text = text.replace(
+          "finish_quit,",
+          "acceptance_quit,\n            finish_quit,",
+        );
       // Test copies never resolve/launch the installed companion.
       const start = text.indexOf("fn launch_widget_app("),
         end = text.indexOf("\n#[tauri::command]", start);
@@ -163,5 +205,5 @@ for (const kind of ["desktop", "widgets"]) {
   }
 }
 console.log(
-  "Prepared isolated sources and WebView profiles under tmp/shared-step6; build each with tauri/custom-protocol and copy to unique executable names.",
+  `Prepared isolated sources and WebView profiles under tmp/${areaName}; ${realAuth ? "production AuthProvider/SyncProvider, local real Auth; separate test scheme and data paths" : "synthetic identity"}. Build each with tauri/custom-protocol and copy to unique executable names.`,
 );

@@ -1,6 +1,63 @@
-# Handoff: branch 3 Step 6 — Settings review fix
+# Handoff: branch 3 — real Auth/native acceptance checkpoint
 
 ## Current decision (28 October 2026)
+
+- Owner approved **dcfe07a**; Settings preview finding is resolved. Authorized
+  remaining acceptance only, then checks/report/commit/push and STOP for final
+  review. **Full acceptance remains incomplete. Do not merge.**
+- Docker diagnosis: stale zero-byte runtime reparse objects fail with Error 1920.
+  Preserved only stopped Docker/run as run.facta-acceptance-20261028-1; fresh run
+  advanced startup to a separate docker-secrets-engine socket error. Owner opened
+  Engine 29.7.2; it was available again after the laptop crash/normal startup.
+  No permanent-repair claim, data reset/prune/VHD deletion/WSL unregister or
+  settings/security changes. Original runtime backup remains. Ordinary rename
+  and fresh AF_UNIX bind passed; post-disposal AF_UNIX rename was inconclusive.
+- Disposable Supabase CLI **2.122.0**, project facta-acceptance-20261028 under
+  ignored tmp/supabase-acceptance: API 56421, DB 56422, mail capture 56424.
+  All four copied migrations applied; real PostgreSQL 17.11/GoTrue/PostgREST 16.5.
+  No live/.env/linked project. Unused owned services stopped to reduce load.
+- Final post-crash Auth/HTTP run: **48 assertions passed**, real signup/mail
+  confirmation/sign-in, persisted session/refresh, recovery/password update,
+  logout/revoked refresh, natural expiry, production remote receipt/join/date/
+  Unicode mapping, anonymous/cross-account HTTP, RLS/private-schema rejection.
+  Overall result intentionally **ok:false**: signed wrong-audience/wrong-issuer
+  probes return Auth 200 / REST 200 on local defaults. Valid same-signer control
+  passes; altered/unsigned/expired/future-nbf tokens reject (Auth 403 / REST 401).
+  This is not evidence of forging without the disposable server key. Strict
+  claim policy/configuration and verification remain open; no live policy change.
+- Native real-auth mode mounts actual main.tsx/AuthProvider/SyncProvider, own
+  app IDs/data, facta-acceptance test scheme, normal stacking; no identity alias,
+  manually opened engines, test Quit command or foreground override. Only local
+  domain creation time was temporarily moved/restored; Auth/JWT clocks unchanged.
+  Signed-out startup observed; real HTTP password-grant session dispatched to
+  the test callback. Actual Rust export matched account + personal goal + 50%/0%
+  shared rows; audit showed automatic token rotation.
+- **12 background native assertions passed**, rerun with a fresh group: two real
+  sessions, immutable receipt/stale-revision conflict, automatic native 50→100
+  export/scoring parity, then ownership/leave purge with personal goal unchanged.
+  These are file/HTTP results, not pointer/visual or two-hardware-device claims.
+- Owner pressed Escape and then requested no screen takeover during class.
+  Computer Use stopped; no later UI input. No Windows Sandbox/known disposable
+  VM is available. Production installer/facta://, literal tray Quit, real-Auth
+  native restart, companion interaction/watching, normal stacking, UI account
+  switch, OS-network loss/reconnect and separate hardware remain unverified.
+- Required checks passed: frozen install; desktop/widgets/calendar TypeScript;
+  **437 desktop / 194 calendar tests**; both builds (desktop PORT=1420
+  BASE_PATH=/); both production Windows cargo checks. Existing desktop chunk
+  warning remains. No app/dependency/migration/RLS/scoring source changes.
+  Earlier 567/243/94 and standalone SQL/concurrency evidence is historical,
+  not newly rerun or a substitute for the actual HTTP results above.
+- Exact results, reproduction and gaps: **docs/shared-goals-auth-native.md**;
+  prior report links forward to it. Ignored http-result.json/native-background-
+  result.json retain evidence. CLI source marker moved out of supabase/.temp.
+- The isolated window, test handler and core local services remain available
+  for resumption; left alone at owner's request, not force-closed. Never operate
+  on installed Facta or replace its handler. Live Supabase, installed planner
+  data, .agents/ and skills-lock.json untouched. No merge; stop for final review.
+
+## Settings review fix (dcfe07a; approved, historical)
+
+### Decision at that checkpoint (28 October 2026)
 
 - Owner reviewed **53cd72d** and requested the Settings configured-group fix
   only. **Full acceptance remains incomplete; STOP for review after commit/push.
