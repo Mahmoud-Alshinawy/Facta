@@ -1,6 +1,33 @@
-# Handoff: branch 3 Step 6 — final review checkpoint
+# Handoff: branch 3 Step 6 — Settings review fix
 
 ## Current decision (28 October 2026)
+
+- Owner reviewed **53cd72d** and requested the Settings configured-group fix
+  only. **Full acceptance remains incomplete; STOP for review after commit/push.
+  Do not merge.** Preserve all Auth/JWT/PostgREST and production-native gates
+  recorded below and in docs/shared-goals-step6.md.
+- Settings Progress preview now prioritizes its selected group only when the
+  widget's account matches the active engine account, using the same bounded
+  projection preference as the actual export. The card uses that same ID.
+- New full Settings regression creates 17 additional authorized Gym groups via
+  actual SDK/RPC commands, joins a second eligible member and confirms two days.
+  Before the fix it failed on the missing selected-group name beyond the first
+  16 choices. **78 assertions now pass**, including the name, confirmed 100%/0%
+  rows/ranks, switching to an earlier group and reselecting the late group.
+- Required checks passed: frozen install; all three TypeScript checks;
+  **437 desktop / 194 calendar tests**; both builds (desktop PORT=1420
+  BASE_PATH=/); both production Windows cargo checks. Existing chunk warning
+  remains. Integration reruns: **567 full-App / 243 mounted / 94 data assertions**
+  passed, including creation/recovery, score/date parity and account cleanup.
+- No standalone SQL/security/concurrency suite or native rerun for this focused
+  preview fix; prior evidence and its exact limits remain historical.
+- Installed planner/live Supabase and unrelated .agents/ and skills-lock.json
+  remain untouched. No schema/dependency changes. All browser/fixture runs
+  exited; the owned disposable PostgreSQL cluster was stopped normally.
+
+## Initial Step 6 checkpoint (53cd72d; historical)
+
+### Decision at that checkpoint (28 October 2026)
 
 - Owner approved **9d54740**, completing Step 5, and authorized Step 6 only.
   Step 6 independent work is complete; **STOP for final branch review. Do not

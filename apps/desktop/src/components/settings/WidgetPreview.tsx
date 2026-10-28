@@ -254,10 +254,14 @@ function ProgressPreview({
   const { engine, data } = useSharedGoals();
   // A cache confirmation can be newer than useNow's last minute tick.
   const confirmedNow = Date.now();
+  const userId = engine?.userId ?? null;
+  const selectedGroupId =
+    widget.sharedUserId === userId ? (widget.sharedGroupId ?? null) : null;
   const bundle = projectSharedWidgetExport(
     data,
-    engine?.userId ?? null,
+    userId,
     confirmedNow,
+    selectedGroupId ? [selectedGroupId] : [],
   );
   return (
     <div className="widget-preview-stage" aria-label="Progress widget preview">
@@ -269,11 +273,7 @@ function ProgressPreview({
         widgetId="preview"
         theme={widget.theme}
         translucent={widget.translucent}
-        configuredId={
-          widget.sharedUserId === bundle.userId
-            ? (widget.sharedGroupId ?? null)
-            : null
-        }
+        configuredId={selectedGroupId}
       />
     </div>
   );

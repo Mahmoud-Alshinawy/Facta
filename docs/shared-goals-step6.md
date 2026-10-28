@@ -4,6 +4,41 @@ Owner approved **9d54740** and authorized Step 6. Work ran on Windows on
 27–28 October 2026, on `feat/shared-goals`. **This is partial acceptance, not
 full backend/native acceptance.** Stop for final branch review; do not merge.
 
+## Review of 53cd72d: Settings selection beyond the export cap
+
+- The actual export prioritizes configured same-account selections, but Settings
+  previously omitted that preference. The preview now passes its same-account
+  selected group as a preferred ID to the same bounded projection and uses that
+  ID for the card. Export limits, selection persistence and account boundaries
+  are unchanged; no migration/dependency changes.
+- Added `scripts/shared-settings-preview-tests.mjs`, run through the full
+  production App via `scripts/run-shared-client-tests.mjs` on disposable port
+  55439 in `--ui --step6-review` mode. It creates/publishes 17 additional Gym
+  groups, joins a second eligible member and confirms two selected-group check-ins through the real
+  SDK/RPC adapter. Distinct creation times place the selected group after the
+  first 16 choices. Settings must show its name, two confirmed rows (self 100%,
+  rank 1; peer 0%, rank 2), then switch to an earlier group and back correctly.
+- Before the fix, the test failed at “Settings preview displays the selected
+  group beyond the 16-group export cap.” It exercises the actual Settings
+  picker/preview, real IndexedDB and disposable SQL, with synthetic identity.
+- The fixed Settings regression passed **78 assertions**. Reran the full-App
+  matrix/lifecycle suite (**567 assertions, 284 captures**), existing mounted
+  creation/recovery/lifecycle/Progress suite (**243 assertions**) and data
+  integration (**94 assertions**) successfully. All required checks passed: frozen install;
+  desktop/widgets/calendar TypeScript; **437 desktop / 194 calendar Vitest**;
+  desktop build with PORT=1420 BASE_PATH=/; widgets build; both production
+  Windows `cargo check --offline`. Existing desktop chunk warning remains
+  (~808 KB); no dependency/schema changes.
+- New result: `tmp/shared-goals-runtime/step6-review-result.json`; other
+  rerun manifests retain their existing paths. All browser/fixture processes
+  exited and the owned disposable PostgreSQL cluster was stopped normally.
+  Installed planner data, live Supabase and unrelated files remain untouched.
+- This is a focused review fix. **Full acceptance remains incomplete.** All
+  Auth/JWT/PostgREST and production-native gates and the exact earlier limits
+  below remain outstanding. Standalone SQL/security/concurrency and native
+  observations below are evidence from the original checkpoint, not new runs
+  for this fix.
+
 ## Changes
 
 - Shared cards now stack at <=1200px, matching GoalsShared. A mounted two-group

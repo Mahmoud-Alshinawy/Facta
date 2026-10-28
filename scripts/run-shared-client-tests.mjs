@@ -19,7 +19,8 @@ const { createServer, build, preview } = await import(
 );
 const pgPort = process.argv[2];
 const ui = process.argv.includes("--ui");
-const acceptance = process.argv.includes("--step6");
+const settingsReview = process.argv.includes("--step6-review");
+const acceptance = process.argv.includes("--step6") || settingsReview;
 const desktopRequire = createRequire(
   path.join(root, "apps/desktop/package.json"),
 );
@@ -181,8 +182,11 @@ try {
   });
   const page = await context.newPage();
   if (ui && acceptance) {
-    const { runSharedAcceptance } = await import("./shared-step6-tests.mjs");
-    const result = await runSharedAcceptance({
+    const run = settingsReview
+      ? (await import("./shared-settings-preview-tests.mjs"))
+          .runSettingsProgressSelectionTests
+      : (await import("./shared-step6-tests.mjs")).runSharedAcceptance;
+    const result = await run({
       page,
       context,
       fixture: ready.url,
@@ -190,12 +194,20 @@ try {
       url: `http://127.0.0.1:${address.port}/tmp/shared-goals-runtime/ui-test.html?fixture=${encodeURIComponent(ready.url)}`,
     });
     await writeFile(
-      path.join(root, "tmp/shared-goals-runtime/step6-result.json"),
+      path.join(
+        root,
+        `tmp/shared-goals-runtime/${settingsReview ? "step6-review-result" : "step6-result"}.json`,
+      ),
       JSON.stringify(result, null, 2),
     );
     console.log(
       JSON.stringify(
-        { ...result, screenshots: result.screenshots.length },
+        {
+          ...result,
+          ...(result.screenshots
+            ? { screenshots: result.screenshots.length }
+            : {}),
+        },
         null,
         2,
       ),
