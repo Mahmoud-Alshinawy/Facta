@@ -1,6 +1,23 @@
 # Handoff: branch 3 — accepted claim risk, local-time deadlines
 
-## Current state (29 October 2026, shared goals live on the real install)
+## Current state (29 October 2026, Edit split fix)
+
+- Owner report from the real install: after "Confirm target change" the
+  Edit split dialog stayed open, and confirming again resent the same target.
+  The open dialog was intentional (Step 4: confirm, then optionally Cancel
+  pending change in the same dialog). Fix keeps that flow: after a confirmed
+  change the primary button reads **Done** and closes the dialog. Changing
+  the stepper again restores "Confirm target change"; cancelling the pending
+  change also restores it.
+- Tests: two new checks in scripts/shared-step4-tests.mjs (Done label, and
+  Done closes with no extra target command). `run-shared-client-tests.mjs
+  55439 --ui --step4`: ok, **94** (Step 4 76, was 74; review 18 unchanged).
+  Required checks: frozen install, three tsc, **455 desktop / 212 calendar**,
+  both builds, both cargo checks.
+- The earlier findings (own invite link, stuck profile error, first-round
+  wording, overlapping widgets) are still unfixed.
+
+## Shared goals live on the real install (dd10543; historical)
 
 - Owner applied the shared-goals migration to the live project. Verified with
   a read-only catalog query: 10 tables, six public ones with RLS and 2

@@ -30,6 +30,10 @@ export default function SharedManage({
   );
   const [recipient, setRecipient] = useState(""),
     [message, setMessage] = useState("");
+  // The split dialog stays open after a confirmed change so it can be
+  // cancelled; the primary button then closes it until the value changes.
+  const [saved, setSaved] = useState<number | null>(null);
+  const done = targetOnly && saved !== null && saved === target;
   const [sending, setSending] = useState(false);
   useDialogFocus(ref, true);
   useEffect(() => {
@@ -67,6 +71,7 @@ export default function SharedManage({
     sending ||
     (!targetOnly && (unresolved || (needsRecipient && !recipient)));
   const submit = async (cancelTarget = false) => {
+    if (done && !cancelTarget) return onClose();
     if (busy.current || blocked) return;
     busy.current = true;
     setSending(true);
@@ -98,11 +103,12 @@ export default function SharedManage({
       }
       await engine.syncNow();
       if (out.code === "left") onLeft();
-      else if (targetOnly)
+      else if (targetOnly) {
+        setSaved(cancelTarget ? null : target);
         setMessage(
           `Confirmed: ${out.target} days from ${dateLabel(out.effectiveRound!)}. Current and historical targets stay unchanged.`,
         );
-      else onClose();
+      } else onClose();
     } catch (e) {
       setMessage((e as Error).message);
     } finally {
@@ -264,13 +270,15 @@ export default function SharedManage({
             <span className="lab">
               {sending
                 ? "Sending…"
-                : targetOnly
-                  ? "Confirm target change"
-                  : action === "leave"
-                    ? "Confirm leave"
-                    : action === "archive"
-                      ? "Confirm archive"
-                      : "Confirm transfer"}
+                : done
+                  ? "Done"
+                  : targetOnly
+                    ? "Confirm target change"
+                    : action === "leave"
+                      ? "Confirm leave"
+                      : action === "archive"
+                        ? "Confirm archive"
+                        : "Confirm transfer"}
             </span>
           </button>
         </div>

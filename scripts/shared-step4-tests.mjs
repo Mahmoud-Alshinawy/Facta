@@ -197,12 +197,33 @@ export async function runSharedStep4Tests({
       !document.querySelector('[role="dialog"] button[type="submit"]')
         ?.disabled,
   );
+  check(
+    (await modal.getByRole("button", { name: "Done", exact: true }).count()) ===
+      1 && (await button("Confirm target change").count()) === 0,
+    "a confirmed split turns the submit button into Done instead of resending",
+  );
   await page.keyboard.press("Escape");
   await modal.waitFor({ state: "hidden" });
   await page.waitForFunction(
     () => document.activeElement?.textContent === "Edit split",
   );
   check(true, "Escape closes split editing and restores the opener focus");
+  // Done closes the dialog, without sending the same target again.
+  await button("Edit split").click();
+  await modal.waitFor();
+  await button("Confirm target change").click();
+  await modal.getByRole("button", { name: "Done", exact: true }).waitFor();
+  const sent = await page.evaluate(
+    () => window.sharedUi.snapshot().cache.snapshot.targets.length,
+  );
+  await modal.getByRole("button", { name: "Done", exact: true }).click();
+  await modal.waitFor({ state: "hidden" });
+  check(
+    (await page.evaluate(
+      () => window.sharedUi.snapshot().cache.snapshot.targets.length,
+    )) === sent,
+    "Done closes split editing without another target command",
+  );
 
   await context.setOffline(true);
   await button("Check in: Client integration").click();
