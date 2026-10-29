@@ -4,6 +4,48 @@
 authorized remaining acceptance only. **Full acceptance remains incomplete.
 Stop for final review; do not merge.** No application or migration changes.
 
+## Shared goals on the real install after the live migration (29 October 2026)
+
+The owner applied `20261024160000_shared_goals.sql` to the live project. A
+read-only catalog query showed all 10 tables: the six `public.shared_*` with
+RLS on and 2 policies each, the four `facta_private` tables with RLS off and
+no API access. The installed app then dropped "unavailable on this server";
+the widget export reports `unavailable: false`.
+
+The owner did the steps that need a password or a personal choice: account A
+profile, a Gym group "working out" (Sundays, Asia/Riyadh, first round Sun
+1 Nov), opening A's own invite link, then a sign-out and a new account B
+joining with that link on 29 Oct. Claude checked the results in the app, in
+its local cache (WebView DevTools on loopback, closed afterwards) and in the
+widgets.
+
+| Check                                             | Result                                                                                                                                                                                                                                                      |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Account switch via the real UI (A → sign-out → B) | Pass. B sees only its own goals, notes and widget export, none of A's. Device-level widget settings are kept, by design. A's shared cache stays on disk under A's own key, by design (client doc: per-account store, hidden from consumers after sign-out). |
+| Join as a second member                           | Pass. Roster shows 2 people; both memberships have `eligible_round 2026-11-01`, the group's first round. B joined on 29 Oct, before it starts, so B is in from the start, not a week late.                                                                  |
+| Handles                                           | Pass. Unique as designed: A saved handle `bob`, B saved `bobross`. Both use the display name "bobross" (display names are not unique).                                                                                                                      |
+| Waiting state                                     | Pass. Shared card, detail, Today and the Progress widget show Waiting / "Starts 2026-11-01", with check-in disabled.                                                                                                                                        |
+| Widgets: Progress + Open group                    | Pass. Progress widget shows the group. With Facta minimized, Open group restored it on the group detail.                                                                                                                                                    |
+| Scoring with two members                          | Open until the Sun 1 Nov boundary.                                                                                                                                                                                                                          |
+
+Findings (not fixed yet):
+
+1. **Own invite link shows a fresh invitation.** As the group's creator, opening
+   your own `facta://join/…` shows "bobross invited you…" with a days-per-week
+   picker and Join. Joining returns `already_joined`, so nothing changes and
+   the picked target is ignored. The preview carries `groupId`, and the local
+   snapshot knows the membership, so the screen could say "You're already in
+   this group" and offer Open group.
+2. **Profile error never clears.** `SharedGoalsPage.tsx` sets `error` on a
+   failed check but never resets it when the input changes, so "Use 3–24
+   lowercase letters…" stays under a username that is now valid.
+3. **First-round wording.** Joining before the first round says "Your
+   eligibility starts Sun 1 Nov… earlier days are not missed", which reads as
+   if the member is late. When `eligible_round` equals the first round it
+   should say the member starts with the first round.
+4. New widgets open at the same default spot, so the Progress widget
+   overlapped the Tasks widget.
+
 ## Production-native checks on the real install (task 5, 28 October 2026)
 
 Owner-authorized: `pnpm tauri build` of both apps (repo `.env`: live URL and

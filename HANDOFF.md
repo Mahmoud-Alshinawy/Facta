@@ -1,6 +1,23 @@
 # Handoff: branch 3 — accepted claim risk, local-time deadlines
 
-## Current state (28 October 2026, task 5 on the real install)
+## Current state (29 October 2026, shared goals live on the real install)
+
+- Owner applied the shared-goals migration to the live project. Verified with
+  a read-only catalog query: 10 tables, six public ones with RLS and 2
+  policies each. Do not merge.
+- The owner made account A's profile and the group "working out", then
+  switched to a new account B, which joined via the invite link. Verified:
+  the account switch leaves none of A's data visible to B; both members start
+  with the first round (Sun 1 Nov); handles are unique (`bob` / `bobross`);
+  Waiting state on all surfaces; the Progress widget's Open group works.
+- Findings, not fixed: own invite link shows a fresh invitation and a
+  target picker; the profile error message never clears; first-round wording
+  sounds late; new widgets overlap. Details in docs/shared-goals-auth-native.md.
+- Open: two-member scoring after the Sun 1 Nov boundary, literal tray Quit
+  with pending writes, real logon autostart, two physical devices.
+- No code changes since 7f40337.
+
+## Task 5 on the real install (7f40337; historical)
 
 - After ee244c0 (review fixes), task 5 ran on the owner's real install.
   Details and the full result table: docs/shared-goals-auth-native.md (top).
