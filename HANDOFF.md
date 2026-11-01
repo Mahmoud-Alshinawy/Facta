@@ -1,6 +1,20 @@
 # Handoff: branch 3 — accepted claim risk, local-time deadlines
 
-## Current state (1 November 2026, real-install findings fixed)
+## Current state (1 November 2026, review of 32d6c17)
+
+- Reviewer approved 32d6c17's code with no blockers. **STOP after this push. Do
+  not merge.** The owner is running check-in scoring, real restart autostart,
+  tray Quit with pending writes and the own invite link, and will send results
+  to record.
+- Deleted, unread, on the owner's instruction: both `tmp/real-install-backup-*`
+  folders and `tmp/task5-backup*.ps1`. Older sections naming them are history.
+- `get_monitor_work_areas` now lists the real primary monitor first, so
+  `free_widget_position` places new widgets on it. Only matters with several
+  monitors; **not in the installed build** and not checked on a real
+  multi-monitor desktop.
+- docs/shared-goals-auth-native.md: top and stale task 5 rows updated.
+
+## Real-install findings fixed (32d6c17; approved, historical)
 
 - Owner asked for the four recorded findings to be fixed. STOP for review after
   push. **Do not merge.**

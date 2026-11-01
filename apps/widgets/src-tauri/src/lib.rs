@@ -148,7 +148,8 @@ fn log(msg: &str) {
 /// Returns: Vec<(x, y, width, height, scale_factor)>
 fn get_monitor_work_areas(app: &tauri::AppHandle) -> Vec<(i32, i32, u32, u32, f64)> {
     let mut monitors = Vec::new();
-    
+    let primary = app.primary_monitor().ok().flatten().map(|m| *m.position());
+
     if let Ok(available) = app.available_monitors() {
         for monitor in available {
             let scale = monitor.scale_factor();
@@ -158,7 +159,13 @@ fn get_monitor_work_areas(app: &tauri::AppHandle) -> Vec<(i32, i32, u32, u32, f6
             let wpos = work_area.position;
             let wsize = work_area.size;
             
-            monitors.push((wpos.x, wpos.y, wsize.width, wsize.height, scale));
+            // The primary monitor goes first: new widgets are placed on it.
+            let area = (wpos.x, wpos.y, wsize.width, wsize.height, scale);
+            if Some(*monitor.position()) == primary {
+                monitors.insert(0, area);
+            } else {
+                monitors.push(area);
+            }
         }
     }
     
@@ -175,8 +182,9 @@ fn physical_to_logical(physical: i32, scale: f64) -> f64 {
     physical as f64 / scale
 }
 
-/// First spot on a grid over the primary work area that doesn't cover a placed
-/// widget. `placed` holds (x, y, width, height); everything is in logical pixels.
+/// First spot on a grid over the first monitor's work area (the primary one, from
+/// `get_monitor_work_areas`) that doesn't cover a placed widget. `placed` holds
+/// (x, y, width, height); everything is in logical pixels.
 fn free_widget_position(
     width: f64,
     height: f64,
