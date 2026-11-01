@@ -20,8 +20,15 @@
 - Real install, checked by eye on 1 Nov (build d42415d): Edit split Confirm →
   Done, + → Confirm, − → Done, Done closes; target stays 4. The first round
   is active with two members (0 of 3, 0 of 4, Check in enabled). No check-in
-  was made, so scoring after a real check-in remains open. **These four fixes
-  are not installed on the real install yet.**
+  was made, so scoring after a real check-in remains open.
+- Build 3eac730 of both apps is installed (exit 0; one instance of each, signed
+  in as account B). A temporary Events widget landed clear of the others while
+  Tasks and Progress kept their saved spots (those two overlap until moved);
+  it was then removed. Not checked by eye: the already-a-member screen (needs
+  a link from owner account A), the profile form (needs an account with no
+  profile) and first-round wording (the round has started). Those three are
+  covered by the browser suites only.
+- Owner: no more data backups before installing.
 - Results: full mounted browser suite `--ui`: ok, **248** (was 243). `--ui --join-review`: ok, **11**. Rust widgets:
   **5** tests (4 new). Required checks: frozen install, three tsc, **455
   desktop / 212 calendar**, both builds, both cargo checks.
