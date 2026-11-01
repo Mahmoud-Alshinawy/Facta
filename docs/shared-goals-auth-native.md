@@ -28,7 +28,8 @@ widgets.
 | Widgets: Progress + Open group                    | Pass. Progress widget shows the group. With Facta minimized, Open group restored it on the group detail.                                                                                                                                                    |
 | Scoring with two members                          | Open until the Sun 1 Nov boundary.                                                                                                                                                                                                                          |
 
-Findings (not fixed yet):
+Findings (all fixed 1 November 2026; verified in browser and unit suites, not
+yet on the real install):
 
 1. **Own invite link shows a fresh invitation.** As the group's creator, opening
    your own `facta://join/…` shows "bobross invited you…" with a days-per-week

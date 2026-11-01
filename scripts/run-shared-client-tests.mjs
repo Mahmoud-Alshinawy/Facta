@@ -21,8 +21,9 @@ const pgPort = process.argv[2];
 const ui = process.argv.includes("--ui");
 const settingsReview = process.argv.includes("--step6-review");
 const deadlines = process.argv.includes("--deadlines");
+const joinReview = process.argv.includes("--join-review");
 const acceptance =
-  process.argv.includes("--step6") || settingsReview || deadlines;
+  process.argv.includes("--step6") || settingsReview || deadlines || joinReview;
 const desktopRequire = createRequire(
   path.join(root, "apps/desktop/package.json"),
 );
@@ -184,12 +185,14 @@ try {
   });
   const page = await context.newPage();
   if (ui && acceptance) {
-    const run = deadlines
-      ? (await import("./shared-deadline-tests.mjs")).runSharedDeadlineTests
-      : settingsReview
-        ? (await import("./shared-settings-preview-tests.mjs"))
-            .runSettingsProgressSelectionTests
-        : (await import("./shared-step6-tests.mjs")).runSharedAcceptance;
+    const run = joinReview
+      ? (await import("./shared-join-review-tests.mjs")).runJoinReviewTests
+      : deadlines
+        ? (await import("./shared-deadline-tests.mjs")).runSharedDeadlineTests
+        : settingsReview
+          ? (await import("./shared-settings-preview-tests.mjs"))
+              .runSettingsProgressSelectionTests
+          : (await import("./shared-step6-tests.mjs")).runSharedAcceptance;
     const result = await run({
       page,
       context,
@@ -200,7 +203,7 @@ try {
     await writeFile(
       path.join(
         root,
-        `tmp/shared-goals-runtime/${deadlines ? "deadline-result" : settingsReview ? "step6-review-result" : "step6-result"}.json`,
+        `tmp/shared-goals-runtime/${joinReview ? "join-review-result" : deadlines ? "deadline-result" : settingsReview ? "step6-review-result" : "step6-result"}.json`,
       ),
       JSON.stringify(result, null, 2),
     );

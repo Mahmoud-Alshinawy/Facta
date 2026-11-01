@@ -142,6 +142,20 @@ export async function runSharedUiTests({ page, context, url, fixture, root }) {
 
     await actor(config.newUser);
     await heading("Your shared profile").waitFor();
+    check(
+      (await page
+        .getByText("3–24 lowercase letters, numbers or underscores.", {
+          exact: false,
+        })
+        .count()) === 1,
+      "the username rule is visible before any failed attempt",
+    );
+    await page.getByLabel("Username", { exact: true }).fill("AB");
+    check(
+      (await page.getByLabel("Username", { exact: true }).inputValue()) ===
+        "ab",
+      "capitals become lowercase as the username is typed",
+    );
     await page.getByLabel("Username", { exact: true }).fill("ab");
     await page.getByLabel("Display name", { exact: true }).fill("Planner");
     await button("Save profile").click();
@@ -153,6 +167,11 @@ export async function runSharedUiTests({ page, context, url, fixture, root }) {
       "invalid handle is blocked before RPC",
     );
     await page.getByLabel("Username", { exact: true }).fill("client_0");
+    check(
+      (await page.getByText("Use 3–24 lowercase", { exact: false }).count()) ===
+        0,
+      "editing the username clears the old error",
+    );
     await button("Save profile").click();
     await page.getByText("That username is taken.", { exact: false }).waitFor();
     await page.getByLabel("Username", { exact: true }).fill("planner_user");

@@ -108,10 +108,15 @@ function ProfileSetup({
                   autoComplete="off"
                   maxLength={24}
                   value={handle}
-                  onChange={(e) =>
-                    setHandle(e.target.value.toLowerCase().replace(/^@/, ""))
-                  }
+                  onChange={(e) => {
+                    setError("");
+                    setHandle(e.target.value.toLowerCase().replace(/^@/, ""));
+                  }}
                 />
+                <span className="shared-note">
+                  3–24 lowercase letters, numbers or underscores. Capitals
+                  become lowercase as you type.
+                </span>
               </div>
               <div className="field">
                 <label htmlFor="shared-display-name">Display name</label>
@@ -120,7 +125,10 @@ function ProfileSetup({
                   className="inp"
                   maxLength={80}
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => {
+                    setError("");
+                    setName(e.target.value);
+                  }}
                 />
               </div>
             </fieldset>
@@ -402,6 +410,7 @@ export default function SharedGoalsPage({
       locked={locked}
       onClose={close}
       onDone={done}
+      onOpen={(id) => open({ kind: "detail", id })}
     />
   ) : panel.kind === "people" ? (
     <div
@@ -452,9 +461,12 @@ export default function SharedGoalsPage({
               <>
                 <p>
                   You are a member.{" "}
-                  {panel.eligible
-                    ? `Your eligibility starts ${dateLabel(panel.eligible)}.`
-                    : "Rounds wait for at least two eligible members."}
+                  {!panel.eligible
+                    ? "Rounds wait for at least two eligible members."
+                    : panel.eligible ===
+                        groups.find((g) => g.id === panel.id)?.firstRoundDate
+                      ? `You start with the first round on ${dateLabel(panel.eligible)}.`
+                      : `Your eligibility starts ${dateLabel(panel.eligible)}.`}
                 </p>
                 {groups.find((g) => g.id === panel.id)?.ownerId ===
                   engine.userId && (

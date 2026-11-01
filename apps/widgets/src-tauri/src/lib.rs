@@ -175,6 +175,42 @@ fn physical_to_logical(physical: i32, scale: f64) -> f64 {
     physical as f64 / scale
 }
 
+/// First spot on a grid over the primary work area that doesn't cover a placed
+/// widget. `placed` holds (x, y, width, height); everything is in logical pixels.
+fn free_widget_position(
+    width: f64,
+    height: f64,
+    placed: &[(f64, f64, f64, f64)],
+    monitors: &[(i32, i32, u32, u32, f64)],
+) -> (f64, f64) {
+    const MARGIN: f64 = 50.0;
+    const GAP: f64 = 20.0;
+    let (mon_x, mon_y, mon_w, mon_h, scale) = monitors[0];
+    let left = physical_to_logical(mon_x, scale) + MARGIN;
+    let top = physical_to_logical(mon_y, scale) + MARGIN;
+    let right = physical_to_logical(mon_x, scale) + physical_to_logical(mon_w as i32, scale);
+    let bottom = physical_to_logical(mon_y, scale) + physical_to_logical(mon_h as i32, scale);
+    let free = |x: f64, y: f64| {
+        placed.iter().all(|&(px, py, pw, ph)| {
+            x + width + GAP <= px || px + pw + GAP <= x || y + height + GAP <= py || py + ph + GAP <= y
+        })
+    };
+    let mut y = top;
+    while y + height <= bottom {
+        let mut x = left;
+        while x + width <= right {
+            if free(x, y) {
+                return (x, y);
+            }
+            x += width + GAP;
+        }
+        y += height + GAP;
+    }
+    // A full screen: cascade so each widget still has a grabbable corner.
+    let step = placed.len() as f64 * 30.0;
+    (left + step, top + step)
+}
+
 /// Clamp a window position to ensure it's visible on at least one monitor
 /// Returns clamped (x, y) in logical coordinates
 fn clamp_to_monitors(
@@ -292,6 +328,28 @@ fn open_main_app(app: tauri::AppHandle, section: Option<String>, note_id: Option
         .open_url(url, None::<&str>)
         .map_err(|e| e.to_string())
 }
+#[cfg(test)] mod widget_position_tests {
+    use super::free_widget_position;
+    const SCREEN: [(i32, i32, u32, u32, f64); 1] = [(0, 0, 1920, 1040, 1.0)];
+    #[test] fn first_widget_takes_the_top_left_slot() {
+        assert_eq!(free_widget_position(280.0, 360.0, &[], &SCREEN), (50.0, 50.0));
+    }
+    #[test] fn next_widget_does_not_cover_a_placed_one() {
+        let placed = [(50.0, 50.0, 280.0, 360.0)];
+        assert_eq!(free_widget_position(300.0, 400.0, &placed, &SCREEN), (370.0, 50.0));
+    }
+    #[test] fn a_full_row_wraps_and_moved_widgets_are_respected() {
+        let placed = [(50.0, 50.0, 900.0, 300.0), (1000.0, 50.0, 880.0, 300.0)];
+        assert_eq!(free_widget_position(280.0, 360.0, &placed, &SCREEN), (50.0, 430.0));
+    }
+    #[test] fn scaled_monitor_uses_logical_pixels() {
+        let scaled = [(0, 0, 1920, 1040, 2.0)];
+        let placed = [(50.0, 50.0, 800.0, 400.0)];
+        // 960x520 logical: nothing else fits, so it cascades instead of leaving the screen.
+        assert_eq!(free_widget_position(280.0, 360.0, &placed, &scaled), (80.0, 80.0));
+    }
+}
+
 #[cfg(test)] mod progress_link_tests {
     use super::main_app_url;
     #[test] fn opens_only_canonical_group_routes_and_preserves_note_routes() {
@@ -517,8 +575,14 @@ fn spawn_or_update_widgets(app: &tauri::AppHandle, state: &tauri::State<WidgetSt
     
     let mut expected_labels: Vec<String> = Vec::new();
     let mut spawned_count = 0;
-    
-    for (index, w) in widgets.iter().enumerate() {
+    // Widgets already on screen; new ones are placed around them.
+    let mut placed: Vec<(f64, f64, f64, f64)> = widgets.iter()
+        .filter_map(|w| w.get("id").and_then(|v| v.as_str()))
+        .filter_map(|id| positions.get(id))
+        .map(|p| (p.x, p.y, p.width, p.height))
+        .collect();
+
+    for w in widgets.iter() {
         let id = w.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string();
         let enabled = w.get("enabled").and_then(|v| v.as_bool()).unwrap_or(true);
         let widget_type = w.get("type").and_then(|v| v.as_str()).unwrap_or("tasks").to_string();
@@ -588,10 +652,6 @@ fn spawn_or_update_widgets(app: &tauri::AppHandle, state: &tauri::State<WidgetSt
         }
         
         let saved_pos = positions.get(&id);
-        let default_x = 50.0 + (index as f64 * 30.0);
-        let default_y = 50.0 + (index as f64 * 30.0);
-        let x = saved_pos.map(|p| p.x).unwrap_or(default_x);
-        let y = saved_pos.map(|p| p.y).unwrap_or(default_y);
         
         let (default_w, default_h) = match widget_type.as_str() {
             "progress" => (300.0, 400.0),
@@ -603,6 +663,14 @@ fn spawn_or_update_widgets(app: &tauri::AppHandle, state: &tauri::State<WidgetSt
         };
         let width = saved_pos.map(|p| p.width).unwrap_or(default_w);
         let height = saved_pos.map(|p| p.height).unwrap_or(default_h);
+        let (x, y) = match saved_pos {
+            Some(p) => (p.x, p.y),
+            None => {
+                let (x, y) = free_widget_position(width, height, &placed, &monitors);
+                placed.push((x, y, width, height));
+                (x, y)
+            }
+        };
         
         // Clamp position to ensure it's visible on screen
         let (clamped_x, clamped_y) = clamp_to_monitors(x, y, width, height, &monitors);

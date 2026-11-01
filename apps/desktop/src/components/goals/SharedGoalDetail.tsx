@@ -206,7 +206,9 @@ export default function SharedGoalDetail({
               {view.reason}
               {view.member.eligibleRound &&
               view.member.eligibleRound > (view.slot ?? "")
-                ? ". Your eligibility starts at that boundary; earlier days are not missed."
+                ? view.member.eligibleRound === view.group.firstRoundDate
+                  ? ". That is the group's first round, so you start with it."
+                  : ". Your eligibility starts at that boundary; earlier days are not missed."
                 : ""}
             </p>
           )}

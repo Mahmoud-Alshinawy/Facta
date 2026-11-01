@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { SharedInvitePreview, SharedOutcome } from "@/types/sharedGoals";
 import type { SharedSync } from "@/lib/sync/shared/engine";
 import { sharedRequests } from "@/lib/sharedGoals/requests";
@@ -18,12 +18,14 @@ export default function SharedGoalJoin({
   locked,
   onClose,
   onDone,
+  onOpen,
 }: {
   engine: SharedSync;
   source: JoinSource;
   locked: boolean;
   onClose: () => void;
   onDone: (id: string, eligible?: string | null) => void;
+  onOpen: (id: string) => void;
 }) {
   const [preview, setPreview] = useState<SharedInvitePreview | null>(
       "invitation" in source ? source.invitation : null,
@@ -34,7 +36,19 @@ export default function SharedGoalJoin({
     [loading, setLoading] = useState(false),
     [unavailable, setUnavailable] = useState(false);
   const busy = useRef(false),
-    requests = sharedRequests(engine);
+    requests = sharedRequests(engine),
+    data = useSyncExternalStore(engine.subscribe, engine.getSnapshot);
+  // Joining also makes this true, so it only counts when nothing is in flight.
+  const alreadyIn =
+    !!preview &&
+    !loading &&
+    !!data.cache?.snapshot.memberships.some(
+      (m) =>
+        m.groupId === preview.groupId &&
+        m.userId === engine.userId &&
+        !m.leftAt &&
+        !m.deletedAt,
+    );
   useEffect(() => {
     if (!("token" in source)) return;
     let active = true;
@@ -131,6 +145,7 @@ export default function SharedGoalJoin({
           e.key === "Enter" &&
           !(e.target as HTMLElement).closest("button") &&
           !full &&
+          !alreadyIn &&
           preview?.published &&
           !unavailable
         ) {
@@ -151,7 +166,25 @@ export default function SharedGoalJoin({
         <div className="shared-wizard">
           <section className="shared-card" aria-busy={loading}>
             {loading && !preview && <p role="status">Checking invitation…</p>}
-            {preview && (
+            {preview && alreadyIn && (
+              <>
+                <h2>You're already in {preview.name}</h2>
+                <p className="shared-note">
+                  There is nothing to join, and this invitation changes nothing
+                  for you.
+                </p>
+                <div className="shared-actions">
+                  <button type="button" className="ctl" onClick={onClose}>
+                    Back to Shared
+                  </button>
+                  <span className="flex-1" />
+                  <Commit onClick={() => onOpen(preview.groupId)}>
+                    Open group
+                  </Commit>
+                </div>
+              </>
+            )}
+            {preview && !alreadyIn && (
               <>
                 <h2>
                   {preview.inviter} invited you to {preview.name}

@@ -1,6 +1,35 @@
 # Handoff: branch 3 — accepted claim risk, local-time deadlines
 
-## Current state (29 October 2026, Edit split fix)
+## Current state (1 November 2026, real-install findings fixed)
+
+- Owner asked for the four recorded findings to be fixed. STOP for review after
+  push. **Do not merge.**
+- **Own invite link:** the join screen checks the local snapshot. A current
+  member sees "You're already in …" with Open group, and no Join button or
+  target picker. A stale cache only affects this screen; the server still
+  decides any real join.
+- **Profile form:** the username rule is visible from the start, and editing
+  either field clears the old error.
+- **First-round wording:** joining before the first round now says "You start
+  with the first round on …" and, on the detail page, "That is the group's
+  first round, so you start with it." Later joiners keep the old wording. The
+  widget export's `reason` is unchanged.
+- **New widgets:** `free_widget_position` picks the first grid slot on the
+  primary monitor that doesn't touch another configured widget, then cascades
+  if the screen is full. Saved positions are never moved.
+- Real install, checked by eye on 1 Nov (build d42415d): Edit split Confirm →
+  Done, + → Confirm, − → Done, Done closes; target stays 4. The first round
+  is active with two members (0 of 3, 0 of 4, Check in enabled). No check-in
+  was made, so scoring after a real check-in remains open. **These four fixes
+  are not installed on the real install yet.**
+- Results: full mounted browser suite `--ui`: ok, **248** (was 243). `--ui --join-review`: ok, **11**. Rust widgets:
+  **5** tests (4 new). Required checks: frozen install, three tsc, **455
+  desktop / 212 calendar**, both builds, both cargo checks.
+- Open: scoring after a real check-in, literal tray Quit with pending writes,
+  real logon autostart, two physical devices. Facta was found not running on
+  1 Nov with no crash in the Windows log; cause unknown.
+
+## Edit split fix (d42415d; historical)
 
 - Owner report from the real install: after "Confirm target change" the
   Edit split dialog stayed open, and confirming again resent the same target.
