@@ -348,6 +348,19 @@
   border-radius: 12px;
   background: var(--raised);
 }
+.fx .shared-pending-panel.compact {
+  padding: 12px;
+  margin-top: 0;
+}
+.fx .shared-pending-panel.compact .shared-person {
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+}
+.fx .shared-pending-panel.compact .shared-person > span {
+  flex-basis: 100%;
+}
 .fx .shared-modal-scrim {
   position: absolute;
   inset: 0;

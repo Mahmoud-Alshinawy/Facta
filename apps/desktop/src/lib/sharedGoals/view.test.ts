@@ -4,6 +4,8 @@ import { sharedCell } from "./view";
 import { emptySharedState } from "@/lib/sync/shared/state";
 import { mapSnapshot } from "./contracts";
 import { reconcileSnapshot } from "./cache";
+import { checkinFailureText } from "./creation";
+import { projectSharedView } from "./projection";
 import {
   sharedRpcFixture,
   SHARED_USER,
@@ -237,4 +239,42 @@ it("makes archival read-only even with an older active round retained in cache",
   const v = sharedGroupView(state, SHARED_USER, SHARED_GROUP, SHARED_NOW)!;
   expect(v.phase).toBe("archived");
   expect(v.canCheck).toBe(false);
+});
+it("treats a rejected check-in as not saved, not as pending or checked", () => {
+  const state = emptySharedState(SHARED_USER);
+  state.cache = reconcileSnapshot(
+    null,
+    mapSnapshot(sharedRpcFixture(), SHARED_USER, SHARED_RANGE),
+    SHARED_RANGE,
+    SHARED_NOW,
+  );
+  const base = sharedGroupView(state, SHARED_USER, SHARED_GROUP, SHARED_NOW)!;
+  state.outbox = [
+    {
+      id: crypto.randomUUID(),
+      groupId: SHARED_GROUP,
+      membershipId: base.member.id,
+      userId: SHARED_USER,
+      date: base.today,
+      capturedAt: new Date(SHARED_NOW).toISOString(),
+      completed: !base.checked,
+      baseRevision: 0,
+      after: null,
+      command: null,
+      phase: "failed",
+      failure: "invalid_date",
+    },
+  ];
+  const view = sharedGroupView(state, SHARED_USER, SHARED_GROUP, SHARED_NOW)!;
+  expect(view.pending).toBe(false);
+  expect(view.checked).toBe(base.checked);
+  expect(view.canCheck).toBe(false);
+  expect(view.failed).toHaveLength(1);
+  expect(view.reason).toBe(
+    "A check-in wasn't saved. Open the group to fix it.",
+  );
+  expect(projectSharedView(view, SHARED_USER).pending).toBe(false);
+  expect(checkinFailureText("invalid_date")).toContain("clock");
+  expect(checkinFailureText("invalid_date")).not.toContain("invalid");
+  expect(checkinFailureText("something_new")).toBe("Try again, or discard it.");
 });

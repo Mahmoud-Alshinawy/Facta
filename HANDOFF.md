@@ -1,6 +1,36 @@
 # Handoff: branch 3 — accepted claim risk, local-time deadlines
 
-## Current state (1 November 2026, review of 32d6c17)
+## Current state (1 November 2026, check-in clock skew and offline toast)
+
+- Reviewer raised intermittent `invalid_date` check-ins to a **merge blocker**. Fixes
+  are in; STOP for review. **Do not merge.** Details:
+  docs/shared-goals-auth-native.md (top).
+- **Owner must run** `supabase/migrations/20261101120000_shared_checkin_clock_skew.sql`
+  on the live project. Until then the installed app can still get `invalid_date`,
+  though it now shows it as not saved with a fix on Today.
+- Fix: stamp up to 5 minutes ahead accepted and stored clamped to server time; date
+  rules still apply to the device's stamp; further ahead refused. Known limit near
+  group midnight is documented in the migration and the report.
+- Not saved state: plain words, "Not saved" button, Try again and Discard on Today,
+  the shared card and group detail. `decideSharedToast` shares `toastPolicy.ts`; a
+  retry no longer blanks the message.
+- Owner results: own invite link PASS; tray Quit with an unsaved change PASS; restart
+  autostart PASS (delay about 13 s from Windows, 0.8 s widgets log); Wi-Fi data PASS,
+  repeating toast FAIL (fixed in source, recheck); check-in scoring FAIL (fixed in
+  source, recheck); two physical devices not tested, accepted as open.
+- **Red control:** `--checkin-skew` against the old migration alone fails with
+  `Never confirmed completed=true: [["failed","invalid_date"]]`, the owner's error.
+- Results, new code: frozen install, three tsc, **462 desktop** (455 + 7) / **212 calendar** / **5 Rust**, both builds, both cargo checks. Browser: `--ui` **248**, `--ui --step6` **567**, `--checkin-skew` **23**; before the final Today layout tidy, `--join-review` **11**, `--deadlines` **48**, `--step6-review` **78**. Existing tests changed only for new wording: "Try again", "Discard" and the exact conflict sentence.
+- **NOT RUN: both HTTP suites and `--verify-boundaries`,** including the new real-server
+  skew cases, which have never executed. Since the 14:33 restart Windows refuses every
+  WSL2 VM (`Wsl/Service/CreateInstance/CreateVm/HCS/ERROR_NOT_SUPPORTED`, Ubuntu too),
+  so Docker cannot start. Reinstalling Docker would not help and was not done.
+  No reset. Renamed, contents kept: `%LOCALAPPDATA%\Docker\run.facta-acceptance-20261101-1`
+  and `-2`; `%LOCALAPPDATA%\docker-secrets-engine.facta-20261101-1` and `-2`. The new
+  migration must also be applied to the disposable stack before those suites run.
+- Installed build: both apps from this code (installer exit 0, 15:38 and 15:40; no backup, as the owner asked). Facta running from the install path, signed in, showing Checked in with 1 of 3 and 1 of 4. Fixes not yet exercised there: the skew tolerance needs the migration, and the offline toast needs the owner recheck.
+
+## Review of 32d6c17 (8947842; historical)
 
 - Reviewer approved 32d6c17's code with no blockers. **STOP after this push. Do
   not merge.** The owner is running check-in scoring, real restart autostart,

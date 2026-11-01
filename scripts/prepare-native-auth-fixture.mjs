@@ -142,6 +142,104 @@ try {
         )
     : [{ now: Date.now() }];
   const results = [];
+  const skew = [];
+  if (verifyBoundaries) {
+    // Device clock ahead of the database: Sunday-based group whose round started
+    // yesterday, with the domain clock held at a fixed server time.
+    const server = Date.parse("2026-10-28T09:00:00Z");
+    const plan = nativeScoringPlan(server);
+    try {
+      setClock(plan.createdAt);
+      const draft = await command(clients[0], "create_draft", {
+        name: "Clock skew group",
+        template: "gym",
+        schedule_kind: "n",
+        target: 2,
+        time_zone: plan.zone,
+        round_weekday: plan.roundWeekday,
+      });
+      await command(clients[0], "publish", {
+        group_id: draft.group_id,
+        expected_revision: 1,
+        first_round_date: plan.firstRoundDate,
+      });
+      const invite = await command(clients[0], "issue_link", {
+        group_id: draft.group_id,
+      });
+      await command(clients[1], "join", { token: invite.token, target: 2 });
+      setClock(new Date(server).toISOString(), true);
+      const snapshot = await clients[0].rpc("facta_shared_snapshot", {
+        history_from: plan.seedDate,
+        history_until: plan.today,
+      });
+      if (snapshot.error) throw Error("Disposable snapshot failed");
+      const own = snapshot.data.memberships.find(
+        (m) => m.group_id === draft.group_id && m.user_id === users[0].id,
+      );
+      const stamp = (ms) => new Date(server + ms).toISOString();
+      const send = (captured, date, base_revision, completed = true) =>
+        attempt(clients[0], "set_checkin", {
+          group_id: draft.group_id,
+          membership_id: own.id,
+          date,
+          captured_at: captured,
+          completed,
+          base_revision,
+        });
+      const stored = async () => {
+        const row = await clients[0]
+          .from("shared_checkins")
+          .select("captured_at,revision")
+          .eq("group_id", draft.group_id)
+          .eq("user_id", users[0].id)
+          .eq("checkin_date", plan.today)
+          .single();
+        if (row.error) throw Error("Disposable check-in read failed");
+        return row.data;
+      };
+      const beyond = await send(stamp(300_001), plan.today, 0);
+      check(
+        beyond?.ok === false && beyond.code === "invalid_date",
+        "a stamp beyond 5 minutes ahead is refused",
+      );
+      const ahead = await send(stamp(5_000), plan.today, 0);
+      check(ahead?.ok, "a stamp 5 seconds ahead is accepted");
+      const first = await stored();
+      check(
+        Date.parse(first.captured_at) === server,
+        "the stored capture is clamped to the server time",
+      );
+      const edge = await send(
+        stamp(300_000),
+        plan.today,
+        first.revision,
+        false,
+      );
+      check(edge?.ok, "a stamp exactly 5 minutes ahead is accepted");
+      const second = await stored();
+      check(
+        Date.parse(second.captured_at) === server,
+        "the edge capture is clamped to the server time too",
+      );
+      const past = await send(stamp(-60_000), plan.today, second.revision);
+      check(past?.ok, "a stamp behind the server is still accepted");
+      check(
+        Date.parse((await stored()).captured_at) === server - 60_000,
+        "a stamp behind the server is stored unchanged",
+      );
+      setClock("2026-10-28T20:59:30Z", true);
+      const midnight = await send("2026-10-28T21:00:10Z", "2026-10-29", 0);
+      check(
+        midnight?.ok === false && midnight.code === "invalid_date",
+        "a device already past group midnight is refused until the server gets there",
+      );
+      skew.push(
+        "beyond 5 min refused; 5 s and exactly 5 min stored clamped; behind unchanged; past group midnight refused",
+      );
+    } finally {
+      setClock(null, true);
+    }
+  }
   for (const { now, otherSide } of cases) {
     const plan = nativeScoringPlan(now);
     let groupId;
@@ -287,6 +385,7 @@ try {
     ok: true,
     assertions,
     cases: results,
+    skew,
     clocks: "domain clocks restored; Auth/JWT clocks unchanged",
     nativeAccounts: 2,
     reusedAccounts: !!saved,

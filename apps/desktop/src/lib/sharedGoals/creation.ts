@@ -130,6 +130,25 @@ export function dateLabel(date: string) {
     .format(new Date(date + "T12:00:00Z"))
     .replace(",", "");
 }
+/** Plain words for a check-in the server refused. */
+export function checkinFailureText(failure: string | null): string {
+  return (
+    (
+      {
+        conflict: "Another device changed this day. Check it, then try again.",
+        invalid_date:
+          "Your device's clock or date doesn't match the server. Check your clock, then try again.",
+        inactive_period: "That day isn't part of an active round.",
+        rest_day: "That day is a rest day for this goal.",
+        ineligible: "You can't check in for this goal yet.",
+        membership_changed: "Your membership in this group has changed.",
+        archived: "This group has been archived.",
+        forbidden: "You can't check in for this group any more.",
+        dependency_failed: "An earlier change for this day wasn't saved first.",
+      } as Record<string, string>
+    )[failure ?? ""] ?? "Try again, or discard it."
+  );
+}
 export function outcomeText(code: string): string {
   return (
     (

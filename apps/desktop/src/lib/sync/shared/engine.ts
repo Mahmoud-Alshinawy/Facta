@@ -46,6 +46,8 @@ export interface SharedStatus {
   lastError: string | null;
   lastSyncedAt: number | null;
 }
+const CHECKINS_NOT_SAVED =
+  "Some check-ins weren't saved. They stay on this device until you try again or discard them.";
 export interface SharedSyncOptions {
   userId: string;
   store: KeyValueStore;
@@ -128,12 +130,18 @@ export class SharedSync {
   }
   private patch(patch: Partial<SharedStatus>) {
     if (!this.current()) return;
-    this.status = {
+    const next = {
       ...this.status,
       ...patch,
       pending: this.state.outbox.filter((e) => e.phase !== "failed").length,
       failed: this.state.outbox.filter((e) => e.phase === "failed").length,
     };
+    // Retry or Discard resolved the last one: nothing is left to report.
+    if (next.failed === 0 && next.lastError === CHECKINS_NOT_SAVED) {
+      next.lastError = null;
+      if (next.state === "error") next.state = "idle";
+    }
+    this.status = next;
     this.emit();
   }
   private storageFailure(error: unknown) {
@@ -525,7 +533,9 @@ export class SharedSync {
         return;
       }
       if (!this.online()) throw new SharedRemoteError("offline");
-      this.patch({ state: "syncing", lastError: null });
+      // The last problem stays until this attempt settles, so a retry doesn't
+      // make its message vanish and reappear.
+      this.patch({ state: "syncing" });
       while (this.current() && this.ranges.size) {
         const [rangeKey, next] = this.ranges.entries().next().value!;
         this.ranges.delete(rangeKey);
@@ -622,7 +632,7 @@ export class SharedSync {
           ? "error"
           : "idle",
         lastError: this.state.outbox.some((e) => e.phase === "failed")
-          ? "Some shared check-ins need review. Their intent has been retained."
+          ? CHECKINS_NOT_SAVED
           : null,
       });
     })

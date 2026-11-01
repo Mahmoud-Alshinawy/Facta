@@ -118,9 +118,13 @@ export function sharedGroupView(
   const checkedRow = s.checkins.find(
     (c) => c.membershipId === member.id && c.checkinDate === today,
   );
-  const checked = todayIntent
-    ? todayIntent.completed
-    : (checkedRow?.completed ?? false);
+  // A rejected change wasn't saved, so the confirmed state still applies.
+  const failed = intentions.filter((e) => e.phase === "failed");
+  const todayFailed = todayIntent?.phase === "failed";
+  const checked =
+    todayIntent && !todayFailed
+      ? todayIntent.completed
+      : (checkedRow?.completed ?? false);
   const eligible =
     !!slot &&
     !!member.eligibleRound &&
@@ -193,10 +197,10 @@ export function sharedGroupView(
             ? "Waiting for two eligible members at a round boundary"
             : !active
               ? "Reconnect to confirm the current round"
-              : rest
-                ? "Rest day"
-                : todayIntent?.failure
-                  ? "Review rejected check-in"
+              : failed.length
+                ? "A check-in wasn't saved. Open the group to fix it."
+                : rest
+                  ? "Rest day"
                   : null;
   return {
     group,
@@ -212,9 +216,10 @@ export function sharedGroupView(
     confirmedAt,
     stale,
     checked,
-    pending: !!todayIntent,
+    pending: !!todayIntent && !todayFailed,
     todayIntent,
     intentions,
+    failed,
     eligible,
     rest,
     canCheck,

@@ -8,9 +8,50 @@ links, Edit split, the invite and profile screens, first-round wording and
 widget placement. No migration file changed; the owner applied the existing
 shared-goals migration to the live project.
 
-The owner is running the remaining hands-on checks (check-in scoring, autostart
-at a real restart, tray Quit with pending writes, own invite link on the fixed
-build). Two separate physical devices remain untested.
+Owner hands-on checks are recorded below. Check-in scoring and the offline toast
+are fixed in source and need rechecking on the installed build after the owner
+runs the new migration. Two separate physical devices are an accepted open
+limitation.
+
+## Check-in clock skew and the offline toast (1 November 2026)
+
+**Cause of the rejected check-ins.** The app stamps a check-in with the device's
+clock, and `set_checkin` refused any stamp later than the database's clock. A
+device slightly ahead failed when the request arrived quickly. Owner evidence:
+captured 11:22:10.240Z, base revision 0, `invalid_date` at 11:22:11.276Z; Review
+and retry then worked on both accounts. Tests missed it because the app and test
+server shared one clock.
+
+**Fix.** New re-runnable migration
+`20261101120000_shared_checkin_clock_skew.sql` replaces `sg_execute_command`; only
+the capture check differs from the original. A stamp up to 5 minutes ahead is
+accepted. The date rules still apply to the device's stamp, then the stored time
+is clamped to the server's, so there is no scoring gain. Anything further ahead
+is refused. **Known limit:** within 5 minutes of group midnight, a device already
+past midnight sends the new date while the server is still on the old one. That
+is still refused, shows as not saved, and works after midnight.
+
+**Not-saved state.** A refused change no longer reads as "Pending check-in" or
+"Rejected: invalid date". The button says "Not saved", the checked state is the
+server's, and plain words with **Try again** and **Discard** appear on Today, on
+the shared goal card and in group detail. The Progress widget says to open the
+group, and its Open group button goes there.
+
+**Offline toast.** `SharedErrorToasts` re-armed whenever `syncNow` cleared the
+error at the start of a retry. Shared goals now use the same decision as personal
+sync (`lib/sync/toastPolicy.ts`, one toast per distinct problem, fixed ids).
+Offline shows one "Shared goals paused" message, which clears on recovery, and a
+retry no longer blanks the current message.
+
+**Evidence.** `run-shared-client-tests.mjs 55439 --ui --checkin-skew` holds the device
+clock ahead of the database: check in, undo, check in saves all three and stores
+clamped times; 6 minutes ahead shows the plain state with one toast, and Discard and
+Try again both work; offline shows one toast that does not return. Against the old
+migration alone the suite fails with the owner's `invalid_date`. **Not run:** the HTTP
+suites and the new `--verify-boundaries` skew cases, because Windows refused every
+WSL2 VM after the 1 November restart (`HCS/ERROR_NOT_SUPPORTED`, Ubuntu too), so Docker
+cannot start. The migration has run on PostgreSQL 17.5 through the browser fixture, but
+not yet with real Auth/PostgREST.
 
 ## Shared goals on the real install after the live migration (29 October 2026)
 
@@ -34,7 +75,7 @@ widgets.
 | Handles                                           | Pass. Unique as designed: A saved handle `bob`, B saved `bobross`. Both use the display name "bobross" (display names are not unique).                                                                                                                      |
 | Waiting state                                     | Pass. Shared card, detail, Today and the Progress widget show Waiting / "Starts 2026-11-01", with check-in disabled.                                                                                                                                        |
 | Widgets: Progress + Open group                    | Pass. Progress widget shows the group. With Facta minimized, Open group restored it on the group detail.                                                                                                                                                    |
-| Scoring with two members                          | Round active on 1 November: Sun 1 Nov – Sat 7 Nov, both members ranked at 0 of 3 and 0 of 4, Check in enabled. Score change after a real check-in is with the owner.                                                                                        |
+| Scoring with two members                          | **Failed, fixed in source; recheck after install.** Scores count when accepted (a member showed 1 of 4, 25%), but a normal click could be refused with `invalid_date`. See the check-in section at the top.                                                 |
 
 Findings (all fixed 1 November 2026 and installed from 3eac730. Widget placement
 was checked on the real desktop; the other three only in the browser suites. The later
@@ -74,20 +115,20 @@ on the owner's instruction, unread, on 1 November. The old 20 Oct processes did 
 children were stopped first), so they were force-stopped. No literal Quit
 of the old build.
 
-| Check (installed build, exactly one `facta.exe` from the install path) | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Silent NSIS upgrade over existing install, both apps                   | Pass. Exit 0; exes dated today. Handler now points at the installed exe. Signed-in session and data kept.                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| Restart while signed in                                                | Pass. Fresh launch: same account, "Synced", both offline-created goals present. A white window shows for ~2–4 s before first paint (cosmetic).                                                                                                                                                                                                                                                                                                                                                                                    |
-| Autostart                                                              | Partial. Run key = `facta.exe --hidden`. Running that command started one hidden process (no window, tray only) and wrote a fresh widget export. An actual Windows restart is with the owner.                                                                                                                                                                                                                                                                                                                                     |
-| Cold `facta://focus?section=diary`                                     | Pass. Started on Diary.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| Warm `facta://focus…`                                                  | **Failed on the first build, fixed.** Single-instance forwarding re-serializes path-less links as `facta://focus/?…` (seen via WebView DevTools: `deep-link://new-url` payloads). `parseFactaLink` rejected them, so widget "Open Facta" and note links did nothing while Facta was running. Fix: optional `/` after `focus`, plus 3 Vitest cases. Rebuilt, reinstalled, rechecked: Diary, Notes (from a tray-hidden window) and bare `facta://focus` all open.                                                                   |
-| Warm `facta://group/<uuid>` and `facta://auth/callback?…`              | Forwarded unchanged. Before the migration the group link opened Goals → Shared, showing "unavailable… Retry loading". After it, Open group in the widget opened the group detail. The auth-error link kept the session signed in; its toast was hidden behind the shared toast and could not be read (inconclusive).                                                                                                                                                                                                              |
-| Invite (`facta://join/…`) and auth success links                       | Invite: the owner opened the link as account A (old screen, since fixed) and as new account B, which joined. Whether Facta was already running each time was not recorded. Own link on the fixed build is with the owner. Auth success: account B ended up signed in after sign-up, but the confirmation-link return was not observed.                                                                                                                                                                                            |
-| Widget companion                                                       | Pass. Adding a Tasks widget auto-launched the installed companion (one process). It was briefly above Facta at creation, then bottom-stacked after Facta was clicked. File watching: marking a goal done in Facta updated the widget to "1/2 completed" without interaction. Progress widget: Open group restored Facta on the group detail.                                                                                                                                                                                      |
-| OS network outage/reconnect                                            | Pass with a finding. Two runs (home Wi-Fi, then owner's phone hotspot), Wi-Fi radio switched off by script for 90 s / 60 s (no admin). Goals created offline were kept and synced after reconnect, with no error, and survived a restart. **Finding:** `navigator.onLine` stays `true` throughout (VMware/WSL/Tailscale adapters), so the footer keeps showing "Synced · just now" for ~49 s, until a request fails and it switches to "Offline". It returned to "Synced" ~21 s after the radio came back. Same on both networks. |
-| Tray Quit with pending writes                                          | **Open, with the owner.** The tray menu needs a right-click on the taskbar, which Claude's screen-control grant does not allow.                                                                                                                                                                                                                                                                                                                                                                                                   |
-| Account switch / sign-out cleanup via the real UI                      | Pass (29 October). The owner signed out of A and into new account B; B saw none of A's goals, notes or widget data.                                                                                                                                                                                                                                                                                                                                                                                                               |
-| Two separate physical devices                                          | **Open.** Not available here.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Check (installed build, exactly one `facta.exe` from the install path) | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Silent NSIS upgrade over existing install, both apps                   | Pass. Exit 0; exes dated today. Handler now points at the installed exe. Signed-in session and data kept.                                                                                                                                                                                                                                                                                                                                                                                  |
+| Restart while signed in                                                | Pass. Fresh launch: same account, "Synced", both offline-created goals present. A white window shows for ~2–4 s before first paint (cosmetic).                                                                                                                                                                                                                                                                                                                                             |
+| Autostart                                                              | Pass (owner, real restart). Facta and the widgets started on their own and kept their positions. Windows delays startup apps by about 13 s; the widgets log shows 0.8 s from process start to windows created. Run key = `facta.exe --hidden`.                                                                                                                                                                                                                                             |
+| Cold `facta://focus?section=diary`                                     | Pass. Started on Diary.                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| Warm `facta://focus…`                                                  | **Failed on the first build, fixed.** Single-instance forwarding re-serializes path-less links as `facta://focus/?…` (seen via WebView DevTools: `deep-link://new-url` payloads). `parseFactaLink` rejected them, so widget "Open Facta" and note links did nothing while Facta was running. Fix: optional `/` after `focus`, plus 3 Vitest cases. Rebuilt, reinstalled, rechecked: Diary, Notes (from a tray-hidden window) and bare `facta://focus` all open.                            |
+| Warm `facta://group/<uuid>` and `facta://auth/callback?…`              | Forwarded unchanged. Before the migration the group link opened Goals → Shared, showing "unavailable… Retry loading". After it, Open group in the widget opened the group detail. The auth-error link kept the session signed in; its toast was hidden behind the shared toast and could not be read (inconclusive).                                                                                                                                                                       |
+| Invite (`facta://join/…`) and auth success links                       | Invite: pass. New account B joined with the link, and the owner's own link on the installed build shows "You're already in working out" with Open group. Whether Facta was already running each time was not recorded. Auth success: account B ended up signed in after sign-up, but the confirmation-link return was not observed.                                                                                                                                                        |
+| Widget companion                                                       | Pass. Adding a Tasks widget auto-launched the installed companion (one process). It was briefly above Facta at creation, then bottom-stacked after Facta was clicked. File watching: marking a goal done in Facta updated the widget to "1/2 completed" without interaction. Progress widget: Open group restored Facta on the group detail.                                                                                                                                               |
+| OS network outage/reconnect                                            | Data: pass. Two runs by Claude (home Wi-Fi, then the owner's hotspot) and a later owner run: goals created offline were kept and synced after reconnect, with no error, and survived a restart. Toast: **failed, fixed in source; recheck after install.** "Shared goals need attention" reappeared repeatedly while offline. Also: `navigator.onLine` stays `true` here (VMware/WSL/Tailscale adapters), so the footer keeps showing "Synced · just now" for ~49 s until a request fails. |
+| Tray Quit with pending writes                                          | Pass (owner). Tray Quit with an unsaved change.                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Account switch / sign-out cleanup via the real UI                      | Pass (29 October). The owner signed out of A and into new account B; B saw none of A's goals, notes or widget data.                                                                                                                                                                                                                                                                                                                                                                        |
+| Two separate physical devices                                          | **Not tested.** The owner accepts this as an open limitation.                                                                                                                                                                                                                                                                                                                                                                                                                              |
 
 Server-side confirmation of the offline writes is via the app (no sync error,
 "Synced", present after restart). A direct REST read of the live project was
@@ -331,11 +372,9 @@ launching are disabled in copies. No installer or installed handler was changed.
   (28 October 2026); see the accepted-risk note.
 - Windows Sandbox is absent, so the owner authorized production checks on the real
   install; see the real-install sections at the top.
-- Still unverified: literal tray Quit with pending writes, autostart at a real
-  restart, a score change after a real check-in, own invite link on the fixed
-  build, the auth-success link and separate hardware devices. See the real-install
-  sections at the top. Earlier synthetic/test-scheme evidence in
-  `shared-goals-step6.md` remains distinct.
+- Still open: rechecks after the check-in migration and new build, the auth-success
+  link, and separate hardware devices (accepted by the owner). Earlier
+  synthetic/test-scheme evidence in `shared-goals-step6.md` remains distinct.
 - At the owner's request, the isolated native window is left alone; no forced
   termination or UI cleanup. Its test-scheme handler and core disposable services
   remain available for resumption. Original Docker runtime backup is preserved.

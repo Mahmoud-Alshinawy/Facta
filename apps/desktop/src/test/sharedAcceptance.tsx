@@ -7,7 +7,7 @@ import App from "../App";
 import DeepLinkBridge from "@/components/DeepLinkBridge";
 import { GoalsProvider } from "@/hooks/useGoals";
 import { EventsProvider } from "@/hooks/useEvents";
-import { SyncEngines } from "@/hooks/useSync";
+import { SharedErrorToasts, SyncEngines } from "@/hooks/useSync";
 import { IndexedDbStore } from "@/lib/sync/indexedDbStore";
 import { PlannerSync } from "@/lib/sync/engine";
 import { SharedSync } from "@/lib/sync/shared/engine";
@@ -93,6 +93,7 @@ function Acceptance() {
       <DeepLinkBridge />
       <Toaster />
       <SyncEngines engine={personal} shared={shared}>
+        {shared && <SharedErrorToasts engine={shared} />}
         <GoalsProvider>
           <EventsProvider>
             <App />

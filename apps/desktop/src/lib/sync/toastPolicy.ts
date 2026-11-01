@@ -7,6 +7,7 @@
 // new message replaces the previous toast of that kind instead of stacking.
 
 import type { SyncStatus } from "@/lib/sync/engine";
+import type { SharedStatus } from "@/lib/sync/shared/engine";
 
 export type SyncToastId =
   "sync-offline" | "sync-error" | "sync-failed" | "sync-storage";
@@ -17,17 +18,26 @@ export const SYNC_TOAST_IDS: readonly SyncToastId[] = [
   "sync-storage",
 ];
 
-export interface SyncToast {
-  id: SyncToastId;
+export type SharedToastId =
+  "shared-offline" | "shared-error" | "shared-failed" | "shared-storage";
+export const SHARED_TOAST_IDS: readonly SharedToastId[] = [
+  "shared-offline",
+  "shared-error",
+  "shared-failed",
+  "shared-storage",
+];
+
+export interface SyncToast<Id extends string = SyncToastId> {
+  id: Id;
   message: string;
   failed: number;
 }
 
-export interface ToastDecision {
+export interface ToastDecision<Id extends string = SyncToastId> {
   /** Remembered for the next call. */
   shown: string | null;
   /** Show (or replace) this toast. */
-  show: SyncToast | null;
+  show: SyncToast<Id> | null;
   /** Sync recovered: dismiss every sync toast. */
   clear: boolean;
 }
@@ -36,25 +46,48 @@ export function decideSyncToast(
   shown: string | null,
   status: SyncStatus,
 ): ToastDecision {
+  return decideToast(shown, status, "sync");
+}
+
+/** The same rules for shared goals, with their own fixed toast ids. */
+export function decideSharedToast(
+  shown: string | null,
+  status: SharedStatus,
+): ToastDecision<SharedToastId> {
+  return decideToast(shown, status, "shared");
+}
+
+function decideToast<Prefix extends "sync" | "shared">(
+  shown: string | null,
+  status: {
+    state: string;
+    failed: number;
+    lastError: string | null;
+    storageError?: boolean;
+  },
+  prefix: Prefix,
+): ToastDecision<`${Prefix}-${"storage" | "offline" | "failed" | "error"}`> {
   if (
     status.state === "idle" ||
+    status.state === "paused" ||
     (status.state === "local-only" && !status.lastError)
   )
     return { shown: null, show: null, clear: shown !== null };
   if (
-    (status.state !== "error" && status.state !== "offline") ||
+    !["error", "offline", "unavailable"].includes(status.state) ||
     !status.lastError
   ) {
     // syncing, local-only, or no message: keep whatever is showing.
     return { shown, show: null, clear: false };
   }
-  const id: SyncToastId = status.storageError
-    ? "sync-storage"
+  const kind = status.storageError
+    ? "storage"
     : status.state === "offline"
-      ? "sync-offline"
+      ? "offline"
       : status.failed > 0
-        ? "sync-failed"
-        : "sync-error";
+        ? "failed"
+        : "error";
+  const id = `${prefix}-${kind}` as const;
   const key = `${id}|${status.failed}|${status.lastError}`;
   if (key === shown) return { shown, show: null, clear: false };
   return {

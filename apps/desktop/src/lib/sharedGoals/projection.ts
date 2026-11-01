@@ -58,7 +58,7 @@ export function projectSharedView(
     reason: view.reason,
     confirmedAt: view.confirmedAt,
     archived: !!view.group.archivedAt,
-    pending: view.intentions.length > 0,
+    pending: view.intentions.length > view.failed.length,
     stale: view.stale,
     round: view.round
       ? {

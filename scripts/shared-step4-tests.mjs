@@ -301,14 +301,19 @@ export async function runSharedStep4Tests({
   );
   await context.setOffline(false);
   await button("Sync now").click();
-  await page.getByText("conflict", { exact: false }).first().waitFor();
+  await page
+    .getByText("Another device changed this day. Check it, then try again.", {
+      exact: false,
+    })
+    .first()
+    .waitFor();
   check(
     await page.evaluate(
       () => window.sharedUi.snapshot().outbox[0]?.phase === "failed",
     ),
     "stale opposing offline intent remains visible as a conflict",
   );
-  await button("Review and retry").click();
+  await button("Try again").click();
   await page.waitForFunction(
     () => window.sharedUi.snapshot().outbox.length === 0,
   );
@@ -651,7 +656,7 @@ export async function runSharedStep4Tests({
       (await page.getByText("Daily walk", { exact: true }).count()) === 0,
     "access revocation removes group details and scores from the mounted panel",
   );
-  await button("Discard rejected change").click();
+  await button("Discard").click();
   await page.waitForFunction(
     () => window.sharedUi.snapshot().outbox.length === 0,
   );

@@ -6,7 +6,11 @@ import {
   percent,
   type SharedGroupView,
 } from "@/lib/sharedGoals/view";
-import { dateLabel, scheduleText } from "@/lib/sharedGoals/creation";
+import {
+  checkinFailureText,
+  dateLabel,
+  scheduleText,
+} from "@/lib/sharedGoals/creation";
 import { SharedIcon } from "./SharedParts";
 import { addDays } from "@/lib/sharedGoals/dates";
 import { groupDeadlineText } from "@facta/calendar";
@@ -17,10 +21,13 @@ export function PendingReview({
   engine,
   intentions,
   unavailable = false,
+  compact = false,
 }: {
   engine: SharedSync;
   intentions: CheckinIntent[];
   unavailable?: boolean;
+  /** Only the rows, for a card that already says which group this is. */
+  compact?: boolean;
 }) {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -38,12 +45,19 @@ export function PendingReview({
   };
   if (!intentions.length) return null;
   return (
-    <section className="shared-pending-panel" aria-label="Check-in sync review">
-      <h2>Pending changes</h2>
-      <p className="shared-note">
-        Checkmarks can be pending. Scores and ranks remain server-confirmed
-        until sync.
-      </p>
+    <section
+      className={`shared-pending-panel${compact ? " compact" : ""}`}
+      aria-label="Check-in sync review"
+    >
+      {!compact && (
+        <>
+          <h2>Pending changes</h2>
+          <p className="shared-note">
+            Checkmarks can be pending. Scores and ranks remain server-confirmed
+            until sync.
+          </p>
+        </>
+      )}
       {unavailable && (
         <p className="shared-note">
           These are your own saved changes for an unavailable group. Group
@@ -53,12 +67,9 @@ export function PendingReview({
       {intentions.map((i) => (
         <div className="shared-person" key={i.id}>
           <span className="flex-1">
-            {i.date} · {i.completed ? "Check in" : "Undo"} ·{" "}
             {i.phase === "failed"
-              ? i.failure === "conflict"
-                ? "Conflict · another device changed this day. Review the confirmed state before retrying."
-                : `Rejected: ${(i.failure ?? "unavailable").replaceAll("_", " ")}`
-              : "Pending"}
+              ? `${i.completed ? "Check-in" : "Undo"} for ${dateLabel(i.date)} wasn't saved. ${checkinFailureText(i.failure)}`
+              : `${dateLabel(i.date)} · ${i.completed ? "Check in" : "Undo"} · Pending`}
           </span>
           {i.phase === "failed" ? (
             <>
@@ -74,7 +85,7 @@ export function PendingReview({
                     })
                   }
                 >
-                  Review and retry
+                  Try again
                 </button>
               )}
               <button
@@ -83,7 +94,7 @@ export function PendingReview({
                 disabled={busy}
                 onClick={() => void run(() => engine.discardFailed(i.id))}
               >
-                Discard rejected change
+                Discard
               </button>
             </>
           ) : (
@@ -163,17 +174,19 @@ export function CheckinAction({
         onClick={() => void toggle()}
       >
         <span className="lab">
-          {view.pending
-            ? view.checked
-              ? "Pending check-in"
-              : "Pending undo"
-            : view.checked
-              ? detail
-                ? "Checked in today"
-                : "Checked in"
-              : detail
-                ? "Check in today"
-                : "Check in"}
+          {view.todayIntent?.phase === "failed"
+            ? "Not saved"
+            : view.pending
+              ? view.checked
+                ? "Pending check-in"
+                : "Pending undo"
+              : view.checked
+                ? detail
+                  ? "Checked in today"
+                  : "Checked in"
+                : detail
+                  ? "Check in today"
+                  : "Check in"}
         </span>
         {detail && !view.checked && (
           <span className="key" aria-hidden="true">
@@ -411,6 +424,7 @@ export function SharedOverview({
                 </span>
               </div>
               <RoundStatus view={v} now={now()} />
+              <PendingReview engine={engine} intentions={v.failed} compact />
               <SharedRanking view={v} userId={engine.userId} compact />
               {v.pendingTarget && (
                 <p className="shared-note">

@@ -67,7 +67,7 @@ def main():
             create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
             grant usage on schema auth to anon,authenticated;
             grant execute on function auth.uid() to anon,authenticated;""")
-            for file in ["20261016120000_goals_events.sql", "20261022140000_notes_diary.sql", "20261024160000_shared_goals.sql"]:
+            for file in ["20261016120000_goals_events.sql", "20261022140000_notes_diary.sql", "20261024160000_shared_goals.sql", "20261101120000_shared_checkin_clock_skew.sql"]:
                 c.execute((ROOT / "supabase/migrations" / file).read_text(encoding="utf-8"))
             # Supabase public-schema default grants, explicit in this scaffold.
             c.execute("grant select,insert,update,delete on public.goals,public.events to authenticated")

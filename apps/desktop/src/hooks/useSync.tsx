@@ -14,7 +14,12 @@ import { SharedSync } from "@/lib/sync/shared/engine";
 import { createSharedRemote } from "@/lib/sync/shared/remote";
 import { PlannerSync, type SyncStatus } from "@/lib/sync/engine";
 import { IndexedDbStore, storageErrorMessage } from "@/lib/sync/indexedDbStore";
-import { SYNC_TOAST_IDS, decideSyncToast } from "@/lib/sync/toastPolicy";
+import {
+  SHARED_TOAST_IDS,
+  SYNC_TOAST_IDS,
+  decideSharedToast,
+  decideSyncToast,
+} from "@/lib/sync/toastPolicy";
 import { createSupabaseRemotes } from "@/lib/sync/supabaseRemote";
 import {
   requestWidgetExport,
@@ -205,38 +210,63 @@ export function useSharedSyncEngine(): SharedSync | null {
   return !loading && engine?.userId === user?.id ? engine : null;
 }
 
-function SharedErrorToasts({ engine }: { engine: SharedSync }) {
+/** One toast per distinct problem; see lib/sync/toastPolicy.ts. */
+export function SharedErrorToasts({ engine }: { engine: SharedSync }) {
   const status = useSyncExternalStore(engine.subscribe, engine.getStatus);
   const shown = useRef<string | null>(null);
   useEffect(() => {
-    if (!status.lastError) {
-      if (shown.current) toast.dismiss("shared-sync-error");
-      shown.current = null;
-      return;
+    const decision = decideSharedToast(shown.current, status);
+    shown.current = decision.shown;
+    if (decision.clear) {
+      for (const id of SHARED_TOAST_IDS) toast.dismiss(id);
     }
-    if (shown.current === status.lastError) return;
-    shown.current = status.lastError;
-    toast.error(
-      status.storageError
-        ? "Shared changes could not be saved on this device"
-        : "Shared goals need attention",
-      {
-        id: "shared-sync-error",
-        description: status.lastError,
-        ...(status.storageError
-          ? {
-              duration: Infinity,
-              action: {
-                label: "Retry saving",
-                onClick: () => {
-                  void engine.retrySaving().catch(() => {});
-                },
-              },
-            }
-          : {}),
-      },
-    );
+    const t = decision.show;
+    if (!t) return;
+    // Only one kind of shared toast at a time.
+    for (const id of SHARED_TOAST_IDS) if (id !== t.id) toast.dismiss(id);
+    if (t.id === "shared-storage") {
+      toast.error("Shared changes could not be saved on this device", {
+        id: t.id,
+        description: t.message,
+        duration: Infinity,
+        action: {
+          label: "Retry saving",
+          onClick: () => {
+            void engine.retrySaving().catch(() => {});
+          },
+        },
+      });
+    } else if (t.id === "shared-offline") {
+      toast.warning("Shared goals paused", {
+        id: t.id,
+        description:
+          "Check-ins are saved on this device and will sync when the connection is back.",
+      });
+    } else if (t.id === "shared-failed") {
+      toast.error(
+        t.failed === 1
+          ? "A check-in wasn't saved"
+          : `${t.failed} check-ins weren't saved`,
+        {
+          id: t.id,
+          description: "Try again or discard it from Today or the group page.",
+        },
+      );
+    } else {
+      toast.error("Shared goals need attention", {
+        id: t.id,
+        description: t.message,
+      });
+    }
   }, [engine, status]);
+  // A different account must not inherit this account's message.
+  useEffect(
+    () => () => {
+      shown.current = null;
+      for (const id of SHARED_TOAST_IDS) toast.dismiss(id);
+    },
+    [engine],
+  );
   return null;
 }
 

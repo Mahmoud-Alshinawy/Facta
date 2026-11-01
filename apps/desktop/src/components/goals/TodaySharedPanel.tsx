@@ -21,7 +21,7 @@ import {
   ProgressScores,
   ProgressState,
 } from "../../../../widgets/src/components/ProgressShared";
-import { CheckinAction } from "./SharedProgress";
+import { CheckinAction, PendingReview } from "./SharedProgress";
 type Props = {
   onOpenGroup: (id: string) => void;
   onCreate: (template: "gym" | "custom") => void;
@@ -105,7 +105,15 @@ export function TodaySharedContent({
             label="Today shared group"
           />
           <ProgressScores group={group} counts />
-          <ProgressState group={group} now={now} timeFormat={timeFormat} />
+          {/* The row below already says this, with its own fix. */}
+          <ProgressState
+            group={view?.failed.length ? { ...group, reason: null } : group}
+            now={now}
+            timeFormat={timeFormat}
+          />
+          {engine && view && (
+            <PendingReview engine={engine} intentions={view.failed} compact />
+          )}
           <div className="today-shared-actions">
             <button
               className="progress-open"
@@ -152,7 +160,7 @@ export function TodaySharedContent({
           </div>
         </>
       )}
-      {(error || selection.error) && (
+      {(selection.error || (error && !view?.failed.length)) && (
         <p role="status">{selection.error || error}</p>
       )}
     </section>

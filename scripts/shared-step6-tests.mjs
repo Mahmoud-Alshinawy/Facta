@@ -479,7 +479,7 @@ export async function runSharedAcceptance({
         .getByRole("button", { name: "Open group", exact: true })
         .click();
       await page
-        .getByRole("button", { name: "Discard rejected change", exact: true })
+        .getByRole("button", { name: "Discard", exact: true })
         .click();
       await page.waitForFunction(
         () => window.acceptance.snapshot().outbox.length === 0,
