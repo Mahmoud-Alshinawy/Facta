@@ -53,3 +53,38 @@ has installed the integrated build:
 3. If anything is blank or stops working, tell the reviewer which screen or
    widget and what you were doing. Do not install this separate worktree build
    alongside the running installed app.
+
+### CSP follow-up: remote sources and development mode
+
+The widget frontend was searched for URL literals, `fetch`, `WebSocket`,
+`XMLHttpRequest`, `EventSource`, and `sendBeacon`; no remote host was found.
+Its `connect-src` now permits only self and Supabase HTTP/WebSocket hosts, and
+its fonts only self and data URLs. The unused Google Fonts hosts were removed
+from the desktop style and font policies. Both policies now include
+`base-uri 'self'` and `form-action 'none'`.
+
+On Windows with the configured Vite `devUrl`, Tauri 2.11.2 navigates directly
+to that HTTP URL, rather than serving its HTML through the Tauri asset
+protocol. The [webview source](https://github.com/tauri-apps/tauri/blob/tauri-v2.11.2/crates/tauri/src/manager/webview.rs#L43)
+sets the dev-server proxy only for mobile and
+[selects the app URL](https://github.com/tauri-apps/tauri/blob/tauri-v2.11.2/crates/tauri/src/manager/webview.rs#L443-L460).
+The [manager](https://github.com/tauri-apps/tauri/blob/tauri-v2.11.2/crates/tauri/src/manager/mod.rs#L353-L380)
+selects the configured `devUrl` in development and chooses `devCsp` (falling
+back to `csp`) when Tauri serves an asset. Its
+[asset handling](https://github.com/tauri-apps/tauri/blob/tauri-v2.11.2/crates/tauri/src/manager/mod.rs#L435-L452)
+applies the policy there. Thus neither configuration policy is injected into
+Vite's direct Windows HTTP response; no `devCsp` was added. A policy sent by
+the dev server itself would still apply. This conclusion comes from source
+inspection, not running the app or changing system registration.
+
+The local Edge/Playwright check was repeated with the tightened production
+policies: all six desktop sections and all seven widget types rendered, with
+zero console errors or CSP violations. The production builds were made in
+PowerShell with `BASE_PATH=/`, avoiding Git Bash path conversion. The same
+fixture and native-integration limitations described above apply.
+
+After the follow-up commit, the required checks passed: locked dependency
+installation; TypeScript for all three packages; desktop Vitest (39 files,
+375 tests) and calendar Vitest (12 files, 184 tests); both production builds;
+both offline Cargo checks; and widget Cargo test (0 tests). The desktop build
+still reports its large-chunk warning.
