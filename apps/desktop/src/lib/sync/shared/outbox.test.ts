@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { appendCheckin, prepareCheckin } from "./outbox";
+import {
+  appendCheckin,
+  datedAhead,
+  prepareCheckin,
+  type CheckinIntent,
+} from "./outbox";
 import { mapSnapshot } from "@/lib/sharedGoals/contracts";
 import {
   sharedRpcFixture,
@@ -73,5 +78,56 @@ describe("durable shared intent reducer", () => {
     expect(
       prepareCheckin(prepared, [], snapshot, SHARED_NOW + 86_400_000).command,
     ).toEqual(prepared.command);
+  });
+});
+
+describe("a refused check-in from a clock that was ahead", () => {
+  const snapshot = mapSnapshot(sharedRpcFixture(), SHARED_USER, SHARED_RANGE);
+  // Asia/Riyadh is UTC+3: 20:58Z is 23:58 on the 20th, 21:03Z is 00:03 on the 21st.
+  const corrected = Date.parse("2026-10-20T20:58:00Z");
+  const failed = (date: string, capturedAt: string) =>
+    ({
+      groupId: SHARED_GROUP,
+      date,
+      capturedAt,
+      phase: "failed",
+      failure: "invalid_date",
+    }) as CheckinIntent;
+
+  it("is dated ahead when its day hasn't started here yet", () => {
+    expect(
+      datedAhead(
+        failed("2026-10-21", "2026-10-20T21:03:00Z"),
+        snapshot,
+        corrected,
+      ),
+    ).toBe(true);
+  });
+  it("is not dated ahead on the same day, so Try again can re-stamp it", () => {
+    expect(
+      datedAhead(
+        failed("2026-10-20", "2026-10-20T20:59:00Z"),
+        snapshot,
+        corrected,
+      ),
+    ).toBe(false);
+  });
+  it("is not dated ahead when the stamp is in the past", () => {
+    expect(
+      datedAhead(
+        failed("2026-10-20", "2026-10-20T09:00:00Z"),
+        snapshot,
+        corrected,
+      ),
+    ).toBe(false);
+  });
+  it("is not dated ahead once that day has started", () => {
+    expect(
+      datedAhead(
+        failed("2026-10-21", "2026-10-20T21:03:00Z"),
+        snapshot,
+        Date.parse("2026-10-20T21:01:00Z"),
+      ),
+    ).toBe(false);
   });
 });

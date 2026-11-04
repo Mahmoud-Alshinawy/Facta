@@ -15,7 +15,11 @@ import { SharedIcon } from "./SharedParts";
 import { addDays } from "@/lib/sharedGoals/dates";
 import { groupDeadlineText } from "@facta/calendar";
 import { usePrefs } from "@/hooks/usePrefs";
-import type { CheckinIntent } from "@/lib/sync/shared/outbox";
+import {
+  CHECKIN_FROM_AHEAD,
+  datedAhead,
+  type CheckinIntent,
+} from "@/lib/sync/shared/outbox";
 
 export function PendingReview({
   engine,
@@ -44,6 +48,7 @@ export function PendingReview({
     }
   };
   if (!intentions.length) return null;
+  const snapshot = engine.getSnapshot().cache?.snapshot;
   return (
     <section
       className={`shared-pending-panel${compact ? " compact" : ""}`}
@@ -64,51 +69,55 @@ export function PendingReview({
           details have been removed.
         </p>
       )}
-      {intentions.map((i) => (
-        <div className="shared-person" key={i.id}>
-          <span className="flex-1">
-            {i.phase === "failed"
-              ? `${i.completed ? "Check-in" : "Undo"} for ${dateLabel(i.date)} wasn't saved. ${checkinFailureText(i.failure)}`
-              : `${dateLabel(i.date)} · ${i.completed ? "Check in" : "Undo"} · Pending`}
-          </span>
-          {i.phase === "failed" ? (
-            <>
-              {!unavailable && (
+      {intentions.map((i) => {
+        // A day that hasn't started yet can only be discarded.
+        const ahead = datedAhead(i, snapshot, Date.now());
+        return (
+          <div className="shared-person" key={i.id}>
+            <span className="flex-1">
+              {i.phase === "failed"
+                ? `${i.completed ? "Check-in" : "Undo"} for ${dateLabel(i.date)} wasn't saved. ${ahead ? CHECKIN_FROM_AHEAD : checkinFailureText(i.failure)}`
+                : `${dateLabel(i.date)} · ${i.completed ? "Check in" : "Undo"} · Pending`}
+            </span>
+            {i.phase === "failed" ? (
+              <>
+                {!unavailable && !ahead && (
+                  <button
+                    type="button"
+                    className="ctl"
+                    disabled={busy}
+                    onClick={() =>
+                      void run(async () => {
+                        await engine.retryFailed(i.id);
+                        if (navigator.onLine) await engine.syncNow();
+                      })
+                    }
+                  >
+                    Try again
+                  </button>
+                )}
                 <button
                   type="button"
                   className="ctl"
                   disabled={busy}
-                  onClick={() =>
-                    void run(async () => {
-                      await engine.retryFailed(i.id);
-                      if (navigator.onLine) await engine.syncNow();
-                    })
-                  }
+                  onClick={() => void run(() => engine.discardFailed(i.id))}
                 >
-                  Try again
+                  Discard
                 </button>
-              )}
+              </>
+            ) : (
               <button
                 type="button"
                 className="ctl"
                 disabled={busy}
-                onClick={() => void run(() => engine.discardFailed(i.id))}
+                onClick={() => void run(() => engine.syncNow())}
               >
-                Discard
+                Sync now
               </button>
-            </>
-          ) : (
-            <button
-              type="button"
-              className="ctl"
-              disabled={busy}
-              onClick={() => void run(() => engine.syncNow())}
-            >
-              Sync now
-            </button>
-          )}
-        </div>
-      ))}
+            )}
+          </div>
+        );
+      })}
       {message && <p role="status">{message}</p>}
     </section>
   );

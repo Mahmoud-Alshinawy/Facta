@@ -11,7 +11,7 @@ import {
   validateDraft,
   isUuid,
 } from "@/lib/sharedGoals/contracts";
-import { defaultHistoryRange, groupDate } from "@/lib/sharedGoals/dates";
+import { defaultHistoryRange } from "@/lib/sharedGoals/dates";
 import {
   reconcileSnapshot,
   forgetGroup,
@@ -23,6 +23,8 @@ import { SharedRemoteError, type SharedRemote } from "./remote";
 import {
   acknowledge,
   appendCheckin,
+  datedAhead,
+  CHECKIN_FROM_AHEAD,
   prepareCheckin,
   type CheckinInput,
 } from "./outbox";
@@ -52,8 +54,6 @@ export interface SharedStatus {
 }
 const CHECKINS_NOT_SAVED =
   "Some check-ins weren't saved. They stay on this device until you try again or discard them.";
-const CHECKIN_FROM_AHEAD =
-  "Your clock was ahead when you checked in, so this was saved for a day that hasn't started yet. Discard it, then check in again.";
 export interface SharedSyncOptions {
   userId: string;
   store: KeyValueStore;
@@ -418,20 +418,15 @@ export class SharedSync {
       assert(member);
       const rest = state.outbox.filter((e) => e.id !== id);
       assert(!rest.some((e) => e.after === id));
-      // A stamp ahead of this device's clock came from a clock that was ahead
-      // and has since been set right. Same day: stamp it now. A day that
-      // hasn't started here can't be saved, so the row stays for Discard.
-      // Any other stamp is the real time of an offline check-in and is kept.
-      let capturedAt = old.capturedAt;
-      if (Date.parse(capturedAt) > this.now()) {
-        const group = state.cache.snapshot.groups.find(
-          (g) => g.id === old.groupId,
-        );
-        assert(group);
-        if (groupDate(this.now(), group.timeZone) !== old.date)
-          throw new Error(CHECKIN_FROM_AHEAD);
-        capturedAt = new Date(this.now()).toISOString();
-      }
+      // A stamp ahead of this device's clock is from a clock since set right:
+      // on the same day it is stamped now. Any other stamp is the real time of
+      // an offline check-in and is kept.
+      if (datedAhead(old, state.cache.snapshot, this.now()))
+        throw new Error(CHECKIN_FROM_AHEAD);
+      const capturedAt =
+        Date.parse(old.capturedAt) > this.now()
+          ? new Date(this.now()).toISOString()
+          : old.capturedAt;
       return {
         ...state,
         outbox: appendCheckin(

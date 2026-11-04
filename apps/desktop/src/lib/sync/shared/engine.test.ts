@@ -268,7 +268,7 @@ describe("shared sync problems reach the user once", () => {
     );
     expect(failed.date).toBe("2026-10-21");
     await expect(engine.retryFailed(failed.id)).rejects.toThrow(
-      /Discard it, then check in again/,
+      "Your clock was ahead when you checked in, so this check-in is dated for a day that hasn't started yet. Discard it, then check in again.",
     );
     expect(engine.getSnapshot().outbox).toEqual([failed]);
     engine.dispose();

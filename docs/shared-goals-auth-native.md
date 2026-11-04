@@ -60,6 +60,11 @@ is accepted, and the refused past-midnight request is accepted once the server
 passes midnight. So the refusal is the date rule, not a wrong zone in the test
 setup. Wrong audience and issuer remain accepted, as the accepted risk.
 
+**Wording follow-up.** The discard message now says the check-in "is dated for a
+day that hasn't started yet" rather than "was saved". Such a row shows that
+message at once and offers only Discard, using the same rule (`datedAhead`) as
+Try again. Desktop tests 471; `--checkin-skew` 35.
+
 ## Check-in clock skew and the offline toast (1 November 2026)
 
 **Cause of the rejected check-ins.** The app stamps a check-in with the device's

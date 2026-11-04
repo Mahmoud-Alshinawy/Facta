@@ -4,7 +4,7 @@ import type {
   SharedOutcome,
 } from "@/types/sharedGoals";
 import { assert, freeze, makeCommand } from "@/lib/sharedGoals/contracts";
-import { canReplay, roundStart } from "@/lib/sharedGoals/dates";
+import { canReplay, groupDate, roundStart } from "@/lib/sharedGoals/dates";
 
 export interface CheckinIntent {
   id: string;
@@ -33,6 +33,23 @@ export interface CheckinInput {
   date: string;
   completed: boolean;
   capturedAt?: string;
+}
+export const CHECKIN_FROM_AHEAD =
+  "Your clock was ahead when you checked in, so this check-in is dated for a day that hasn't started yet. Discard it, then check in again.";
+/** A stamp ahead of this device's clock came from a clock that was ahead and
+ * has since been set right. If its group day hasn't started here yet, it can't
+ * be saved or re-stamped, only discarded. */
+export function datedAhead(
+  intent: Pick<CheckinIntent, "groupId" | "date" | "capturedAt">,
+  snapshot: SharedSnapshot | undefined,
+  now: number,
+): boolean {
+  const group = snapshot?.groups.find((g) => g.id === intent.groupId);
+  return (
+    !!group &&
+    Date.parse(intent.capturedAt) > now &&
+    groupDate(now, group.timeZone) !== intent.date
+  );
 }
 export const intentKey = (
   i: Pick<CheckinIntent, "groupId" | "membershipId" | "date">,

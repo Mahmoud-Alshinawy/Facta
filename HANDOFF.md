@@ -13,8 +13,9 @@
   user saw "Shared goals returned incomplete or incompatible data". Now a stamp
   ahead of the device's clock is re-stamped with now if the group date is still
   the same; if the date no longer matches, the row stays and the user reads
-  "Your clock was ahead when you checked in, so this was saved for a day that
-  hasn't started yet. Discard it, then check in again." Every other stamp is kept,
+  "Your clock was ahead when you checked in, so this check-in is dated for a day
+  that hasn't started yet. Discard it, then check in again." (reworded below).
+  Every other stamp is kept,
   so offline check-ins keep their real time.
 - **No Pending → Check in → Checked in flicker.** An accepted "checked" reply now
   writes its id, revision and checked state into the cached check-in row in the
@@ -50,6 +51,18 @@
     and the 28th; the same request is accepted once the server reaches 21:00:20Z.
     So the refusal comes from the date rule, not a wrong zone in the setup.
   - Nothing failed, so no app code changed.
+- **Reviewer's ddc7b5a review: no blockers.** It re-ran the stack: boundaries 40,
+  HTTP legacy 64, HTTP publishable 64, all ok. Two wording nits from the ec33426
+  review are now fixed:
+  - The message reads "Your clock was ahead when you checked in, so this check-in
+    is dated for a day that hasn't started yet. Discard it, then check in again."
+    (it used to say "was saved", but the row isn't saved).
+  - A refused row whose stamp is ahead of the device and whose day hasn't started
+    here shows that message straight away, with Discard only and no Try again.
+    `datedAhead` in `lib/sync/shared/outbox.ts` decides this for both the row and
+    `retryFailed`.
+  - Results: desktop tsc ok; **471 desktop** tests (467 + 4 new); `--checkin-skew`
+    ok, **35**, 16:08:35. No install for this change, as asked.
 - Renamed Docker folders: `run.facta-acceptance-20261101-1/-2` were already gone.
   `docker-secrets-engine.facta-20261101-2` was empty and was removed.
   `docker-secrets-engine.facta-20261101-1` holds one zero-byte broken socket link
