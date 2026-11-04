@@ -47,8 +47,18 @@ fe1a3c4's app code at the held-read step, and with only the re-stamp removed at
 Try again (`[["failed","invalid_date"]]`). Final code: 467 desktop / 212 calendar /
 5 Rust tests; browser `--checkin-skew` 35, `--ui` 248, `--step6` 567,
 `--step6-review` 78, `--deadlines` 48, `--join-review` 11. Both apps rebuilt and
-installed on the real machine. **Not run:** the HTTP suites and
-`--verify-boundaries` (Docker still blocked).
+installed on the real machine.
+
+**Docker-only checks (later on 4 November).** Docker came back with no images,
+containers or volumes, so the disposable stack was recreated (CLI 2.122.0, same
+project id and ports). A fresh start applied all five migrations on PostgreSQL
+17.11; re-running the clock-skew migration gave exit 0 and the check query stayed
+`true`. `--verify-boundaries`: ok, 40 assertions (was 29), the clock-skew checks'
+first real-server run. HTTP suite: ok, 64. HTTP suite with `--publishable-key`:
+ok, 64. The midnight case now has controls: a same-day stamp 20 seconds ahead
+is accepted, and the refused past-midnight request is accepted once the server
+passes midnight. So the refusal is the date rule, not a wrong zone in the test
+setup. Wrong audience and issuer remain accepted, as the accepted risk.
 
 ## Check-in clock skew and the offline toast (1 November 2026)
 

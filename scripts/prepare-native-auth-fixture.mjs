@@ -227,14 +227,40 @@ try {
         Date.parse((await stored()).captured_at) === server - 60_000,
         "a stamp behind the server is stored unchanged",
       );
+      // Riyadh is UTC+3, so 21:00Z is group midnight. The controls show the
+      // refusal comes from the date rule, not from a wrong zone in this setup.
       setClock("2026-10-28T20:59:30Z", true);
+      const sameDay = await send(
+        "2026-10-28T20:59:50Z",
+        plan.today,
+        (await stored()).revision,
+      );
+      check(
+        plan.today === "2026-10-28" && sameDay?.ok,
+        "control: 20 s ahead, still the 28th in Riyadh, is accepted",
+      );
       const midnight = await send("2026-10-28T21:00:10Z", "2026-10-29", 0);
       check(
         midnight?.ok === false && midnight.code === "invalid_date",
         "a device already past group midnight is refused until the server gets there",
       );
+      const wrongDay = await send(
+        "2026-10-28T21:00:10Z",
+        plan.today,
+        (await stored()).revision,
+      );
+      check(
+        wrongDay?.ok === false && wrongDay.code === "invalid_date",
+        "control: the same stamp for the 28th is refused, as it is the 29th in Riyadh",
+      );
+      setClock("2026-10-28T21:00:20Z", true);
+      const after = await send("2026-10-28T21:00:10Z", "2026-10-29", 0);
+      check(
+        after?.ok,
+        "control: the same past-midnight check-in is accepted once the server reaches midnight",
+      );
       skew.push(
-        "beyond 5 min refused; 5 s and exactly 5 min stored clamped; behind unchanged; past group midnight refused",
+        "beyond 5 min refused; 5 s and exactly 5 min stored clamped; behind unchanged; past group midnight refused by the date rule (same-day control accepted, accepted after server midnight)",
       );
     } finally {
       setClock(null, true);

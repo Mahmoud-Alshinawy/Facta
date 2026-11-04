@@ -1,6 +1,6 @@
 # Handoff: branch 3 — accepted claim risk, local-time deadlines
 
-## Current state (4 November 2026, Try again after a clock fix, no label flicker)
+## Current state (4 November 2026, Try again after a clock fix, no label flicker, Docker checks)
 
 - Review of fe1a3c4 found no blockers in that fix. **STOP for review. Do not
   merge.** Details: docs/shared-goals-auth-native.md (top).
@@ -34,9 +34,27 @@
   **248**, `--ui --step6` **567**, `--step6-review` **78**, `--deadlines` **48**,
   `--join-review` **11**, `--checkin-skew` **35** (was 23). Screenshots:
   `tmp/shared-goals-runtime/checkin-{checked,unchecked}-{default,light}.png`.
-- **Still NOT RUN (Docker blocked, WSL2 VMs refused):** both HTTP suites,
-  `--verify-boundaries` with the new skew cases, the clock-skew migration on the
-  disposable stack, the midnight-case zone check. Renamed Docker folders kept.
+- **Docker-only checks, run 4 Nov once WSL/Docker worked (Engine 29.9.2):** Docker
+  had come back empty (no images, containers or volumes), so the disposable stack
+  was recreated with the same CLI 2.122.0 and project id; only db, auth, rest,
+  kong and mail capture run. A fresh start applied all five migrations
+  (PostgreSQL 17.11). The clock-skew migration was then run a second time: exit 0,
+  check query `true` before and after.
+  - `prepare-native-auth-fixture.mjs --verify-boundaries`: ok, **40** (was 29;
+    11 clock-skew checks ran for the first time), 15:45:42.
+  - `run-supabase-acceptance.mjs`: ok, **64**, 15:48:42.
+  - `run-supabase-acceptance.mjs --publishable-key`: ok, **64**, 15:51:46.
+  - Wrong audience/issuer still accepted (Auth 200 / REST 200), as the accepted risk.
+  - Midnight case: three controls added. At server 20:59:30Z a stamp 20 s ahead
+    on the 28th is accepted; the past-midnight stamp is refused for both the 29th
+    and the 28th; the same request is accepted once the server reaches 21:00:20Z.
+    So the refusal comes from the date rule, not a wrong zone in the setup.
+  - Nothing failed, so no app code changed.
+- Renamed Docker folders: `run.facta-acceptance-20261101-1/-2` were already gone.
+  `docker-secrets-engine.facta-20261101-2` was empty and was removed.
+  `docker-secrets-engine.facta-20261101-1` holds one zero-byte broken socket link
+  that Windows refuses to open ("cannot be accessed by the system"); left in
+  place rather than forced. Docker is unaffected.
 - Installed build: both apps from this code (installers exit 0 at 14:36; no
   backup, as the owner asked). The running Facta was in the tray and did not close
   on a window close, so it was force-stopped first. Afterwards exactly one
