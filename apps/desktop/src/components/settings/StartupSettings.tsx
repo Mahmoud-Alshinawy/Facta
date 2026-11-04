@@ -55,21 +55,25 @@ export default function StartupSettings() {
       className="settings-card settings-stack"
       aria-label="Windows startup"
     >
-      <label className="flex items-center justify-between gap-4">
-        <span>
-          <strong>Start Facta when Windows starts</strong>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <strong id="startup-label">Start Facta when Windows starts</strong>
           <span className="block text-sm text-subtle">
             Also starts your widgets when available.
           </span>
-        </span>
-        <input
-          type="checkbox"
+        </div>
+        <button
+          type="button"
+          className="sw"
           role="switch"
-          checked={enabled ?? false}
+          aria-labelledby="startup-label"
+          aria-checked={enabled ?? false}
           disabled={!desktop || enabled === null || busy}
-          onChange={(event) => void change(event.target.checked)}
-        />
-      </label>
+          onClick={() => void change(!enabled)}
+        >
+          <span className="knob" />
+        </button>
+      </div>
       {!desktop && <p>Available in the Windows app.</p>}
       {error && (
         <p className="settings-error" role="alert">

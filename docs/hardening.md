@@ -100,13 +100,13 @@ entry is removed during migration; if it points to a valid widget executable,
 its path is saved in local app data so a custom install can still be found.
 The companion no longer enables itself. When Facta starts with `--hidden` and
 its startup setting is enabled, it starts the installed companion if needed.
-Migration errors are logged and exposed in Settings; no failed operation is
-reported as a successful toggle.
+Migration runs once during each setup and failures are logged. Startup reads
+and changes do not depend on migration succeeding.
 
 The desktop now directly references `winreg` 0.10.1, which was already in the
 lockfile as a transitive dependency of the autostart plugin. This permits the
-old widget entry and the main entry to be removed idempotently and lets real
-registry errors be distinguished from a missing value. The only lockfile
+old widget entry to be removed idempotently and lets real registry errors be
+distinguished from a missing value. The main entry is disabled by the plugin. The only lockfile
 change is adding the existing package to the desktop dependency list.
 
 The startup decision was developed test-first. Seven Rust unit tests use an
@@ -152,3 +152,47 @@ installed **both** integrated apps:
 
 The desktop production build reported its existing large-chunk warning. No
 installer, built application, or real Windows startup operation was run.
+
+### Startup review follow-up
+
+Legacy widget migration now runs only during app setup. A failure is logged
+and does not block reading or changing the main startup setting, or the main
+app's decision to launch widgets at login. If migration fails, the old widget
+entry can still start widgets independently until a later setup removes it.
+
+The widget process holds a Windows named-mutex handle from before Tauri setup
+until exit, preventing simultaneous launches from creating duplicate trays.
+The available Tauri single-instance plugin's Windows implementation can let a
+second launch continue if the first has created its mutex but has not yet
+created the plugin's helper window; the handle-only guard closes that gap.
+`windows-sys` 0.59 was already in the widget lockfile transitively and is now
+referenced directly for this guard. The widget app's unused Rust and JavaScript
+autostart dependencies were removed. The main startup entry is disabled by
+the autostart plugin; an absent entry is treated as success without parsing a
+localized error string. The Settings toggle uses the existing `.sw` switch
+style and remains keyboard accessible.
+
+The fake-store regression test first reproduced the migration error blocking a
+change, then passed after the fix. Widget tests use unique temporary mutex
+names and cover an immediate second attempt, 12 simultaneous attempts, and a
+separate test process. These tests did not start Facta or touch the registry.
+A local browser check verified the styled switch, keyboard use, simulated
+on/off, reopening Settings, and error recovery with no console errors or CSP
+violations.
+
+| Check | Result |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | Passed |
+| TypeScript, desktop / widgets / calendar | Passed / passed / passed |
+| Desktop Vitest | 39 files, 375 tests passed |
+| Calendar Vitest | 12 files, 184 tests passed |
+| Desktop and widget production builds | Passed / passed |
+| Desktop and widget `cargo check --offline` | Passed / passed |
+| Desktop `cargo test --offline` | 8 passed |
+| Widget `cargo test --offline` | 4 passed, including a child-process fixture |
+
+The desktop build continues to report its large-chunk warning. Neither app nor
+an installer was run, and the real Windows startup entries were not changed.
+After review and integrated installation, the owner should check the first
+Windows login after upgrade for one widget tray icon and one copy of each
+configured widget, then carry out the on/off restart checks above.

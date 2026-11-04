@@ -1,3 +1,6 @@
+#[cfg(windows)]
+mod single_instance;
+
 use tauri::{Manager, WebviewWindowBuilder, WebviewUrl};
 use tauri::tray::TrayIconBuilder;
 use tauri::menu::{Menu, MenuItem};
@@ -728,16 +731,22 @@ fn spawn_or_update_widgets(app: &tauri::AppHandle, state: &tauri::State<WidgetSt
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Hold the named handle for the entire process, including initial setup.
+    #[cfg(windows)]
+    let _instance_guard = match single_instance::acquire("Local\\app.facta.widgets.single-instance") {
+        Ok(Some(guard)) => guard,
+        Ok(None) => return,
+        Err(error) => {
+            log(&format!("Could not create single-instance guard: {error}"));
+            return;
+        }
+    };
     let t0 = std::time::Instant::now();
     log("Starting Facta Widgets companion app");
     
     tauri::Builder::default()
         .manage(WidgetState::new())
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_autostart::init(
-            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
-            Some(vec![]),
-        ))
         .invoke_handler(tauri::generate_handler![
             read_shared_data,
             close_widget,

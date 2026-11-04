@@ -191,8 +191,7 @@ fn export_data_for_widgets(
 fn get_start_with_windows(app: tauri::AppHandle) -> Result<bool, String> {
     #[cfg(windows)]
     {
-        let mut store = startup_windows::WindowsStartup(&app);
-        startup::initialize(&mut store)?;
+        let store = startup_windows::WindowsStartup(&app);
         startup::read_enabled(&store)
     }
     #[cfg(not(windows))]

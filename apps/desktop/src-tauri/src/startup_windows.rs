@@ -7,7 +7,6 @@ use winreg::{
 
 const RUN_KEY: &str = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
 const WIDGET_ENTRY: &str = "Facta Widgets";
-const MAIN_ENTRY: &str = "Facta";
 
 pub struct WindowsStartup<'a>(pub &'a tauri::AppHandle);
 
@@ -58,7 +57,21 @@ impl StartupStore for WindowsStartup<'_> {
         self.0.autolaunch().enable().map_err(|e| e.to_string())
     }
     fn disable(&mut self) -> Result<(), String> {
-        remove_value(&run_key()?, MAIN_ENTRY)
+        match self.0.autolaunch().disable() {
+            Ok(()) => Ok(()),
+            Err(error) => {
+                // The plugin converts registry errors to strings. Check the
+                // plugin's default entry name to distinguish an absent value
+                // from a real failure without relying on localized messages.
+                let entry = RegKey::predef(HKEY_CURRENT_USER)
+                    .open_subkey_with_flags(RUN_KEY, KEY_READ)
+                    .and_then(|key| key.get_raw_value(&self.0.package_info().name));
+                match entry {
+                    Err(missing) if missing.kind() == std::io::ErrorKind::NotFound => Ok(()),
+                    _ => Err(error.to_string()),
+                }
+            }
+        }
     }
     fn remove_legacy_widget(&mut self) -> Result<(), String> {
         let key = run_key()?;

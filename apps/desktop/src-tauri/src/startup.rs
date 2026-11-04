@@ -13,7 +13,6 @@ pub fn initialize(store: &mut impl StartupStore) -> Result<(), String> {
 }
 
 pub fn set_enabled(store: &mut impl StartupStore, enabled: bool) -> Result<(), String> {
-    store.remove_legacy_widget()?;
     if enabled {
         store.enable()
     } else {
@@ -52,7 +51,7 @@ mod tests {
     }
 
     #[test]
-    fn migration_failure_is_reported_without_changing_main_startup() {
+    fn migration_failure_does_not_block_reading_or_changing_main_startup() {
         struct FailingStore {
             main: bool,
         }
@@ -73,8 +72,12 @@ mod tests {
             }
         }
         let mut store = FailingStore { main: true };
-        assert_eq!(set_enabled(&mut store, false), Err("denied".into()));
-        assert!(store.main);
+        assert_eq!(initialize(&mut store), Err("denied".into()));
+        assert_eq!(read_enabled(&store), Ok(true));
+        assert_eq!(set_enabled(&mut store, false), Ok(()));
+        assert_eq!(read_enabled(&store), Ok(false));
+        assert_eq!(set_enabled(&mut store, true), Ok(()));
+        assert_eq!(read_enabled(&store), Ok(true));
     }
 
     #[test]

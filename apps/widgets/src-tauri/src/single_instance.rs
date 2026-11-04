@@ -1,0 +1,119 @@
+use std::io;
+use windows_sys::Win32::{
+    Foundation::{CloseHandle, GetLastError, SetLastError, ERROR_ALREADY_EXISTS, HANDLE},
+    System::Threading::CreateMutexW,
+};
+
+pub(super) struct InstanceGuard(HANDLE);
+
+impl Drop for InstanceGuard {
+    fn drop(&mut self) {
+        // SAFETY: The guard exclusively owns this valid mutex handle.
+        unsafe {
+            CloseHandle(self.0);
+        }
+    }
+}
+
+pub(super) fn acquire(name: &str) -> io::Result<Option<InstanceGuard>> {
+    let wide: Vec<u16> = name.encode_utf16().chain(std::iter::once(0)).collect();
+    // SAFETY: The name is a null-terminated UTF-16 string and the default
+    // security attributes require no borrowed state. We do not own the mutex;
+    // the handle's lifetime alone keeps the named object alive.
+    let handle = unsafe {
+        SetLastError(0);
+        CreateMutexW(std::ptr::null(), 0, wide.as_ptr())
+    };
+    if handle.is_null() {
+        return Err(io::Error::last_os_error());
+    }
+    // SAFETY: Read immediately after CreateMutexW, before another system call.
+    if unsafe { GetLastError() } == ERROR_ALREADY_EXISTS {
+        // SAFETY: This newly opened handle is no longer needed.
+        unsafe {
+            CloseHandle(handle);
+        }
+        Ok(None)
+    } else {
+        Ok(Some(InstanceGuard(handle)))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::acquire;
+
+    #[test]
+    fn child_process_reports_existing_instance() {
+        let Ok(name) = std::env::var("FACTA_TEST_MUTEX_NAME") else {
+            return;
+        };
+        assert!(acquire(&name)
+            .expect("child check should not fail")
+            .is_none());
+    }
+
+    #[test]
+    fn second_process_is_blocked_while_first_is_alive() {
+        let name = format!("Local\\FactaWidgets-process-test-{}", std::process::id());
+        let _guard = acquire(&name)
+            .expect("first process should not fail")
+            .expect("first process should own the name");
+        let result = std::process::Command::new(std::env::current_exe().expect("test executable"))
+            .args([
+                "--exact",
+                "single_instance::tests::child_process_reports_existing_instance",
+            ])
+            .env("FACTA_TEST_MUTEX_NAME", name)
+            .output()
+            .expect("child test should run");
+        let output = String::from_utf8_lossy(&result.stdout);
+        assert!(
+            result.status.success() && output.contains("1 passed"),
+            "child test did not pass: {output}"
+        );
+    }
+
+    #[test]
+    fn simultaneous_launches_admit_only_one_instance() {
+        use std::sync::{Arc, Barrier};
+        let name = format!("Local\\FactaWidgets-race-test-{}", std::process::id());
+        let start = Arc::new(Barrier::new(12));
+        let finish = Arc::new(Barrier::new(12));
+        let threads: Vec<_> = (0..12)
+            .map(|_| {
+                let name = name.clone();
+                let start = Arc::clone(&start);
+                let finish = Arc::clone(&finish);
+                std::thread::spawn(move || {
+                    start.wait();
+                    let guard = acquire(&name).expect("guard should be available");
+                    let admitted = guard.is_some();
+                    finish.wait();
+                    admitted
+                })
+            })
+            .collect();
+        let admitted = threads
+            .into_iter()
+            .map(|thread| thread.join().expect("test thread failed"))
+            .filter(|admitted| *admitted)
+            .count();
+        assert_eq!(admitted, 1);
+    }
+
+    #[test]
+    fn second_launch_is_blocked_until_first_instance_exits() {
+        let name = format!("Local\\FactaWidgets-test-{}", std::process::id());
+        let first = acquire(&name)
+            .expect("first launch should not fail")
+            .expect("first launch should own the name");
+        assert!(acquire(&name)
+            .expect("second launch should not fail")
+            .is_none());
+        drop(first);
+        assert!(acquire(&name)
+            .expect("later launch should not fail")
+            .is_some());
+    }
+}
