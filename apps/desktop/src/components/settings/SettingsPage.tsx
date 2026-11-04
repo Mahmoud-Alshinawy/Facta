@@ -7,6 +7,7 @@ import CalendarSettings from "../CalendarSettings";
 import WidgetManager from "../WidgetManager";
 import ThemeCards from "./ThemeCards";
 import InlineConfirm from "./InlineConfirm";
+import StartupSettings from "./StartupSettings";
 
 const TABS = ["Widgets", "Appearance", "Account"] as const;
 export default function SettingsPage() {
@@ -90,7 +91,7 @@ export default function SettingsPage() {
         tabIndex={0}
       >
         <div className="settings-content-inner">
-          {tab === "Widgets" && <WidgetManager />}
+          {tab === "Widgets" && <><StartupSettings /><WidgetManager /></>}
           {tab === "Appearance" && (
             <>
               <section
