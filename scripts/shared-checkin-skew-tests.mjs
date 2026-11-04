@@ -55,6 +55,75 @@ export async function runCheckinSkewTests({ page, url, fixture }) {
     }
   };
   const label = () => checkButton.innerText();
+  // Hold every snapshot read that follows a check-in reply, so the button's
+  // state between the reply and the next read can be seen.
+  let armed = false;
+  let gate = null;
+  let release = () => {};
+  let held = 0;
+  await page.route("**/rpc/facta_shared_command", (route) => {
+    if (armed) gate ??= new Promise((r) => (release = r));
+    return route.fallback();
+  });
+  await page.route("**/rpc/facta_shared_snapshot", async (route) => {
+    if (gate) {
+      held++;
+      await gate;
+    }
+    return route.fallback();
+  });
+  // Every label and button size the check-in shows, from the click onwards.
+  const watchButton = () =>
+    page.evaluate(() => {
+      const button = document.querySelector(
+        '[data-progress-surface="today"] .shared-check-action button',
+      );
+      const seen = (window.__checkinSeen = []);
+      const record = () => {
+        const { width, height } = button.getBoundingClientRect();
+        const text = button.innerText.trim();
+        if (seen.at(-1)?.text !== text) seen.push({ text, width, height });
+      };
+      record();
+      window.__checkinObserver?.disconnect();
+      window.__checkinObserver = new MutationObserver(record);
+      window.__checkinObserver.observe(button, {
+        subtree: true,
+        childList: true,
+        characterData: true,
+        attributes: true,
+      });
+    });
+  const seen = () => page.evaluate(() => window.__checkinSeen);
+  const sizes = new Set();
+  // Click, hold the read after the reply, and see the final label while held.
+  const heldClick = async (from, pending, done) => {
+    await watchButton();
+    held = 0;
+    armed = true;
+    await checkButton.click();
+    await page.waitForFunction(
+      () => window.acceptance.snapshot().outbox.length === 0,
+    );
+    const deadline = Date.now() + 10_000;
+    while (!held && Date.now() < deadline)
+      await new Promise((r) => setTimeout(r, 20));
+    check(held > 0, `the read after the ${done} reply is held`);
+    check(
+      (await label()).trim() === done,
+      `"${done}" shows before the next read`,
+    );
+    armed = false;
+    gate = null;
+    release();
+    await confirmed(done === "Checked in");
+    const labels = (await seen()).map((x) => x.text);
+    check(
+      JSON.stringify(labels) === JSON.stringify([from, pending, done]),
+      `${from} → ${pending} → ${done} without a step back: ${JSON.stringify(labels)}`,
+    );
+    for (const x of await seen()) sizes.add(`${x.width}x${x.height}`);
+  };
   const stored = async () => {
     const s = await snapshot();
     return s.cache.snapshot.checkins.find(
@@ -78,20 +147,20 @@ export async function runCheckinSkewTests({ page, url, fixture }) {
   // The owner's real failure: a normal check-in, undo, check-in with the device
   // clock 2 seconds ahead of the database, which never moves past the stamps.
   await deviceClock(at(2));
-  await checkButton.click();
-  await confirmed(true);
+  await heldClick("Check in", "Pending check-in", "Checked in");
   check(
     (await stored())?.completed === true,
     "check-in ahead of the server saved",
   );
-  await checkButton.click();
-  await confirmed(false);
+  await heldClick("Checked in", "Pending undo", "Check in");
   check(
     (await stored())?.completed === false,
     "undo ahead of the server saved",
   );
   await checkButton.click();
   await confirmed(true);
+  // The reply alone already shows the row; read the stored capture time.
+  await sync();
   const saved = await stored();
   check(saved?.completed === true, "check-in again ends checked in");
   check(saved?.revision === 3, "all three clicks reached the server");
@@ -117,6 +186,10 @@ export async function runCheckinSkewTests({ page, url, fixture }) {
     (await label()).trim() === "Not saved",
     "the button says it was not saved",
   );
+  {
+    const { width, height } = await checkButton.boundingBox();
+    sizes.add(`${width}x${height}`);
+  }
   check(
     (await today.getByText("invalid", { exact: false }).count()) === 0 &&
       (await today.getByText("Rejected", { exact: false }).count()) === 0,
@@ -183,6 +256,61 @@ export async function runCheckinSkewTests({ page, url, fixture }) {
     "Try again ends in the saved state",
   );
 
+  // The owner's case: the clock ran more than 5 minutes ahead, the change was
+  // refused, and the clock was then set right before Try again.
+  await deviceClock(at(361 + 400));
+  await checkButton.click();
+  await button("Try again").waitFor();
+  check((await label()).trim() === "Not saved", "far ahead is not saved");
+  await serverClock(at(365));
+  await deviceClock(at(365));
+  await button("Try again").click();
+  await confirmed(true);
+  await sync();
+  check(
+    (await button("Try again").count()) === 0,
+    "Try again after setting the clock right saves the change",
+  );
+  check(
+    (await today.getByText("incompatible", { exact: false }).count()) === 0,
+    "no incompatible-data message",
+  );
+  check(
+    Date.parse((await stored()).capturedAt) <= Date.parse(at(365)),
+    "the retried check-in carries the corrected time",
+  );
+  check((await label()).trim() === "Checked in", "ends checked in");
+
+  // One shape in every state, in both themes.
+  for (const [theme, name] of [
+    ["light", "Light"],
+    ["default", "Black and green"],
+  ]) {
+    await page
+      .getByRole("button", { name: `${name} theme`, exact: true })
+      .click();
+    for (const state of ["checked", "unchecked"]) {
+      if (state === "unchecked") {
+        await checkButton.click();
+        await confirmed(false);
+      } else if ((await label()).trim() !== "Checked in") {
+        await checkButton.click();
+        await confirmed(true);
+      }
+      await sync();
+      const { width, height } = await checkButton.boundingBox();
+      sizes.add(`${width}x${height}`);
+      await today.screenshot({
+        path: `tmp/shared-goals-runtime/checkin-${state}-${theme}.png`,
+        animations: "disabled",
+      });
+    }
+  }
+  check(
+    sizes.size === 1,
+    `the check-in button keeps one size in every state: ${[...sizes].join(", ")}`,
+  );
+
   // Network gone: one calm message over repeated failed retries, then recovery.
   const paused = () =>
     page.getByText("Shared goals paused", { exact: true }).count();
@@ -215,6 +343,9 @@ export async function runCheckinSkewTests({ page, url, fixture }) {
       "check in, undo, check in with the device 2 s ahead: all saved, clamped, no stuck state",
       "6 min ahead: plain not-saved state on Today, one toast across syncs, nothing pending",
       "Discard and Try again both work from Today",
+      "the label goes straight from Pending to Checked in (and back for undo) while the next read is held",
+      "Try again after the clock is set right re-stamps and saves",
+      "the check-in button keeps one size in every state, screenshots in both themes",
       "offline: one calm toast over repeated retries, no return after fading, clears on recovery",
     ],
   };

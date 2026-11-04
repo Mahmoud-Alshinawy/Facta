@@ -1,6 +1,49 @@
 # Handoff: branch 3 — accepted claim risk, local-time deadlines
 
-## Current state (1 November 2026, check-in clock skew and offline toast)
+## Current state (4 November 2026, Try again after a clock fix, no label flicker)
+
+- Review of fe1a3c4 found no blockers in that fix. **STOP for review. Do not
+  merge.** Details: docs/shared-goals-auth-native.md (top).
+- Owner rechecks on the installed fe1a3c4 build: Wi-Fi toast **PASS**. Check-in:
+  the first recheck ran before the migration was applied, so it doesn't count;
+  the owner then applied `20261101120000_shared_checkin_clock_skew.sql` to the
+  live project (check query `true`), and the recheck after it is **PASS**.
+- **Try again after setting the clock right.** `retryFailed` reused the old
+  stamp; with a stamp ahead of the corrected clock, `appendCheckin` threw and the
+  user saw "Shared goals returned incomplete or incompatible data". Now a stamp
+  ahead of the device's clock is re-stamped with now if the group date is still
+  the same; if the date no longer matches, the row stays and the user reads
+  "Your clock was ahead when you checked in, so this was saved for a day that
+  hasn't started yet. Discard it, then check in again." Every other stamp is kept,
+  so offline check-ins keep their real time.
+- **No Pending → Check in → Checked in flicker.** An accepted "checked" reply now
+  writes its id, revision and checked state into the cached check-in row in the
+  same save that removes the outbox entry (`confirmCheckin` in
+  `lib/sharedGoals/cache.ts`), unless the cached row is at a later revision.
+  Scores still wait for the next read. Undo is the same in reverse.
+- The check-in button keeps one slanted shape and size in every state (Checked in
+  is the same shape in quiet colours). The not-saved toast now says "Open the
+  group to try again or discard it."
+- Tests first: the engine tests and the extended `--checkin-skew` suite failed on
+  the old code for the reasons above (unit: incompatible-data error, and labels
+  `pending → unchecked → checked`; browser: `"Checked in" shows before the next
+  read` on fe1a3c4's app code, and `Never confirmed completed=true:
+  [["failed","invalid_date"]]` with only the re-stamp removed).
+- Results on the final code: frozen install, three tsc, **467 desktop** (462 + 5) /
+  **212 calendar** / **5 Rust**, both builds, both cargo checks. Browser: `--ui`
+  **248**, `--ui --step6` **567**, `--step6-review` **78**, `--deadlines` **48**,
+  `--join-review` **11**, `--checkin-skew` **35** (was 23). Screenshots:
+  `tmp/shared-goals-runtime/checkin-{checked,unchecked}-{default,light}.png`.
+- **Still NOT RUN (Docker blocked, WSL2 VMs refused):** both HTTP suites,
+  `--verify-boundaries` with the new skew cases, the clock-skew migration on the
+  disposable stack, the midnight-case zone check. Renamed Docker folders kept.
+- Installed build: both apps from this code (installers exit 0 at 14:36; no
+  backup, as the owner asked). The running Facta was in the tray and did not close
+  on a window close, so it was force-stopped first. Afterwards exactly one
+  `facta.exe`, from the install path; signed in; Today shows the new Checked in
+  button with 2 of 3. Not pressed: that would change the owner's real score.
+
+## 1 November 2026: check-in clock skew and offline toast (fe1a3c4; historical)
 
 - Reviewer raised intermittent `invalid_date` check-ins to a **merge blocker**. Fixes
   are in; STOP for review. **Do not merge.** Details:

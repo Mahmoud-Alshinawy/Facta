@@ -1,4 +1,8 @@
-import type { SharedSnapshot, HistoryRange } from "@/types/sharedGoals";
+import type {
+  SharedSnapshot,
+  HistoryRange,
+  SharedOutcome,
+} from "@/types/sharedGoals";
 import { freeze } from "./contracts";
 export interface HistoryWindow extends HistoryRange {
   confirmedAt: number;
@@ -51,6 +55,67 @@ export function forgetGroup(
     return Object.keys(versions).length ? [{ ...w, versions }] : [];
   });
   return freeze({ ...cache, snapshot, windows });
+}
+
+/** An accepted check-in is the server's answer for that day, so the cached row
+ * takes its id, revision and checked state at once instead of showing the old
+ * row until the next read. Scores still wait for that read. A row already at a
+ * later revision is newer than this answer and stays. */
+export function confirmCheckin(
+  cache: SharedCache | null,
+  intent: {
+    groupId: string;
+    membershipId: string;
+    userId: string;
+    date: string;
+    capturedAt: string;
+  },
+  outcome: SharedOutcome,
+  now: number,
+): SharedCache | null {
+  if (
+    !cache ||
+    !outcome.ok ||
+    outcome.code !== "checked" ||
+    !outcome.id ||
+    outcome.revision === undefined ||
+    outcome.completed === undefined
+  )
+    return cache;
+  const old = cache.snapshot.checkins.find(
+    (c) =>
+      c.membershipId === intent.membershipId && c.checkinDate === intent.date,
+  );
+  if (old && old.revision > outcome.revision) return cache;
+  // A first check-in has no row yet; its times are placeholders the next read
+  // replaces. The server clamps a stamp from a clock ahead to its own time.
+  const stamp = new Date(now).toISOString();
+  const row = old
+    ? {
+        ...old,
+        id: outcome.id,
+        revision: outcome.revision,
+        completed: outcome.completed,
+      }
+    : {
+        id: outcome.id,
+        groupId: intent.groupId,
+        userId: intent.userId,
+        membershipId: intent.membershipId,
+        checkinDate: intent.date,
+        completed: outcome.completed,
+        capturedAt: intent.capturedAt < stamp ? intent.capturedAt : stamp,
+        createdAt: stamp,
+        updatedAt: stamp,
+        revision: outcome.revision,
+      };
+  return freeze({
+    ...cache,
+    snapshot: {
+      ...cache.snapshot,
+      checkins: [...cache.snapshot.checkins.filter((c) => c !== old), row],
+    },
+  });
 }
 
 /** Complete identity lists replace old lists. History pages replace only their

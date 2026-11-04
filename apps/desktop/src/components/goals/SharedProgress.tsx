@@ -167,7 +167,7 @@ export function CheckinAction({
       <button
         type="button"
         data-checkin={detail ? "detail" : undefined}
-        className={view.checked ? "ctl" : "b b-commit b-primary"}
+        className={`b b-commit ${view.checked ? "is-checked" : "b-primary"}`}
         disabled={!view.canCheck || locked || saving}
         aria-label={`${view.checked ? "Undo check-in" : "Check in"}: ${view.group.name}`}
         aria-pressed={view.checked}

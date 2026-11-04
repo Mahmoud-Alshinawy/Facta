@@ -249,7 +249,7 @@ export function SharedErrorToasts({ engine }: { engine: SharedSync }) {
           : `${t.failed} check-ins weren't saved`,
         {
           id: t.id,
-          description: "Try again or discard it from Today or the group page.",
+          description: "Open the group to try again or discard it.",
         },
       );
     } else {

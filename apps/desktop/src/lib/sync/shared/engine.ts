@@ -11,8 +11,12 @@ import {
   validateDraft,
   isUuid,
 } from "@/lib/sharedGoals/contracts";
-import { defaultHistoryRange } from "@/lib/sharedGoals/dates";
-import { reconcileSnapshot, forgetGroup } from "@/lib/sharedGoals/cache";
+import { defaultHistoryRange, groupDate } from "@/lib/sharedGoals/dates";
+import {
+  reconcileSnapshot,
+  forgetGroup,
+  confirmCheckin,
+} from "@/lib/sharedGoals/cache";
 import type { KeyValueStore } from "../storage";
 import { storageErrorMessage } from "../indexedDbStore";
 import { SharedRemoteError, type SharedRemote } from "./remote";
@@ -48,6 +52,8 @@ export interface SharedStatus {
 }
 const CHECKINS_NOT_SAVED =
   "Some check-ins weren't saved. They stay on this device until you try again or discard them.";
+const CHECKIN_FROM_AHEAD =
+  "Your clock was ahead when you checked in, so this was saved for a day that hasn't started yet. Discard it, then check in again.";
 export interface SharedSyncOptions {
   userId: string;
   store: KeyValueStore;
@@ -412,6 +418,20 @@ export class SharedSync {
       assert(member);
       const rest = state.outbox.filter((e) => e.id !== id);
       assert(!rest.some((e) => e.after === id));
+      // A stamp ahead of this device's clock came from a clock that was ahead
+      // and has since been set right. Same day: stamp it now. A day that
+      // hasn't started here can't be saved, so the row stays for Discard.
+      // Any other stamp is the real time of an offline check-in and is kept.
+      let capturedAt = old.capturedAt;
+      if (Date.parse(capturedAt) > this.now()) {
+        const group = state.cache.snapshot.groups.find(
+          (g) => g.id === old.groupId,
+        );
+        assert(group);
+        if (groupDate(this.now(), group.timeZone) !== old.date)
+          throw new Error(CHECKIN_FROM_AHEAD);
+        capturedAt = new Date(this.now()).toISOString();
+      }
       return {
         ...state,
         outbox: appendCheckin(
@@ -422,7 +442,7 @@ export class SharedSync {
           {
             groupId: old.groupId,
             date: old.date,
-            capturedAt: old.capturedAt,
+            capturedAt,
             completed: old.completed,
           },
           this.now(),
@@ -615,6 +635,7 @@ export class SharedSync {
               outcome,
               this.now(),
             ),
+            cache: confirmCheckin(state.cache, prepared, outcome, this.now()),
             needsRefresh: state.needsRefresh || outcome.ok,
           }));
           changed = true;

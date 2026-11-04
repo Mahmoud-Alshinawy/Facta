@@ -1,17 +1,54 @@
 # Remaining acceptance: real local Auth/HTTP and native providers
 
-Last updated 1 November 2026. Branch `feat/shared-goals`. **Full acceptance
+Last updated 4 November 2026. Branch `feat/shared-goals`. **Full acceptance
 remains incomplete; do not merge.** This began as acceptance-only work after
 `dcfe07a`, but the acceptance found problems, so application code has changed
 since then: local-time deadlines, the publishable-key fallback, warm focus
-links, Edit split, the invite and profile screens, first-round wording and
-widget placement. No migration file changed; the owner applied the existing
-shared-goals migration to the live project.
+links, Edit split, the invite and profile screens, first-round wording, widget
+placement and check-in clock skew. One new migration,
+`20261101120000_shared_checkin_clock_skew.sql`; the owner applied it and the
+original shared-goals migration to the live project.
 
 Owner hands-on checks are recorded below. Check-in scoring and the offline toast
 are fixed in source and need rechecking on the installed build after the owner
 runs the new migration. Two separate physical devices are an accepted open
 limitation.
+
+## Try again after a clock fix, and a steady check-in button (4 November 2026)
+
+**Owner rechecks of fe1a3c4 on the installed build.** Wi-Fi toast: pass. Check-in:
+the first recheck happened before the migration was applied, so it does not
+count. After the owner applied `20261101120000_shared_checkin_clock_skew.sql`
+(check query `true`), the recheck passed.
+
+**Try again after setting the clock right.** A check-in made with the clock more
+than 5 minutes ahead is refused. If the owner then sets the clock right and
+presses Try again, the old stamp is now in the device's future, and the app
+reported "incomplete or incompatible data". `retryFailed` now re-stamps with the
+current time when the group date is unchanged. When the stamp belongs to a day
+that has not started yet, the row stays and the message says to discard it and
+check in again. Any other stamp is kept, so an offline check-in keeps its real
+time.
+
+**Label flicker.** After a check-in the button went Pending check-in → Check in →
+Checked in (undo the same in reverse). The accepted reply removed the outbox
+entry, but the cached row only changed on the next read, so for one round trip
+the view showed the old row. The reply now updates that row (id, revision,
+checked) in the same save, unless the cached row is already at a later revision.
+Scores still wait for the read. The button also keeps one shape and size in every
+state, and the not-saved toast points to the group.
+
+**Evidence.** Unit tests (engine and cache) and the extended
+`run-shared-client-tests.mjs 55439 --ui --checkin-skew`: the next read is held
+after each reply and the label must go straight from Pending to the final
+state; the device clock is moved back before Try again; button sizes are compared
+across states and screenshots taken in both themes. The browser suite failed on
+fe1a3c4's app code at the held-read step, and with only the re-stamp removed at
+Try again (`[["failed","invalid_date"]]`). Final code: 467 desktop / 212 calendar /
+5 Rust tests; browser `--checkin-skew` 35, `--ui` 248, `--step6` 567,
+`--step6-review` 78, `--deadlines` 48, `--join-review` 11. Both apps rebuilt and
+installed on the real machine. **Not run:** the HTTP suites and
+`--verify-boundaries` (Docker still blocked).
 
 ## Check-in clock skew and the offline toast (1 November 2026)
 

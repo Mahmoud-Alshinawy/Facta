@@ -172,6 +172,19 @@
   flex-direction: column;
   gap: 6px;
 }
+/* One shape and size in every state, so the card doesn't jump when a
+   check-in switches between Check in, Pending and Checked in. */
+.fx .shared-check-action > .b-commit {
+  min-width: 168px;
+}
+.fx .shared-check-action > .b-commit.is-checked {
+  background: var(--raised-2);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--control-border);
+}
+.fx .shared-check-action > .b-commit.is-checked:hover {
+  box-shadow: inset 0 0 0 1px var(--text-2);
+}
 .fx .shared-check-action p {
   font-size: 12px;
   margin: 0;

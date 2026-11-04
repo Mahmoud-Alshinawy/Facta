@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { mapSnapshot } from "./contracts";
-import { reconcileSnapshot, forgetGroup } from "./cache";
+import { reconcileSnapshot, forgetGroup, confirmCheckin } from "./cache";
 import {
   sharedRpcFixture,
   SHARED_USER,
   SHARED_GROUP,
+  SHARED_MEMBER,
   SHARED_RANGE,
   SHARED_NOW,
 } from "@/test/sharedFixtures";
@@ -73,5 +74,52 @@ describe("shared snapshot reconciliation", () => {
     ]);
     expect(removed.windows).toEqual([]);
     expect(cache.snapshot.groups).toHaveLength(1);
+  });
+});
+
+describe("an accepted check-in in the cache", () => {
+  const intent = {
+    groupId: SHARED_GROUP,
+    membershipId: SHARED_MEMBER,
+    userId: SHARED_USER,
+    date: "2026-10-20",
+    capturedAt: new Date(SHARED_NOW).toISOString(),
+  };
+  const cache = reconcileSnapshot(
+    null,
+    mapSnapshot(sharedRpcFixture(), SHARED_USER, SHARED_RANGE),
+    SHARED_RANGE,
+    SHARED_NOW,
+  );
+  const id = crypto.randomUUID();
+  const ok = (revision: number, completed: boolean) => ({
+    ok: true,
+    code: "checked",
+    id,
+    revision,
+    completed,
+  });
+
+  it("takes the server's id, revision and state, and keeps a newer row", () => {
+    const first = confirmCheckin(cache, intent, ok(1, true), SHARED_NOW)!;
+    expect(first.snapshot.checkins).toMatchObject([
+      { id, revision: 1, completed: true, checkinDate: "2026-10-20" },
+    ]);
+    const undone = confirmCheckin(first, intent, ok(2, false), SHARED_NOW)!;
+    expect(undone.snapshot.checkins).toMatchObject([
+      { id, revision: 2, completed: false },
+    ]);
+    expect(confirmCheckin(undone, intent, ok(1, true), SHARED_NOW)).toBe(
+      undone,
+    );
+    expect(
+      confirmCheckin(
+        cache,
+        intent,
+        { ok: false, code: "conflict" },
+        SHARED_NOW,
+      ),
+    ).toBe(cache);
+    expect(first.snapshot.scores).toBe(cache.snapshot.scores);
   });
 });
