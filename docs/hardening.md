@@ -88,3 +88,67 @@ installation; TypeScript for all three packages; desktop Vitest (39 files,
 375 tests) and calendar Vitest (12 files, 184 tests); both production builds;
 both offline Cargo checks; and widget Cargo test (0 tests). The desktop build
 still reports its large-chunk warning.
+
+## Start with Windows
+
+The main app no longer enables startup during launch. The Settings switch reads
+and changes the existing Facta Windows startup entry, so a new installation is
+off, an already-enabled entry stays enabled on upgrade, and opening the app
+never turns an off setting back on. Windows Task Manager's startup override is
+included in the plugin's status. The former independent `Facta Widgets` Run
+entry is removed during migration; if it points to a valid widget executable,
+its path is saved in local app data so a custom install can still be found.
+The companion no longer enables itself. When Facta starts with `--hidden` and
+its startup setting is enabled, it starts the installed companion if needed.
+Migration errors are logged and exposed in Settings; no failed operation is
+reported as a successful toggle.
+
+The desktop now directly references `winreg` 0.10.1, which was already in the
+lockfile as a transitive dependency of the autostart plugin. This permits the
+old widget entry and the main entry to be removed idempotently and lets real
+registry errors be distinguished from a missing value. The only lockfile
+change is adding the existing package to the desktop dependency list.
+
+The startup decision was developed test-first. Seven Rust unit tests use an
+in-memory substitute, covering fresh and existing settings, explicit on/off,
+reopening, widget login decisions, and migration failure. A local production
+browser check with simulated native calls verified the toggle's on/off state,
+reopening Settings, and recovery from a failed update; no console errors or
+CSP violations occurred. These tests did not access the real registry or run
+either app. The Windows integration and actual login behavior remain untested.
+
+### Owner's later Windows checks
+
+Only after both changes have been reviewed and merged, and Builder A has
+installed **both** integrated apps:
+
+1. If Facta was already set to start with Windows before the upgrade, open
+   Settings and confirm **Start Facta when Windows starts** is on. A setting
+   disabled in Windows Task Manager should show as off.
+2. Turn the switch off, quit Facta and the widget app from their tray icons,
+   and restart Windows. Confirm neither app starts at login. Open Facta and
+   confirm the switch is still off.
+3. Turn the switch on and restart Windows. Confirm Facta starts in the
+   background and configured widgets appear. Open Settings and confirm the
+   switch is still on.
+4. If a separate clean Windows account or test computer is available, install
+   the integrated apps there and confirm the switch is off before opting in.
+5. Restore whichever setting you prefer. Tell the reviewer about any mismatch,
+   error message, missing widget, or duplicated widget.
+
+### Startup commit checks
+
+| Check | Result |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | Passed |
+| TypeScript, desktop / widgets / calendar | Passed / passed / passed |
+| Desktop Vitest | 39 files, 375 tests passed |
+| Calendar Vitest | 12 files, 184 tests passed |
+| Desktop and widget production builds | Passed / passed |
+| Desktop and widget `cargo check --offline` | Passed / passed |
+| Widget `cargo test --offline` | Passed, 0 tests |
+| Desktop `cargo test --offline ... startup::tests` | 7 passed, 1 unrelated test filtered out |
+| Simulated browser toggle and error recovery | Passed, no console errors or CSP violations |
+
+The desktop production build reported its existing large-chunk warning. No
+installer, built application, or real Windows startup operation was run.

@@ -6,7 +6,6 @@
   "permissions": [
     "core:default",
     "opener:default",
-    "autostart:default",
     "core:window:allow-close",
     "core:window:allow-create",
     "core:window:allow-set-position",

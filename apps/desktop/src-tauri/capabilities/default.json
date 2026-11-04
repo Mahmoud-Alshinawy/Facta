@@ -6,7 +6,6 @@
   "permissions": [
     "core:default",
     "deep-link:default",
-    "autostart:default",
     "window-state:default"
   ]
 }

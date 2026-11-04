@@ -778,15 +778,6 @@ pub fn run() {
             
             log(&format!("Tray icon created (T+{}ms)", t0.elapsed().as_millis()));
             
-            // Enable autostart (cross-platform)
-            {
-                let app_handle = app.app_handle().clone();
-                use tauri_plugin_autostart::ManagerExt;
-                match app_handle.autolaunch().enable() {
-                    Ok(_) => log("Autostart enabled"),
-                    Err(e) => log(&format!("Failed to enable autostart: {}", e)),
-                }
-            }
             
             // Keeper window to keep app alive in background
             match WebviewWindowBuilder::new(app, "keeper", WebviewUrl::App("/".into()))

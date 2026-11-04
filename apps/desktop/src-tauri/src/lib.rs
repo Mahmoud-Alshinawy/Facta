@@ -1,3 +1,7 @@
+mod startup;
+#[cfg(windows)]
+mod startup_windows;
+
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::TrayIconBuilder;
 use tauri::Emitter;
@@ -184,6 +188,30 @@ fn export_data_for_widgets(
 }
 
 #[tauri::command]
+fn get_start_with_windows(app: tauri::AppHandle) -> Result<bool, String> {
+    #[cfg(windows)]
+    {
+        let mut store = startup_windows::WindowsStartup(&app);
+        startup::initialize(&mut store)?;
+        startup::read_enabled(&store)
+    }
+    #[cfg(not(windows))]
+    { let _ = app; Err("Windows startup is only available on Windows".into()) }
+}
+
+#[tauri::command]
+fn set_start_with_windows(app: tauri::AppHandle, enabled: bool) -> Result<bool, String> {
+    #[cfg(windows)]
+    {
+        let mut store = startup_windows::WindowsStartup(&app);
+        startup::set_enabled(&mut store, enabled)?;
+        startup::read_enabled(&store)
+    }
+    #[cfg(not(windows))]
+    { let _ = (app, enabled); Err("Windows startup is only available on Windows".into()) }
+}
+
+#[tauri::command]
 async fn widget_app_running() -> Result<bool, String> {
     // Check if already running (platform-specific)
     #[cfg(target_os = "windows")]
@@ -233,7 +261,18 @@ async fn launch_widget_app() -> Result<(), String> {
 
     // Platform-specific installation paths
     #[cfg(target_os = "windows")]
-    let possible_paths = vec![
+    let possible_paths = {
+        let mut paths = Vec::new();
+        if let Some(dir) = dirs::data_local_dir() {
+            if let Ok(saved) = std::fs::read_to_string(dir.join("Facta").join("widget-app-path.txt")) {
+                let path = std::path::PathBuf::from(saved.trim());
+                if path.is_absolute() && path.file_name().and_then(|name| name.to_str())
+                    .is_some_and(|name| name.eq_ignore_ascii_case("facta-widgets.exe")) {
+                    paths.push(path);
+                }
+            }
+        }
+        paths.extend([
         dirs::data_local_dir().unwrap_or_default()
             .join("Facta Widgets")
             .join("facta-widgets.exe"),
@@ -243,7 +282,9 @@ async fn launch_widget_app() -> Result<(), String> {
             .join("facta-widgets.exe"),
         std::path::PathBuf::from("C:\\Program Files\\Facta Widgets\\facta-widgets.exe"),
         std::path::PathBuf::from("C:\\Program Files (x86)\\Facta Widgets\\facta-widgets.exe"),
-    ];
+        ]);
+        paths
+    };
     
     #[cfg(target_os = "macos")]
     let possible_paths = vec![
@@ -401,7 +442,9 @@ pub fn run() {
             ack_widget_actions,
             set_widget_action_delivery,
             launch_widget_app,
-            widget_app_running
+            widget_app_running,
+            get_start_with_windows,
+            set_start_with_windows
         ]);
 
     builder = builder.setup(|app| {
@@ -471,13 +514,11 @@ pub fn run() {
             });
         }
 
-        // Enable autostart (cross-platform)
-        {
-            use tauri_plugin_autostart::ManagerExt;
-            match app.autolaunch().enable() {
-                Ok(_) => println!("[Facta] Autostart enabled"),
-                Err(e) => eprintln!("[Facta] Failed to enable autostart: {}", e),
-            }
+        // Retire the companion's old independent login entry. Never enable the
+        // main entry here: the existing Windows choice is authoritative.
+        #[cfg(windows)]
+        if let Err(error) = startup::initialize(&mut startup_windows::WindowsStartup(app.handle())) {
+            eprintln!("[Facta] Could not migrate widget startup: {error}");
         }
 
         // Check if --hidden flag was passed (autostart)
@@ -487,6 +528,21 @@ pub fn run() {
         if hidden {
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.hide();
+            }
+        }
+        #[cfg(windows)]
+        {
+            let enabled = get_start_with_windows(app.handle().clone());
+            match enabled {
+                Ok(enabled) if startup::should_launch_widgets(hidden, enabled) => {
+                    tauri::async_runtime::spawn(async {
+                        if let Err(error) = launch_widget_app().await {
+                            eprintln!("[Facta] Could not start widgets at login: {error}");
+                        }
+                    });
+                }
+                Err(error) => eprintln!("[Facta] Could not read startup setting: {error}"),
+                _ => {}
             }
         }
 
