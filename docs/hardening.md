@@ -203,13 +203,13 @@ The following runtime panic points were changed:
 
 - `clamp_to_monitors`: if passed no monitor information, log the condition and
   use the same 1920×1080 default work area already used by monitor discovery.
-- `close_widget`: the two lock operations are now one checked operation. If
-  the closed-widget state is poisoned, log it and still close the window; the
-  close cannot be remembered in that case.
-- `save_current_positions`: log a poisoned position lock and skip saving rather
-  than panic or overwrite the previous saved positions.
-- `spawn_or_update_widgets`: return an error for poisoned closed-widget or
-  position state; the existing callers log the error and skip that update.
+- `close_widget`: the two lock operations are now one operation. A later
+  follow-up recovers the last data from a poisoned closed-widget lock and logs
+  the recovery before recording the close.
+- `save_current_positions`: recover and log a poisoned position lock so the
+  available position data can still be saved.
+- `spawn_or_update_widgets`: recover and log poisoned closed-widget or position
+  state rather than panic or skip every subsequent update.
 - Desktop app build: report a Tauri build error and return instead of panicking.
   It attempts to append the error to `%LOCALAPPDATA%\Facta\startup-error.log`;
   if the log cannot be written, it reports that on standard error as well.
@@ -242,11 +242,67 @@ Widget logging is redirected to standard error in tests to keep them isolated.
 | `pnpm install --frozen-lockfile` | Not run: automatic approval review rejected installation under the no-install instruction; existing dependencies were used for the checks above |
 
 The desktop build still reports the existing large-chunk warning. Neither app,
-an installer, nor an actual login was run. The login-CSRF change remains
-pending until shared goals is merged and this branch is rebased; no live
-Supabase project was used.
+an installer, nor an actual login was run. The login-CSRF change was pending at
+this point and is covered by the subsequent follow-up below; no live Supabase
+project was used.
 
 After review, merge, and installation by Builder A, open Facta and the widget
 app, close and reopen a widget, move it, quit both apps, and reopen them to
 check normal operation and position saving. If either app fails to open, tell
 the reviewer; the startup logs listed above may help identify the cause.
+
+## Rebase, login callback security, and widget lock recovery
+
+`feat/hardening` was rebased without conflicts onto `origin/main` at `0baaf2f`.
+The rebased head was `630236a3328abe1b7cba75bf36edd212def19a21`, and was pushed
+with `--force-with-lease`. At that point, desktop Vitest passed 471 tests,
+calendar Vitest passed 212, desktop Rust passed 13, and widget Rust passed 14.
+All three TypeScript checks, both production builds, and both offline Cargo
+checks also passed. After the owner clarified that installing locked project
+dependencies in the worktree is permitted, `pnpm install --frozen-lockfile`
+passed; no Facta app or installer was run.
+
+The app's Supabase client now uses PKCE. `parseFactaLink` rejects callbacks
+containing access or refresh tokens, including links that mix them with a code
+or error; authorization-code callbacks still reach `exchangeCodeForSession`.
+The SDK's automatic URL detection is disabled because `DeepLinkBridge` already
+processes browser callbacks: otherwise the SDK can consume the same one-time
+code before the bridge exchanges it. An offline regression test reproduced that
+double-exchange path before the change. Further tests use fake HTTP responses to
+verify the signup challenge, the locally stored verifier requirement, and that
+the expected unconfirmed-password response does not discard the verifier.
+No live Supabase service or test database was contacted.
+
+A poisoned widget state lock now logs and returns its last data instead of
+failing permanently. The regression test checks that existing data remains
+available and a later update survives another lock attempt. This applies to
+closed-widget and position state.
+
+| Check | Result |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | Passed |
+| TypeScript, desktop / widgets / calendar | Passed / passed / passed |
+| Desktop Vitest | 51 files, 479 tests passed |
+| Calendar Vitest | 16 files, 212 tests passed |
+| Desktop and widget production builds | Passed / passed |
+| Desktop and widget `cargo check --offline` | Passed / passed |
+| Desktop `cargo test --offline` | 13 passed |
+| Widget `cargo test --offline` | 14 passed |
+
+The desktop build still reports the large-chunk warning. The actual installed
+app, email flow, and live services were not exercised during this work.
+
+### Owner's later signup check
+
+After review, merge, and installation by Builder A:
+
+1. On the same computer where Facta is installed, sign up with an email address
+   that can receive mail.
+2. Open the confirmation email on that computer and follow its link back to
+   Facta. Confirm the app opens signed in to the intended account.
+3. Quit and reopen Facta and confirm the same account remains signed in. If the
+   link fails or a different account appears, tell the reviewer what happened.
+
+PKCE requires the confirmation to use the local verifier created when signup
+started. Open the link on the same installation; links issued by the previous
+implicit flow are no longer accepted, so start a fresh signup if necessary.

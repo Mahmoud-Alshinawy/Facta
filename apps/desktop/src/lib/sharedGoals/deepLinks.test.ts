@@ -25,10 +25,12 @@ describe("strict Facta routes", () => {
       parseFactaLink(
         "facta://auth/callback#access_token=access&refresh_token=refresh&type=signup",
       ),
-    ).toMatchObject({
-      kind: "auth",
-      accessToken: "access",
-      refreshToken: "refresh",
+    ).toBeNull();
+  });
+  it("accepts an authorization-code callback", () => {
+    expect(parseFactaLink("facta://auth/callback?code=sample-code")).toEqual({
+      kind: "auth-code",
+      code: "sample-code",
     });
   });
   it("accepts focus links as Windows forwards them to a running app", () => {
@@ -57,6 +59,9 @@ describe("strict Facta routes", () => {
     ` facta://join/${token}`,
     "facta://evil/auth/callback#access_token=x",
     "facta://auth/callback#access_token=x",
+    "facta://auth/callback?access_token=x&refresh_token=y",
+    "facta://auth/callback?code=valid#access_token=x&refresh_token=y",
+    "facta://auth/callback?error=denied#access_token=x&refresh_token=y",
     "facta://focus?section=notes&section=diary",
     "facta://focus?section=diary&note=",
     "facta://focus?section=notes&group=",

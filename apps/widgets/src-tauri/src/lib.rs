@@ -73,8 +73,11 @@ struct WindowPos {
     height: f64,
 }
 
-fn lock_widget_state<'a, T>(state: &'a Mutex<T>, name: &str) -> Result<std::sync::MutexGuard<'a, T>, String> {
-    state.lock().map_err(|_| format!("{name} is unavailable because its lock is poisoned"))
+fn lock_widget_state<'a, T>(state: &'a Mutex<T>, name: &str) -> std::sync::MutexGuard<'a, T> {
+    state.lock().unwrap_or_else(|poisoned| {
+        log(&format!("{name} lock was poisoned; continuing with its last data"));
+        poisoned.into_inner()
+    })
 }
 
 impl WidgetState {
@@ -316,12 +319,10 @@ fn read_shared_data() -> Result<serde_json::Value, String> {
 #[tauri::command]
 fn close_widget(app: tauri::AppHandle, state: tauri::State<WidgetState>, label: String) {
     let id = label.strip_prefix("widget-").unwrap_or(&label).to_string();
-    match lock_widget_state(&state.user_closed, "closed widget state") {
-        Ok(mut user_closed) => {
-            user_closed.insert(id);
-            save_user_closed(&user_closed);
-        }
-        Err(error) => log(&format!("Could not remember closed widget: {error}")),
+    {
+        let mut user_closed = lock_widget_state(&state.user_closed, "closed widget state");
+        user_closed.insert(id);
+        save_user_closed(&user_closed);
     }
     if let Some(window) = app.get_webview_window(&label) {
         let _ = window.close();
@@ -536,13 +537,7 @@ fn write_all(file: &mut std::fs::File, s: String) -> Result<(), String> {
 
 fn save_current_positions(app: &tauri::AppHandle, state: &tauri::State<WidgetState>) {
     let monitors = get_monitor_work_areas(app);
-    let mut positions = match lock_widget_state(&state.window_positions, "widget positions") {
-        Ok(positions) => positions,
-        Err(error) => {
-            log(&format!("Could not save widget positions: {error}"));
-            return;
-        }
-    };
+    let mut positions = lock_widget_state(&state.window_positions, "widget positions");
     
     for (label, window) in app.webview_windows() {
         if !label.starts_with("widget-") { continue; }
@@ -607,9 +602,9 @@ fn spawn_or_update_widgets(app: &tauri::AppHandle, state: &tauri::State<WidgetSt
         .collect();
     
     // Remove user_closed entries for widgets that are now enabled in config
-    let mut user_closed = lock_widget_state(&state.user_closed, "closed widget state")?;
+    let mut user_closed = lock_widget_state(&state.user_closed, "closed widget state");
     user_closed.retain(|id| !enabled_ids.contains(id));
-    let positions = lock_widget_state(&state.window_positions, "widget positions")?;
+    let positions = lock_widget_state(&state.window_positions, "widget positions");
     
     let mut expected_labels: Vec<String> = Vec::new();
     let mut spawned_count = 0;
