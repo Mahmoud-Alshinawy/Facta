@@ -5,10 +5,7 @@ export type NavigationLink =
   | SharedRoute
   | { kind: "focus"; section?: "notes" | "diary" | "goals"; noteId?: string };
 export type FactaLink =
-  | NavigationLink
-  | { kind: "auth"; accessToken: string; refreshToken: string }
-  | { kind: "auth-code"; code: string }
-  | { kind: "auth-error" };
+  NavigationLink | { kind: "auth-code"; code: string } | { kind: "auth-error" };
 export function parseFactaLink(raw: string): FactaLink | null {
   if (raw.length > 8192 || /[\s\u0000-\u001f\u007f]/.test(raw)) return null;
   const join = /^facta:\/\/join\/([A-Za-z0-9_-]{43})$/.exec(raw);
@@ -48,20 +45,7 @@ export function parseFactaLink(raw: string): FactaLink | null {
   const url = new URL(raw),
     q = url.searchParams,
     h = new URLSearchParams(url.hash.slice(1));
-  const allowed = [
-    "access_token",
-    "refresh_token",
-    "expires_in",
-    "expires_at",
-    "token_type",
-    "type",
-    "code",
-    "error",
-    "error_code",
-    "error_description",
-    "provider_token",
-    "provider_refresh_token",
-  ];
+  const allowed = ["type", "code", "error", "error_code", "error_description"];
   const entries = [...q, ...h],
     names = entries.map(([k]) => k);
   if (
@@ -71,15 +55,8 @@ export function parseFactaLink(raw: string): FactaLink | null {
     return null;
   const p = new URLSearchParams(entries);
   if (p.has("error")) return { kind: "auth-error" };
-  if (p.get("code") && !p.has("access_token") && !p.has("refresh_token"))
-    return { kind: "auth-code", code: p.get("code")! };
-  return p.get("access_token") && p.get("refresh_token") && !p.has("code")
-    ? {
-        kind: "auth",
-        accessToken: p.get("access_token")!,
-        refreshToken: p.get("refresh_token")!,
-      }
-    : null;
+  const code = p.get("code");
+  return code ? { kind: "auth-code", code } : null;
 }
 export interface LinkIntent {
   sequence: number;

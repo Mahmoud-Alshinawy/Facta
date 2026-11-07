@@ -16,14 +16,8 @@ export default function DeepLinkBridge() {
     const process = async (raw: string) => {
       const link = parseFactaLink(raw);
       if (!link || cancelled) return;
-      if (link.kind === "auth" || link.kind === "auth-code") {
-        const result =
-          link.kind === "auth"
-            ? await supabase.auth.setSession({
-                access_token: link.accessToken,
-                refresh_token: link.refreshToken,
-              })
-            : await supabase.auth.exchangeCodeForSession(link.code);
+      if (link.kind === "auth-code") {
+        const result = await supabase.auth.exchangeCodeForSession(link.code);
         if (result.error && !cancelled)
           toast.error("Sign-in could not be completed. Try signing in again.");
       } else if (link.kind === "auth-error")
@@ -40,10 +34,7 @@ export default function DeepLinkBridge() {
     };
     const browserCallback = `facta://auth/callback${window.location.search}${window.location.hash}`;
     const callback = parseFactaLink(browserCallback);
-    if (
-      callback &&
-      ["auth", "auth-code", "auth-error"].includes(callback.kind)
-    ) {
+    if (callback && ["auth-code", "auth-error"].includes(callback.kind)) {
       window.history.replaceState({}, document.title, window.location.pathname);
       void process(browserCallback);
     }
