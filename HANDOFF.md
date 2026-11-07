@@ -1,9 +1,22 @@
 # Handoff: branch 3 — accepted claim risk, local-time deadlines
 
-## Current state (4 November 2026, Try again after a clock fix, no label flicker, Docker checks)
+## Final review and approval (7 November 2026)
 
-- Review of fe1a3c4 found no blockers in that fix. **STOP for review. Do not
-  merge.** Details: docs/shared-goals-auth-native.md (top).
+- Owner check: bobross's check-in after the clock-skew migration **PASS**.
+- Reviewer, 2c832c1: no blockers, no should-fix; tsc ok, 471 desktop tests,
+  `--checkin-skew` 35. Branch security review (DB, client, Rust, widgets): no
+  issues introduced by this branch.
+- Two nits left for the next time this code changes: a failed undo's row says
+  "when you checked in" (neutral wording such as "when this was recorded" would
+  fit both), and the not-saved row decides "dated ahead" with `Date.now()` at
+  render, so a row left open across group midnight keeps Discard-only until
+  something re-renders.
+- Owner approved a squash merge into `main`.
+
+## 4 November 2026: Try again after a clock fix, no label flicker, Docker checks (historical)
+
+- Review of fe1a3c4 found no blockers in that fix. Details:
+  docs/shared-goals-auth-native.md (top).
 - Owner rechecks on the installed fe1a3c4 build: Wi-Fi toast **PASS**. Check-in:
   the first recheck ran before the migration was applied, so it doesn't count;
   the owner then applied `20261101120000_shared_checkin_clock_skew.sql` to the

@@ -1,6 +1,6 @@
 # Remaining acceptance: real local Auth/HTTP and native providers
 
-Last updated 4 November 2026. Branch `feat/shared-goals`. **Full acceptance
+Last updated 7 November 2026. Branch `feat/shared-goals`. **Full acceptance
 remains incomplete; do not merge.** This began as acceptance-only work after
 `dcfe07a`, but the acceptance found problems, so application code has changed
 since then: local-time deadlines, the publishable-key fallback, warm focus
@@ -13,6 +13,12 @@ Owner hands-on checks are recorded below. Check-in scoring and the offline toast
 are fixed in source and need rechecking on the installed build after the owner
 runs the new migration. Two separate physical devices are an accepted open
 limitation.
+
+## Final owner check (7 November 2026)
+
+bobross's check-in after the clock-skew migration: pass. The reviewer's final
+review and branch security review found no issues, and the owner approved the
+merge.
 
 ## Try again after a clock fix, and a steady check-in button (4 November 2026)
 
