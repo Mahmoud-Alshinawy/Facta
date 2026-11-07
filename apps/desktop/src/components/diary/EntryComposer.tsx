@@ -175,7 +175,7 @@ export default function EntryComposer({
     >
       <section className="diary-card" aria-label="One line a day">
         <div className="diary-row">
-          <span className="sec">ONE LINE A DAY</span>
+          <span className="sec">One line a day</span>
           <span className="diary-saved" role="status">
             {dirty ? "Unsaved changes" : entry ? "✓ Saved" : status}
           </span>
@@ -258,7 +258,7 @@ export default function EntryComposer({
       </section>
       <section className="diary-card" aria-label="Mood">
         <span className="sec">
-          {historical ? "HOW WAS THAT DAY" : "HOW WAS TODAY"}
+          {historical ? "How was that day" : "How was today"}
         </span>
         <div className="diary-moods" role="radiogroup" aria-label="Mood">
           {MOODS.map((m) => (
@@ -304,7 +304,7 @@ export default function EntryComposer({
         </div>
       </section>
       <section className="diary-card" aria-label="Entry tags">
-        <span className="sec">TAGS</span>
+        <span className="sec">Tags</span>
         <div className="diary-tags" role="group" aria-label="Entry tags">
           {[...new Set([...tags, ...selectedTags])].map((t) => (
             <button
@@ -357,7 +357,7 @@ export default function EntryComposer({
       </section>
       <section className="diary-card" aria-label="Longer entry">
         <div className="diary-row">
-          <span className="sec">MORE, IF YOU WANT</span>
+          <span className="sec">More, if you want</span>
           <button
             type="button"
             className="ctl"

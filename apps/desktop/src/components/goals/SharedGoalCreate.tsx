@@ -274,7 +274,7 @@ export default function SharedGoalCreate({
     >
       <SharedHeader
         title="New shared goal"
-        kicker={`STEP ${step + 1} OF 4`}
+        kicker={`Step ${step + 1} of 4`}
         step={step}
         busy={working}
         onClose={() => void close()}
@@ -486,22 +486,22 @@ export default function SharedGoalCreate({
                   </div>
                   <div className="shared-facts">
                     <div>
-                      <span className="mono sec">PROPOSED FIRST ROUND</span>
+                      <span className="mono sec">Proposed first round</span>
                       <strong>{firstDate && dateLabel(firstDate)}</strong>
                     </div>
                     <div>
-                      <span className="mono sec">ROUNDS START</span>
+                      <span className="mono sec">Rounds start</span>
                       <strong>Every {WEEKDAYS[fields.round_weekday]}</strong>
                     </div>
                     <div>
-                      <span className="mono sec">PEOPLE</span>
+                      <span className="mono sec">People</span>
                       <strong>
                         {reviewMembers.length} joined · {reviewInvites.length}{" "}
                         invited
                       </strong>
                     </div>
                     <div>
-                      <span className="mono sec">VISIBLE TO</span>
+                      <span className="mono sec">Visible to</span>
                       <strong>Everyone in it</strong>
                     </div>
                   </div>

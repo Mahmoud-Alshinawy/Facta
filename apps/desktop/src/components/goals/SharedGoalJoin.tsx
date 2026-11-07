@@ -156,7 +156,7 @@ export default function SharedGoalJoin({
     >
       <SharedHeader
         title="Join shared goal"
-        kicker="INVITE"
+        kicker="Invite"
         busy={loading}
         onClose={() => {
           if (!busy.current) onClose();
@@ -200,7 +200,7 @@ export default function SharedGoalJoin({
                 </p>
                 <div className="shared-facts">
                   <div>
-                    <span className="mono sec">FIRST ROUND</span>
+                    <span className="mono sec">First round</span>
                     <strong>
                       {preview.firstRoundDate
                         ? dateLabel(preview.firstRoundDate)
@@ -208,17 +208,17 @@ export default function SharedGoalJoin({
                     </strong>
                   </div>
                   <div>
-                    <span className="mono sec">ROUNDS START</span>
+                    <span className="mono sec">Rounds start</span>
                     <strong>Every {WEEKDAYS[preview.roundWeekday]}</strong>
                   </div>
                   <div>
-                    <span className="mono sec">PEOPLE</span>
+                    <span className="mono sec">People</span>
                     <strong>
                       {preview.acceptedCount} accepted · maximum 8
                     </strong>
                   </div>
                   <div>
-                    <span className="mono sec">TIME ZONE</span>
+                    <span className="mono sec">Time zone</span>
                     <strong>{preview.timeZone}</strong>
                   </div>
                 </div>

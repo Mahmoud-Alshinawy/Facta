@@ -116,7 +116,7 @@ export default function DiaryCalendar({
           <div role="row" className="diary-week">
             {weekdayOrder(weekStart).map((d) => (
               <span key={d} role="columnheader" className="diary-weekday">
-                {format(new Date(2026, 0, 4 + d), "EEE").toUpperCase()}
+                {format(new Date(2026, 0, 4 + d), "EEE")}
               </span>
             ))}
           </div>
@@ -159,7 +159,7 @@ export default function DiaryCalendar({
           ))}
         </div>
         <div className="diary-legend">
-          <span className="sec">MOOD</span>
+          <span className="sec">Mood</span>
           {MOODS.map((m) => (
             <span key={m.value}>
               <i className={`diary-dot diary-m${m.value}`} />
@@ -171,25 +171,25 @@ export default function DiaryCalendar({
       <aside className="diary-col" aria-label="Month summary">
         <div className="diary-stats">
           <div>
-            <span className="sec">STREAK</span>
+            <span className="sec">Streak</span>
             <strong>{streak}</strong>
             <small>{dayUnit(streak)}</small>
           </div>
           <div>
-            <span className="sec">WRITTEN</span>
+            <span className="sec">Written</span>
             <strong>
               {summary.written} of {summary.possible}
             </strong>
             <small>this month</small>
           </div>
           <div>
-            <span className="sec">AVG MOOD</span>
+            <span className="sec">Avg mood</span>
             <strong>{summary.average?.toFixed(1) ?? "—"}</strong>
             <small>of 5</small>
           </div>
         </div>
         <section className="diary-card">
-          <span className="sec">MOOD THIS MONTH</span>
+          <span className="sec">Mood this month</span>
           <svg
             viewBox="0 0 290 100"
             role="img"
@@ -237,7 +237,7 @@ export default function DiaryCalendar({
         </section>
         <section className="diary-card" aria-live="polite">
           <span className="sec">
-            {format(noonOf(selected), "EEEE d MMM").toUpperCase()}
+            {format(noonOf(selected), "EEEE d MMM")}
           </span>
           {current ? (
             <>

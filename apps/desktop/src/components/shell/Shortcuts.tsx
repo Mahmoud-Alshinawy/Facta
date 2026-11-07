@@ -11,8 +11,8 @@ export type CalendarView = "day" | "week" | "month" | "agenda";
 interface Row { what: string; keys: string[] }
 interface Group { name: string; rows: Row[] }
 
-const GENERAL: Group = {
-  name: "GENERAL",
+const General: Group = {
+  name: "General",
   rows: [
     { what: "Search everything", keys: ["Ctrl", "K"] },
     { what: "This cheat sheet", keys: ["?"] },
@@ -24,26 +24,26 @@ export const CHEAT_GROUPS: Record<ShortcutContext, { label: string; groups: Grou
   calendar: {
     label: "Calendar",
     groups: [
-      { name: "VIEWS", rows: [{ what: "Day", keys: ["1"] }, { what: "Week", keys: ["2"] }, { what: "Month", keys: ["3"] }, { what: "Agenda", keys: ["4"] }] },
-      { name: "NAVIGATE", rows: [{ what: "Previous or next day", keys: ["←", "→"] }, { what: "Up or down 30 minutes", keys: ["↑", "↓"] }, { what: "Previous or next week", keys: ["PgUp", "PgDn"] }, { what: "Jump to today", keys: ["T"] }] },
-      { name: "CREATE", rows: [{ what: "New event", keys: ["N"] }, { what: "New goal", keys: ["G"] }, { what: "Quick add", keys: ["Q"] }, { what: "Start a slot at the cursor", keys: ["Enter"] }, { what: "Stretch the new slot", keys: ["Shift", "↑ ↓"] }] },
-      { name: "EDIT", rows: [{ what: "Open event or toggle goal", keys: ["Enter"] }, { what: "Edit the open event", keys: ["E"] }, { what: "Delete the open event", keys: ["Del"] }, { what: "Cancel a drag or close", keys: ["Esc"] }] },
-      GENERAL,
+      { name: "Views", rows: [{ what: "Day", keys: ["1"] }, { what: "Week", keys: ["2"] }, { what: "Month", keys: ["3"] }, { what: "Agenda", keys: ["4"] }] },
+      { name: "Navigate", rows: [{ what: "Previous or next day", keys: ["←", "→"] }, { what: "Up or down 30 minutes", keys: ["↑", "↓"] }, { what: "Previous or next week", keys: ["PgUp", "PgDn"] }, { what: "Jump to today", keys: ["T"] }] },
+      { name: "Create", rows: [{ what: "New event", keys: ["N"] }, { what: "New goal", keys: ["G"] }, { what: "Quick add", keys: ["Q"] }, { what: "Start a slot at the cursor", keys: ["Enter"] }, { what: "Stretch the new slot", keys: ["Shift", "↑ ↓"] }] },
+      { name: "Edit", rows: [{ what: "Open event or toggle goal", keys: ["Enter"] }, { what: "Edit the open event", keys: ["E"] }, { what: "Delete the open event", keys: ["Del"] }, { what: "Cancel a drag or close", keys: ["Esc"] }] },
+      General,
     ],
   },
   goals: {
     label: "Goals",
     groups: [
-      { name: "MOVE", rows: [{ what: "Next or previous goal", keys: ["↓", "↑"] }, { what: "Same, without arrows", keys: ["J", "K"] }, { what: "First or last goal", keys: ["Home", "End"] }, { what: "List, filters, add row", keys: ["Tab"] }] },
-      { name: "EDIT", rows: [{ what: "Toggle done", keys: ["X"] }, { what: "Edit the goal", keys: ["E"] }, { what: "New goal", keys: ["N"] }] },
-      { name: "GENERAL", rows: [GENERAL.rows[0], GENERAL.rows[1]] },
+      { name: "Move", rows: [{ what: "Next or previous goal", keys: ["↓", "↑"] }, { what: "Same, without arrows", keys: ["J", "K"] }, { what: "First or last goal", keys: ["Home", "End"] }, { what: "List, filters, add row", keys: ["Tab"] }] },
+      { name: "Edit", rows: [{ what: "Toggle done", keys: ["X"] }, { what: "Edit the goal", keys: ["E"] }, { what: "New goal", keys: ["N"] }] },
+      { name: "General", rows: [General.rows[0], General.rows[1]] },
     ],
   },
   today: {
     label: "Today",
     groups: [
-      { name: "CREATE", rows: [{ what: "New goal", keys: ["N"] }] },
-      { name: "GENERAL", rows: [GENERAL.rows[0], GENERAL.rows[1]] },
+      { name: "Create", rows: [{ what: "New goal", keys: ["N"] }] },
+      { name: "General", rows: [General.rows[0], General.rows[1]] },
     ],
   },
 };

@@ -30,7 +30,8 @@
   align-items: center;
   gap: 8px;
   font-size: 11px;
-  letter-spacing: 0.1em;
+  font-weight: 500;
+  letter-spacing: normal;
   color: var(--text-2);
 }
 .progress-personal {

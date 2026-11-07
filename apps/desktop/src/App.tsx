@@ -263,8 +263,8 @@ export default function App() {
           <>
             <header className="flex shrink-0 flex-wrap items-center justify-between gap-4 border-b border-border px-10 py-6">
               <div className="flex flex-col gap-0.5">
-                <span className="font-mono text-xs tracking-[0.04em] text-subtle">
-                  WEEK {getISOWeek(now)}
+                <span className="text-xs font-medium text-subtle">
+                  Week {getISOWeek(now)}
                 </span>
                 <h1 className="m-0 text-[28px] font-semibold tracking-[-0.03em]">
                   {format(now, "EEEE, d MMMM")}
