@@ -87,6 +87,14 @@ body {
   text-shadow: var(--widget-shadow);
 }
 
+/* A light translucent plate keeps text legible on both light and dark wallpaper. */
+.theme-light.widget-light-trans {
+  box-sizing: border-box;
+  background: rgb(255 255 255 / 88%);
+  border: 1px solid rgb(20 23 19 / 14%);
+  border-radius: 14px;
+}
+
 /* SVG progress circles use the same per-theme accent */
 .progress-ring { stroke: var(--widget-accent); }
 /* Black and green, for the older widgets (the Day widget uses the shared tokens). */

@@ -21,6 +21,11 @@
   border-color: var(--border-strong);
   text-shadow: 0 1px 2px var(--shadow-ink);
 }
+.progress-card.is-trans[data-theme="light"] {
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border-color: color-mix(in srgb, var(--text) 14%, transparent);
+  text-shadow: none;
+}
 .progress-card .mono,
 .today-shared-card .mono {
   font-family: "Geist Mono", monospace;

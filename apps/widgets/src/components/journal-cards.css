@@ -45,7 +45,7 @@
   background: color-mix(in srgb, var(--surface) 46%, transparent);
 }
 .journal-widget.is-trans[data-theme="light"] {
-  background: color-mix(in srgb, var(--surface) 74%, transparent);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
   text-shadow: none;
 }
 .journal-widget.is-trans .jw-paper {
