@@ -19,7 +19,6 @@ import {
   Hash,
   Trash2,
   ChevronLeft,
-  ChevronRight,
   Maximize2,
   Minimize2,
   Download,
@@ -272,7 +271,7 @@ export default function NotesPage({
         setView("list");
         setFilter("all");
         setQuery("");
-        setCollapsed(false);
+        setCollapsed(true);
         setError("");
         setOverlay(null);
         requestAnimationFrame(() => titleRef.current?.focus());
@@ -329,6 +328,7 @@ export default function NotesPage({
       restoreNote(undoId);
       setSelectedId(undoId);
       setView("list");
+      setCollapsed(true);
       setFilter("all");
       setQuery("");
       setUndoId(null);
@@ -392,6 +392,7 @@ export default function NotesPage({
         e.preventDefault();
         setFocus((v) => !v);
         setView("list");
+        setCollapsed(true);
       } else if (mod && key === "z" && undoId && !typing) {
         e.preventDefault();
         undo();
@@ -409,10 +410,17 @@ export default function NotesPage({
           searchRef.current?.focus();
         } else if (key === "g") {
           e.preventDefault();
-          setView((v) => (v === "list" ? "grid" : "list"));
+          setFocus(false);
+          if (view === "list" && !collapsed) {
+            setView("grid");
+          } else {
+            setView("list");
+            setCollapsed(false);
+          }
         } else if (key === "[") {
           e.preventDefault();
-          setCollapsed((v) => !v);
+          setFocus(false);
+          setCollapsed(view === "grid" ? false : !collapsed);
           setView("list");
         } else if (inList && (key === "j" || key === "arrowdown")) {
           e.preventDefault();
@@ -456,6 +464,8 @@ export default function NotesPage({
     undo,
     focus,
     query,
+    view,
+    collapsed,
   ]);
   const applyTag = () => {
     if (!selected || !tag.trim()) {
@@ -848,10 +858,10 @@ export default function NotesPage({
                       <button
                         type="button"
                         className="ctl"
-                        aria-expanded="false"
-                        onClick={() => setCollapsed(false)}
+                        aria-label="Back to all notes"
+                        onClick={() => setView("grid")}
                       >
-                        <ChevronRight size={14} />
+                        <ChevronLeft size={14} />
                         Notes <span className="mono">{visible.length}</span>
                       </button>
                     )
