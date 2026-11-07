@@ -86,9 +86,9 @@ export function noteSection(
   now: Date,
   weekStart: WeekStart = 0,
 ): string {
-  if (note.pinned) return "PINNED";
+  if (note.pinned) return "Pinned";
   const edited = new Date(note.updatedAt ?? note.createdAt);
-  if (edited.toDateString() === now.toDateString()) return "TODAY";
+  if (edited.toDateString() === now.toDateString()) return "Today";
   const start = startOfWeekFor(now, weekStart);
-  return edited >= start ? "THIS WEEK" : "EARLIER";
+  return edited >= start ? "This week" : "Earlier";
 }

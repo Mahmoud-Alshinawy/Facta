@@ -117,21 +117,21 @@ describe("notes selection and capture", () => {
   });
   it("groups notes by local edit date, keeping pins separate", () => {
     const sunday = makeNote({ updatedAt: "2026-10-18T12:00:00Z" });
-    expect(noteSection(sunday, now, 0)).toBe("THIS WEEK");
-    expect(noteSection(sunday, now, 1)).toBe("EARLIER");
+    expect(noteSection(sunday, now, 0)).toBe("This week");
+    expect(noteSection(sunday, now, 1)).toBe("Earlier");
     expect(
       noteSection(makeNote({ updatedAt: "2026-10-17T12:00:00Z" }), now, 0),
-    ).toBe("EARLIER");
+    ).toBe("Earlier");
     expect(
       noteSection(makeNote({ updatedAt: "2026-10-17T12:00:00Z" }), now, 6),
-    ).toBe("THIS WEEK");
-    expect(noteSection(notes[0], now)).toBe("PINNED");
-    expect(noteSection(notes[1], now)).toBe("TODAY");
+    ).toBe("This week");
+    expect(noteSection(notes[0], now)).toBe("Pinned");
+    expect(noteSection(notes[1], now)).toBe("Today");
     expect(
       noteSection(makeNote({ updatedAt: "2026-10-18T12:00:00Z" }), now),
-    ).toBe("THIS WEEK");
+    ).toBe("This week");
     expect(
       noteSection(makeNote({ updatedAt: "2026-10-01T12:00:00Z" }), now),
-    ).toBe("EARLIER");
+    ).toBe("Earlier");
   });
 });

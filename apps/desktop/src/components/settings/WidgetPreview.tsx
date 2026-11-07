@@ -95,12 +95,12 @@ export default function WidgetPreview({
           <HeaderIcon size={14} />
           <span className="flex-1">
             {widget.type === "tasks"
-              ? "TODAY"
+              ? "Today"
               : widget.type === "events"
-                ? "EVENTS · TODAY"
+                ? "Events · Today"
                 : widget.type === "calendar"
-                  ? format(now, "MMMM yyyy").toUpperCase()
-                  : `DAY · ${format(now, "EEE d MMM").toUpperCase()}`}
+                  ? format(now, "MMMM yyyy")
+                  : `Day · ${format(now, "EEE d MMM")}`}
           </span>
           {widget.type !== "calendar" && (
             <span>

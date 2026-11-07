@@ -51,7 +51,7 @@ export default function EventsWidget() {
     <div className="h-full overflow-auto">
       <div className="flex items-center gap-2 mb-2">
         <Clock size={13} className="widget-accent" />
-        <span className="text-[11px] font-bold widget-accent uppercase tracking-wide">Upcoming</span>
+        <span className="widget-label">Upcoming</span>
       </div>
       {upcoming.length === 0 ? (
         <p className="text-sm widget-muted text-center py-6">No upcoming events</p>

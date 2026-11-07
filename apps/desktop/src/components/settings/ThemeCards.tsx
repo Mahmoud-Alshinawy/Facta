@@ -54,7 +54,7 @@ export default function ThemeCards({
           <span className="theme-card-label">
             <span>{theme.name}</span>
             {value === theme.id && !compact && (
-              <span className="mono">IN USE</span>
+              <span className="mono">In use</span>
             )}
           </span>
         </button>

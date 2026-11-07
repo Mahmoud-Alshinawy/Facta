@@ -538,7 +538,7 @@ export default function NoteEditor({
           }}
         >
           <div className="sec">
-            {menu.kind === "slash" ? "INSERT BLOCK" : "LINK A NOTE"}
+            {menu.kind === "slash" ? "Insert block" : "Link a note"}
           </div>
           {menu.kind === "slash"
             ? blockItems.map((block, i) => (

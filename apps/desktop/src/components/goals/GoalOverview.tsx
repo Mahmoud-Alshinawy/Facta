@@ -57,7 +57,7 @@ export default function GoalOverview({
           </text>
         </svg>
         <div className="flex min-w-0 flex-col gap-1">
-          <span className="k">THIS WEEK</span>
+          <span className="k">This week</span>
           <span className="text-[15px] font-semibold">
             {stats.week.total
               ? `${stats.week.done} of ${stats.week.total} goals`
@@ -76,7 +76,7 @@ export default function GoalOverview({
         </div>
       </div>
       <div>
-        <span className="k">STREAK</span>
+        <span className="k">Streak</span>
         <span className="big flex items-center gap-2">
           <Flame aria-hidden="true" size={22} />
           {stats.streak.current}
@@ -85,7 +85,7 @@ export default function GoalOverview({
         <span className="small">Best: {stats.streak.best} days</span>
       </div>
       <div>
-        <span className="k">DONE TODAY</span>
+        <span className="k">Done today</span>
         <span className="big">
           {stats.today.done} of {stats.today.total}
         </span>
@@ -98,7 +98,7 @@ export default function GoalOverview({
         </div>
       </div>
       <div>
-        <span className="k">NEXT UP</span>
+        <span className="k">Next up</span>
         <span className="truncate text-[15px] font-semibold">
           {stats.next?.title ??
             (stats.today.total ? "All done for today" : "Nothing yet")}

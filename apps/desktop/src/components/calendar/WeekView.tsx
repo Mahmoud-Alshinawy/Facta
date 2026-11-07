@@ -340,7 +340,7 @@ export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpen
             ))}
           </div>
           <div className="band" style={{ gridTemplateRows: `repeat(${lanes}, 22px)` }}>
-            <div className="gut" style={{ gridRow: `1 / span ${lanes}` }}>ALL DAY</div>
+            <div className="gut" style={{ gridRow: `1 / span ${lanes}` }}>All day</div>
             {spans.segments.length === 0 && (
               <span style={{ gridColumn: "2 / span 7", gridRow: 1, display: "flex", alignItems: "center", paddingLeft: 12, fontSize: 12, color: "var(--subtle)" }}>All-day events appear here</span>
             )}
@@ -355,7 +355,7 @@ export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpen
             ))}
           </div>
           <div className="goalrow">
-            <div className="gut" style={{ paddingTop: 8 }}>GOALS</div>
+            <div className="gut" style={{ paddingTop: 8 }}>Goals</div>
             {cols.map((c, i) => {
               const gs = perDay[i].goals.filter((g) => g.at === null);
               const shown = gs.length > 2 ? gs.slice(0, 1) : gs.slice(0, 2);

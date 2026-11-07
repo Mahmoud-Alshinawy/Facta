@@ -98,7 +98,7 @@ export default function CalendarPage({ anchor, view, onAnchor, onView, actions, 
         }} />
       <div className="calendar-body relative flex min-h-0 flex-1">
         {miniOpen && <aside className="side-panel calendar-mini" aria-label="Mini calendar">
-          <div className="flex items-center justify-between"><span className="sec">JUMP TO DATE</span>
+          <div className="flex items-center justify-between"><span className="sec">Jump to date</span>
             <button type="button" className="b b-icon" aria-label="Hide mini calendar ([)" onClick={() => setMiniOpen(false)}><IconClose /></button>
           </div>
           <MiniCalendar currentMonth={miniMonth} selectedDate={anchor} onMonthChange={setMiniMonth}

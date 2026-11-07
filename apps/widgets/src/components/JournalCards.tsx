@@ -55,8 +55,7 @@ const noteColor = (color: WidgetNoteColor | null) =>
   `var(--note-${color ?? "a"})`;
 const dateLabel = (key: string) =>
   new Date(`${key}T12:00`)
-    .toLocaleDateString(undefined, { day: "numeric", month: "short" })
-    .toUpperCase();
+    .toLocaleDateString(undefined, { day: "numeric", month: "short" });
 function Plate({
   theme,
   translucent,
@@ -94,7 +93,7 @@ export function NotesCard(props: Common & { style?: "sticky" | "stack" }) {
       <header className="jw-head">
         <span className="jw-drag" data-tauri-drag-region>
           {style === "sticky" ? <StickyNote size={14} /> : <List size={14} />}{" "}
-          {style === "sticky" ? "PINNED" : "NOTES"}
+          {style === "sticky" ? "Pinned" : "Notes"}
         </span>
         {style === "sticky" ? (
           <>
@@ -507,7 +506,7 @@ export function DiaryCard({
     <Plate theme={theme} translucent={translucent}>
       <header className="jw-head">
         <span className="jw-drag" data-tauri-drag-region>
-          <BookOpen size={14} /> ONE LINE A DAY
+          <BookOpen size={14} /> One line a day
         </span>
         <time dateTime={journal.diary.date}>
           {dateLabel(journal.diary.date)}
@@ -572,11 +571,11 @@ export function DiaryCard({
           </div>
         </LineForm>
       )}
-      <span className="jw-section">ON THIS DAY</span>
+      <span className="jw-section">On this day</span>
       <ul className="jw-past">
         {saved && (
           <li className="is-today">
-            <span>TODAY</span>
+            <span>Today</span>
             <button
               type="button"
               aria-label="Edit today's diary line"

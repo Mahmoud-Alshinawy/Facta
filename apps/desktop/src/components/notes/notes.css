@@ -13,9 +13,9 @@
 .notes-heading {
   min-width: 100px;
 }
-.notes-heading > .mono {
+.notes-heading > .sec {
   font-size: 11px;
-  letter-spacing: 0.06em;
+  letter-spacing: normal;
   color: var(--subtle);
 }
 .notes-page .notes-header {

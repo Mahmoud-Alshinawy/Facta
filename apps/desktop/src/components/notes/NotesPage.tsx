@@ -55,7 +55,7 @@ import "./notes.css";
 type Overlay = "capture" | "switcher" | "cheat" | "link" | "delete" | null;
 const SHORTCUTS = [
   [
-    "ANYWHERE",
+    "Anywhere",
     [
       ["Quick switcher", "Ctrl P"],
       ["Quick capture", "Ctrl Shift N"],
@@ -66,7 +66,7 @@ const SHORTCUTS = [
     ],
   ],
   [
-    "LIST",
+    "List",
     [
       ["Next note", "J"],
       ["Previous note", "K"],
@@ -79,7 +79,7 @@ const SHORTCUTS = [
     ],
   ],
   [
-    "EDITOR",
+    "Editor",
     [
       ["Block menu", "/"],
       ["Bold", "Ctrl B"],
@@ -544,7 +544,7 @@ export default function NotesPage({
         ))}
       </div>
       <div className="note-tag-filters">
-        <span className="sec">TAGS</span>
+        <span className="sec">Tags</span>
         {tags.map((name) => (
           <button
             type="button"
@@ -613,7 +613,7 @@ export default function NotesPage({
       {!focus && (
         <header className="hd notes-header">
           <div className="notes-heading">
-            <span className="mono">{live.length} NOTES</span>
+            <span className="sec">{live.length} notes</span>
             <h1>Notes</h1>
           </div>
           <div className="seg" role="group" aria-label="Notes layout">
@@ -692,7 +692,7 @@ export default function NotesPage({
             <div className="nlh">
               <div className="note-list-label">
                 <span className="sec">
-                  {filter === "trash" ? "TRASH" : "NOTES"} · {visible.length}
+                  {filter === "trash" ? "Trash" : "Notes"} · {visible.length}
                 </span>
                 <button
                   type="button"
@@ -775,7 +775,7 @@ export default function NotesPage({
           <div className="note-grid-scroll">
             <div className="note-grid-top">
               {filter === "trash" ? (
-                <span className="sec">TRASH · {visible.length}</span>
+                <span className="sec">Trash · {visible.length}</span>
               ) : (
                 fastCapture
               )}
@@ -843,7 +843,7 @@ export default function NotesPage({
                 <div className="nbar" role="toolbar" aria-label="Note actions">
                   {focus ? (
                     <>
-                      <span className="sec">FOCUS MODE</span>
+                      <span className="sec">Focus mode</span>
                       <button
                         type="button"
                         className="ctl"
@@ -1107,7 +1107,7 @@ export default function NotesPage({
                     {!!backlinks.length && (
                       <section className="backl" aria-label="Backlinks">
                         <span className="sec">
-                          LINKED FROM {backlinks.length}
+                          Linked from {backlinks.length}
                         </span>
                         {backlinks.map((note) => (
                           <button
@@ -1190,7 +1190,7 @@ export default function NotesPage({
             }
           }}
         >
-          <span className="sec">EXPORT AS</span>
+          <span className="sec">Export as</span>
           <button
             type="button"
             role="menuitem"

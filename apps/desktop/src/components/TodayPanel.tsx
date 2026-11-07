@@ -268,7 +268,7 @@ function GoalRow({ goal, done, isNext, popping, onToggle, onToggleBell }: {
 
       <span className="flex min-w-0 flex-1 items-center gap-2">
         {isNext && (
-          <span className="shrink-0 rounded-[5px] bg-raised-2 px-1.5 py-[3px] font-mono text-[10px] font-medium tracking-[0.08em] text-foreground">NEXT</span>
+          <span className="shrink-0 rounded-[5px] bg-raised-2 px-1.5 py-[3px] text-[10px] font-medium text-subtle">Next</span>
         )}
         <span className={`truncate text-[15px] font-medium ${done ? "text-subtle line-through decoration-subtle" : "text-foreground"}`}>
           {goal.title}

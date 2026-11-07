@@ -18,9 +18,9 @@ describe("calendar period navigation", () => {
   });
   it("headings follow the chosen week start", () => {
     const day = new Date(2026, 9, 18, 12);
-    expect(calendarHeading(day, day, "week", { ...DEFAULT_PREFS, weekStart: 1 }).subtitle).toBe("WEEK 42 · 12–18 OCT");
-    expect(calendarHeading(day, day, "week", { ...DEFAULT_PREFS, weekStart: 0 }).subtitle).toBe("WEEK 43 · 18–24 OCT");
-    expect(calendarHeading(day, day, "week", { ...DEFAULT_PREFS, weekStart: 6 }).subtitle).toBe("WEEK 43 · 17–23 OCT");
+    expect(calendarHeading(day, day, "week", { ...DEFAULT_PREFS, weekStart: 1 }).subtitle).toBe("Week 42 · 12–18 Oct");
+    expect(calendarHeading(day, day, "week", { ...DEFAULT_PREFS, weekStart: 0 }).subtitle).toBe("Week 43 · 18–24 Oct");
+    expect(calendarHeading(day, day, "week", { ...DEFAULT_PREFS, weekStart: 6 }).subtitle).toBe("Week 43 · 17–23 Oct");
   });
 });
 

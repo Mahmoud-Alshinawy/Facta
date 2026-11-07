@@ -87,7 +87,7 @@ export const dayLabel = (d: Date) => `${DOW[d.getDay()]} ${d.getDate()} ${MON[d.
 export const dayLabelLong = (d: Date) => `${DOW_LONG[d.getDay()]} ${d.getDate()} ${MON_LONG[d.getMonth()]}`;
 export const monthLong = (m: number) => MON_LONG[m];
 export const monthShort = (m: number) => MON[m];
-export const dowShort = (n: number) => DOW[n].toUpperCase();
+export const dowShort = (n: number) => DOW[n];
 export const dowLong = (n: number) => DOW_LONG[n];
 
 export function sameDay(a: Date, b: Date): boolean {

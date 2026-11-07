@@ -29,7 +29,7 @@ export function monthTitle(anchor: Date, prefs: CalendarPrefs) {
   const weeks = monthMatrix(anchor.getFullYear(), anchor.getMonth(), prefs.weekStart);
   const first = weeks[0][3];
   const last = weeks[weeks.length - 1][3];
-  return { title: `${monthLong(anchor.getMonth())} ${anchor.getFullYear()}`, subtitle: `WEEKS ${isoWeek(first)}–${isoWeek(last)}` };
+  return { title: `${monthLong(anchor.getMonth())} ${anchor.getFullYear()}`, subtitle: `Weeks ${isoWeek(first)}–${isoWeek(last)}` };
 }
 
 export default function MonthView({ anchor, now, prefs, actions, onAnchor, onOpenDay, popOpen, onPop }: Props) {
@@ -186,7 +186,7 @@ function DayPopover({ day, pos, rows, prefsClocks: C, events, goals, onToggle, o
       }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 8px 4px 16px" }}>
         <div style={{ flex: 1 }}>
-          <div className="mono sec">{dowLong(day.getDay()).toUpperCase()}{today ? " · TODAY" : ""}</div>
+          <div className="mono sec">{dowLong(day.getDay())}{today ? " · Today" : ""}</div>
           <h3 style={{ margin: "2px 0 0", fontSize: 17, fontWeight: 600 }}>{dayLabel(day)}</h3>
         </div>
         <button type="button" className="b b-icon" aria-label="Close" onClick={onClose}><IconClose /></button>
