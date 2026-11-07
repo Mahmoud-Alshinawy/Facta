@@ -132,7 +132,7 @@ export default function DayViewWidget({ theme, translucent }: { theme: string; t
     >
       <div className="wg-head" data-tauri-drag-region style={{ cursor: "grab" }}>
         <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>
-        <span className="wg-date">{now.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }).replace(",", "").toUpperCase()}</span>
+        <span className="wg-date">{now.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }).replace(",", "")}</span>
         <span aria-label={`${done} of ${today.length} goals done`}>{done}/{today.length}</span>
       </div>
 

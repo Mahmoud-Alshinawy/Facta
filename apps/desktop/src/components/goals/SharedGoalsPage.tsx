@@ -82,7 +82,7 @@ function ProfileSetup({
     <>
       <SharedHeader
         title="Your shared profile"
-        kicker="BEFORE YOU BEGIN"
+        kicker="Before you begin"
         onClose={onClose}
       />
       <div className="gscroll">
@@ -335,7 +335,7 @@ export default function SharedGoalsPage({
       <div className="gmain shared-page">
         <SharedHeader
           title="Shared goals"
-          kicker="YOUR GROUPS"
+          kicker="Your groups"
           onClose={onMine}
         />
         <div className="shared-wizard">
@@ -425,7 +425,7 @@ export default function SharedGoalsPage({
     >
       <SharedHeader
         title="Invite people"
-        kicker="SHARED GOAL"
+        kicker="Shared goal"
         onClose={close}
       />
       <div className="gscroll">
@@ -447,7 +447,7 @@ export default function SharedGoalsPage({
     </div>
   ) : panel.kind === "result" ? (
     <div className="gmain shared-page">
-      <SharedHeader title="Shared goal" kicker="YOUR GROUP" onClose={close} />
+      <SharedHeader title="Shared goal" kicker="Your group" onClose={close} />
       <div className="gscroll">
         <div className="shared-wizard">
           <ResultCard
@@ -493,7 +493,7 @@ export default function SharedGoalsPage({
     >
       <SharedHeader
         title="Join with a link"
-        kicker="INVITATION"
+        kicker="Invitation"
         onClose={close}
       />
       <div className="gscroll">
@@ -538,7 +538,7 @@ export default function SharedGoalsPage({
     <div className="gmain shared-page">
       <header className="hd shared-header">
         <div>
-          <span className="mono sec">YOUR GROUPS</span>
+          <span className="mono sec">Your groups</span>
           <h1 ref={title} tabIndex={-1}>
             Goals
           </h1>

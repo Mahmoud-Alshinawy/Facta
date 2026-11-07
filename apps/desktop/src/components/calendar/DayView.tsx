@@ -118,7 +118,7 @@ export default function DayView({ anchor, now, prefs, actions, onAnchor, say }: 
           <div className="dwrap">
             <div className="dband">
               <div className="row">
-                <span className="mono sec lbl">ALL DAY</span>
+                <span className="mono sec lbl">All day</span>
                 {allDay.length === 0 && <span style={{ fontSize: 13, color: "var(--subtle)" }}>Nothing all day</span>}
                 {allDay.map((a) => (
                   <button key={a.id} type="button" className="ad1" title={bandTooltip(a, key, C)} style={{ ["--c" as string]: colorVar(a.color) }} onClick={() => setDetail(a.id)}>
