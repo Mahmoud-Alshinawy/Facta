@@ -1,5 +1,7 @@
 #[cfg(windows)]
 mod single_instance;
+#[cfg(test)]
+mod runtime_safety_tests;
 
 use tauri::{Manager, WebviewWindowBuilder, WebviewUrl};
 use tauri::tray::TrayIconBuilder;
@@ -71,6 +73,10 @@ struct WindowPos {
     height: f64,
 }
 
+fn lock_widget_state<'a, T>(state: &'a Mutex<T>, name: &str) -> Result<std::sync::MutexGuard<'a, T>, String> {
+    state.lock().map_err(|_| format!("{name} is unavailable because its lock is poisoned"))
+}
+
 impl WidgetState {
     fn new() -> Self {
         Self {
@@ -127,6 +133,10 @@ fn save_positions(map: &HashMap<String, WindowPos>) {
 
 // ─── Logging ────────────────────────────────────────────────────────────────
 
+#[cfg(test)]
+fn log(msg: &str) { eprintln!("[Facta Widgets] {msg}"); }
+
+#[cfg(not(test))]
 fn log(msg: &str) {
     let path = state_path().join("widget-app.log");
     let _ = std::fs::create_dir_all(state_path());
@@ -254,7 +264,13 @@ fn clamp_to_monitors(
     
     // If window doesn't overlap any monitor, use the first monitor
     let (mon_x, mon_y, mon_w, mon_h) = best_monitor.unwrap_or_else(|| {
-        let &(mx, my, mw, mh, scale) = monitors.first().unwrap();
+        let (mx, my, mw, mh, scale) = match monitors.first() {
+            Some(&monitor) => monitor,
+            None => {
+                log("No monitor available; using the default work area");
+                (0, 0, 1920, 1080, 1.0)
+            }
+        };
         (
             physical_to_logical(mx, scale),
             physical_to_logical(my, scale),
@@ -300,8 +316,13 @@ fn read_shared_data() -> Result<serde_json::Value, String> {
 #[tauri::command]
 fn close_widget(app: tauri::AppHandle, state: tauri::State<WidgetState>, label: String) {
     let id = label.strip_prefix("widget-").unwrap_or(&label).to_string();
-    state.user_closed.lock().unwrap().insert(id);
-    save_user_closed(&state.user_closed.lock().unwrap());
+    match lock_widget_state(&state.user_closed, "closed widget state") {
+        Ok(mut user_closed) => {
+            user_closed.insert(id);
+            save_user_closed(&user_closed);
+        }
+        Err(error) => log(&format!("Could not remember closed widget: {error}")),
+    }
     if let Some(window) = app.get_webview_window(&label) {
         let _ = window.close();
     }
@@ -515,7 +536,13 @@ fn write_all(file: &mut std::fs::File, s: String) -> Result<(), String> {
 
 fn save_current_positions(app: &tauri::AppHandle, state: &tauri::State<WidgetState>) {
     let monitors = get_monitor_work_areas(app);
-    let mut positions = state.window_positions.lock().unwrap();
+    let mut positions = match lock_widget_state(&state.window_positions, "widget positions") {
+        Ok(positions) => positions,
+        Err(error) => {
+            log(&format!("Could not save widget positions: {error}"));
+            return;
+        }
+    };
     
     for (label, window) in app.webview_windows() {
         if !label.starts_with("widget-") { continue; }
@@ -580,9 +607,9 @@ fn spawn_or_update_widgets(app: &tauri::AppHandle, state: &tauri::State<WidgetSt
         .collect();
     
     // Remove user_closed entries for widgets that are now enabled in config
-    let mut user_closed = state.user_closed.lock().unwrap();
+    let mut user_closed = lock_widget_state(&state.user_closed, "closed widget state")?;
     user_closed.retain(|id| !enabled_ids.contains(id));
-    let positions = state.window_positions.lock().unwrap();
+    let positions = lock_widget_state(&state.window_positions, "widget positions")?;
     
     let mut expected_labels: Vec<String> = Vec::new();
     let mut spawned_count = 0;
@@ -729,22 +756,27 @@ fn spawn_or_update_widgets(app: &tauri::AppHandle, state: &tauri::State<WidgetSt
     Ok(())
 }
 
+fn report_widget_run<E: std::fmt::Display>(result: Result<(), E>, report: impl FnOnce(&str)) {
+    if let Err(error) = result {
+        report(&format!("Could not run Facta Widgets: {error}"));
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Hold the named handle for the entire process, including initial setup.
     #[cfg(windows)]
-    let _instance_guard = match single_instance::acquire("Local\\app.facta.widgets.single-instance") {
-        Ok(Some(guard)) => guard,
-        Ok(None) => return,
-        Err(error) => {
-            log(&format!("Could not create single-instance guard: {error}"));
-            return;
-        }
+    let _instance_guard = match single_instance::decide_guard(
+        single_instance::acquire("Local\\app.facta.widgets.single-instance"),
+        |error| log(&format!("Could not create single-instance guard; continuing without it: {error}")),
+    ) {
+        single_instance::GuardDecision::Start(guard) => guard,
+        single_instance::GuardDecision::Duplicate => return,
     };
     let t0 = std::time::Instant::now();
     log("Starting Facta Widgets companion app");
     
-    tauri::Builder::default()
+    let result = tauri::Builder::default()
         .manage(WidgetState::new())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
@@ -885,6 +917,9 @@ pub fn run() {
 
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .run(tauri::generate_context!());
+    report_widget_run(result, |message| {
+        log(message);
+        eprintln!("[Facta Widgets] {message}");
+    });
 }

@@ -4,6 +4,25 @@ use windows_sys::Win32::{
     System::Threading::CreateMutexW,
 };
 
+pub(super) enum GuardDecision<T> {
+    Start(Option<T>),
+    Duplicate,
+}
+
+pub(super) fn decide_guard<T, E>(
+    result: Result<Option<T>, E>,
+    report: impl FnOnce(E),
+) -> GuardDecision<T> {
+    match result {
+        Ok(Some(guard)) => GuardDecision::Start(Some(guard)),
+        Ok(None) => GuardDecision::Duplicate,
+        Err(error) => {
+            report(error);
+            GuardDecision::Start(None)
+        }
+    }
+}
+
 pub(super) struct InstanceGuard(HANDLE);
 
 impl Drop for InstanceGuard {
@@ -42,6 +61,23 @@ pub(super) fn acquire(name: &str) -> io::Result<Option<InstanceGuard>> {
 #[cfg(test)]
 mod tests {
     use super::acquire;
+
+    #[test]
+    fn guard_creation_failure_logs_and_allows_widget_start() {
+        let mut logged = None;
+        let decision =
+            super::decide_guard::<(), _>(Err("guard unavailable"), |error| logged = Some(error));
+        assert!(matches!(decision, super::GuardDecision::Start(None)));
+        assert_eq!(logged, Some("guard unavailable"));
+        assert!(matches!(
+            super::decide_guard::<_, &str>(Ok(Some(42)), |_| {}),
+            super::GuardDecision::Start(Some(42))
+        ));
+        assert!(matches!(
+            super::decide_guard::<(), &str>(Ok(None), |_| {}),
+            super::GuardDecision::Duplicate
+        ));
+    }
 
     #[test]
     fn child_process_reports_existing_instance() {
