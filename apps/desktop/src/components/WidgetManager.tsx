@@ -15,12 +15,17 @@ import {
 import { exportWidgetsNow } from "@/lib/widgetExportBus";
 import { THEMES } from "@/lib/theme";
 import { useTheme } from "@/hooks/useTheme";
+import { useSharedGoals } from "@/hooks/useSharedGoals";
+import { useAuth } from "@/hooks/useAuth";
+import { useNow } from "@/hooks/useNow";
+import { sharedProgressChoices } from "@/lib/sharedGoals/projection";
 import {
   readWidgetConfig,
   widgetConfigJson,
   WIDGET_CONFIG_KEY,
   WIDGET_LABELS,
   WIDGET_TYPES,
+  cleanWidgetSharedSelections,
   type WidgetConfig,
   type WidgetType,
 } from "@/lib/widgetConfig";
@@ -50,6 +55,13 @@ export default function WidgetManager({
   onWidgetChange?: () => void;
 }) {
   const theme = useTheme();
+  const { user } = useAuth(),
+    shared = useSharedGoals(),
+    now = useNow();
+  const groups =
+    shared.data && user
+      ? sharedProgressChoices(shared.data, user.id, now.getTime())
+      : [];
   const [widgets, setWidgets] = useState(() => readWidgetConfig(localStorage));
   const [status, setStatus] = useState<Status>(
     isDesktop() ? "checking" : "browser",
@@ -59,13 +71,68 @@ export default function WidgetManager({
   const [adding, setAdding] = useState(false),
     [confirmReset, setConfirmReset] = useState(false);
   const [draft, setDraft] = useState<
-    Pick<WidgetConfig, "type" | "theme" | "translucent" | "noteStyle">
+    Pick<
+      WidgetConfig,
+      | "type"
+      | "theme"
+      | "translucent"
+      | "noteStyle"
+      | "sharedGroupId"
+      | "sharedUserId"
+    >
   >({ type: "tasks", theme, translucent: true, noteStyle: "sticky" });
   const autoLaunched = useRef(false),
     mounted = useRef(true);
   const addButton = useRef<HTMLButtonElement>(null),
     resetButton = useRef<HTMLButtonElement>(null),
     typeField = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const refreshConfig = () => setWidgets(readWidgetConfig(localStorage));
+    window.addEventListener("facta:widget-config", refreshConfig);
+    return () =>
+      window.removeEventListener("facta:widget-config", refreshConfig);
+  }, []);
+  useEffect(() => {
+    if (!user || !shared.data?.cache || shared.data.userId !== user.id) return;
+    const before = widgetConfigJson(widgets);
+    const cleaned = cleanWidgetSharedSelections(
+      JSON.parse(before),
+      user.id,
+      new Set(groups.map((v) => v.group.id)),
+    );
+    if (JSON.stringify(cleaned) !== before)
+      persist((cleaned.widgets ?? []) as WidgetConfig[]);
+  }, [user?.id, shared.data]);
+  const groupPicker = (
+    w: Pick<WidgetConfig, "type" | "sharedGroupId" | "sharedUserId">,
+    change: (
+      patch: Pick<WidgetConfig, "sharedGroupId" | "sharedUserId">,
+    ) => void,
+    label: string,
+  ) => (
+    <label className="settings-field">
+      {label}
+      <select
+        className="inp"
+        aria-label={label}
+        value={w.sharedUserId === user?.id ? (w.sharedGroupId ?? "") : ""}
+        onChange={(e) =>
+          change(
+            e.target.value && user
+              ? { sharedGroupId: e.target.value, sharedUserId: user.id }
+              : { sharedGroupId: undefined, sharedUserId: undefined },
+          )
+        }
+      >
+        <option value="">Automatic initial group</option>
+        {groups.map((v) => (
+          <option key={v.group.id} value={v.group.id}>
+            {v.group.name}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
   const refresh = useCallback(async () => {
     if (!isDesktop()) return;
     try {
@@ -198,7 +265,12 @@ export default function WidgetManager({
               type="button"
               className="b b-sec"
               onClick={() => {
-                setDraft({ type: "tasks", theme, translucent: true, noteStyle: "sticky" });
+                setDraft({
+                  type: "tasks",
+                  theme,
+                  translucent: true,
+                  noteStyle: "sticky",
+                });
                 setAdding(true);
               }}
             >
@@ -225,10 +297,22 @@ export default function WidgetManager({
                 <div className="settings-grow">
                   <h3>{WIDGET_LABELS[widget.type]}</h3>
                   <p>
-                    {widget.type === "notes" && `${widget.noteStyle === "stack" ? "Stack" : "Sticky"} · `}
+                    {widget.type === "notes" &&
+                      `${widget.noteStyle === "stack" ? "Stack" : "Sticky"} · `}
                     {THEMES.find((item) => item.id === widget.theme)?.name} ·{" "}
                     {widget.translucent ? "Transparent" : "Solid"}
                   </p>
+                  {widget.type === "progress" &&
+                    groupPicker(
+                      widget,
+                      (patch) =>
+                        persist(
+                          widgets.map((w) =>
+                            w.id === widget.id ? { ...w, ...patch } : w,
+                          ),
+                        ),
+                      "Shared group",
+                    )}
                 </div>
                 <span className="widget-state">
                   {widget.enabled ? "Visible" : "Hidden"}
@@ -333,10 +417,23 @@ export default function WidgetManager({
                   onChange={(type) => setDraft({ ...draft, type })}
                 />
               </div>
-              {draft.type === "notes" && <ChoiceGroup<"sticky" | "stack">
-                label="Notes style" value={draft.noteStyle ?? "sticky"}
-                options={[{value:"sticky",label:"Sticky"},{value:"stack",label:"Stack"}]}
-                onChange={noteStyle=>setDraft({...draft,noteStyle})} />}
+              {draft.type === "notes" && (
+                <ChoiceGroup<"sticky" | "stack">
+                  label="Notes style"
+                  value={draft.noteStyle ?? "sticky"}
+                  options={[
+                    { value: "sticky", label: "Sticky" },
+                    { value: "stack", label: "Stack" },
+                  ]}
+                  onChange={(noteStyle) => setDraft({ ...draft, noteStyle })}
+                />
+              )}
+              {draft.type === "progress" &&
+                groupPicker(
+                  draft,
+                  (patch) => setDraft({ ...draft, ...patch }),
+                  "New Progress group",
+                )}
               <div className="settings-field">
                 <span className="sec-h">Theme</span>
                 <ThemeCards

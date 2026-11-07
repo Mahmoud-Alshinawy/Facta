@@ -37,4 +37,25 @@ describe("standalone SQL test migration copies", () => {
     expect(endIndex).toBeGreaterThan(startIndex);
     expect(script.slice(startIndex + start.length, endIndex).trim()).toBe(body);
   });
+
+  it.each([
+    ["-- BEGIN shared migration", "-- END shared migration"],
+    ["-- BEGIN shared migration rerun", "-- END shared migration rerun"],
+  ])("keeps shared goals synchronized at %s", (start, end) => {
+    const shared = readSql("tests/shared_goals.sql");
+    const body = readSql("migrations/20261024160000_shared_goals.sql")
+      .replace(/^(?:begin|commit);[ \t]*\n?/gm, "")
+      .trim();
+    const startIndex = shared.indexOf(start);
+    expect(startIndex).toBeGreaterThanOrEqual(0);
+    const endIndex = shared.indexOf(end, startIndex + start.length);
+    expect(endIndex).toBeGreaterThan(startIndex);
+    expect(shared.slice(startIndex + start.length, endIndex).trim()).toBe(body);
+  });
+
+  it("keeps shared SQL assertions synchronized", () => {
+    expect(readSql("tests/shared_goals.sql")).toContain(
+      readSql("tests/shared_goals.assertions.sql").trim(),
+    );
+  });
 });

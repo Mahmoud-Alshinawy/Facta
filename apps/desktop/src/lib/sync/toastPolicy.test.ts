@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { SyncStatus } from "@/lib/sync/engine";
-import { decideSyncToast } from "@/lib/sync/toastPolicy";
+import type { SharedStatus } from "@/lib/sync/shared/engine";
+import { decideSharedToast, decideSyncToast } from "@/lib/sync/toastPolicy";
 
 const base: SyncStatus = { state: "idle", pending: 0, failed: 0, lastError: null, lastSyncedAt: null };
 const st = (over: Partial<SyncStatus>): SyncStatus => ({ ...base, ...over });
@@ -60,5 +61,42 @@ describe("decideSyncToast", () => {
 
   it("does nothing when idle from the start, or in local-only mode", () => {
     expect(run([base, base, st({ state: "local-only" })])).toEqual({ shownToasts: [], clears: [] });
+  });
+});
+
+describe("decideSharedToast", () => {
+  const shared: SharedStatus = { state: "idle", pending: 0, failed: 0, storageError: false, lastError: null, lastSyncedAt: null };
+  const sh = (over: Partial<SharedStatus>): SharedStatus => ({ ...shared, ...over });
+  const walk = (statuses: SharedStatus[]) => {
+    let shown: string | null = null;
+    const ids: string[] = [];
+    const clears: number[] = [];
+    statuses.forEach((s, i) => {
+      const d = decideSharedToast(shown, s);
+      shown = d.shown;
+      if (d.show) ids.push(d.show.id);
+      if (d.clear) clears.push(i);
+    });
+    return { ids, clears };
+  };
+  const away = sh({ state: "offline", lastError: "Shared goals could not connect." });
+  // A status with no message mid-retry must not re-arm the toast either.
+  const retrying = sh({ state: "syncing" });
+
+  it("shows one offline toast across repeated failed retries, then clears on recovery", () => {
+    expect(walk([away, retrying, away, retrying, away, retrying, shared])).toEqual({ ids: ["shared-offline"], clears: [6] });
+  });
+  it("shows a server that lacks the feature once", () => {
+    const missing = sh({ state: "unavailable", lastError: "Shared goals are unavailable on this server." });
+    expect(walk([missing, retrying, missing]).ids).toEqual(["shared-error"]);
+  });
+  it("shows a rejected check-in once, and again only if the count changes", () => {
+    const one = sh({ state: "error", failed: 1, lastError: "Some check-ins weren't saved." });
+    const two = sh({ state: "error", failed: 2, lastError: "Some check-ins weren't saved." });
+    expect(walk([one, retrying, one, retrying, one, two]).ids).toEqual(["shared-failed", "shared-failed"]);
+  });
+  it("keeps storage failures distinct and clears when the account is paused", () => {
+    const full = sh({ state: "error", storageError: true, lastError: "Device storage is full" });
+    expect(walk([full, sh({ state: "paused" })])).toEqual({ ids: ["shared-storage"], clears: [1] });
   });
 });

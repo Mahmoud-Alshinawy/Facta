@@ -10,6 +10,8 @@ import { widgetReceiptsKey } from "./widgetActions";
 import { keyOf } from "./calendarData";
 import type { Note, DiaryEntry } from "@/types/planner";
 import type { KeyValueStore } from "@/lib/sync/storage";
+import { storedSharedWidgetExport } from "./sharedGoals/widgetExport";
+import { cleanWidgetSharedSelections, WIDGET_CONFIG_KEY } from "./widgetConfig";
 
 let timer: ReturnType<typeof setTimeout> | null = null;
 let exportUserId: string | null = null;
@@ -29,6 +31,12 @@ export function setWidgetExportStore(
 export function setWidgetExportUser(userId: string | null) {
   if (exportUserId === userId) return;
   exportUserId = userId;
+  // Queue account cleanup immediately, including while its next store opens.
+  if (
+    typeof window !== "undefined" &&
+    ((window as any).__TAURI_INTERNALS__ || (window as any).__TAURI__)
+  )
+    void exportWidgetsNow();
   requestWidgetExport();
 }
 let dirty = false;
@@ -51,23 +59,24 @@ export function exportWidgetsNow(): Promise<void> {
 }
 async function writeWidgetSnapshot() {
   try {
-    const userId = exportUserId;
+    const accountId = exportUserId;
     const source = exportStore;
-    // Never export an empty planner while its database is still opening.
-    if (userId && source?.userId !== userId) return;
-    if (userId) await source?.store.flush?.();
+    // Replace the previous account's file while the next account store opens.
+    const userId = accountId;
+    const ready = !!userId && source?.userId === userId;
+    if (ready) await source?.store.flush?.();
     const { invoke } = await import("@tauri-apps/api/core");
-    if (userId !== exportUserId || source !== exportStore) return;
-    const goalsKey = getStorageKey("planner_goals", exportUserId);
-    const eventsKey = getStorageKey("planner_events", exportUserId);
-    const goalsJson = userId ? source!.store.get(goalsKey) || "[]" : "[]";
-    const eventsJson = userId ? source!.store.get(eventsKey) || "[]" : "[]";
-    const notes: Note[] = userId
+    if (accountId !== exportUserId || source !== exportStore) return;
+    const goalsKey = getStorageKey("planner_goals", userId);
+    const eventsKey = getStorageKey("planner_events", userId);
+    const goalsJson = ready ? source!.store.get(goalsKey) || "[]" : "[]";
+    const eventsJson = ready ? source!.store.get(eventsKey) || "[]" : "[]";
+    const notes: Note[] = ready
       ? JSON.parse(
           source!.store.get(getStorageKey("planner_notes", userId)) || "[]",
         )
       : [];
-    const diary: DiaryEntry[] = userId
+    const diary: DiaryEntry[] = ready
       ? JSON.parse(
           source!.store.get(getStorageKey("planner_diary_entries", userId)) ||
             "[]",
@@ -76,7 +85,7 @@ async function writeWidgetSnapshot() {
     const journalJson = JSON.stringify(
       projectWidgetJournal(notes, diary, keyOf(new Date())),
     );
-    const results = userId
+    const results = ready
       ? JSON.parse(source!.store.get(widgetReceiptsKey(userId)) || "[]")
       : [];
     // The widgets read the calendar settings (time format, week start) from
@@ -89,7 +98,38 @@ async function writeWidgetSnapshot() {
     } catch {
       config = { widgets: [] };
     }
-    const configJson = JSON.stringify({ ...config, prefs: readPrefs() });
+    const preferred = Array.isArray(config.widgets)
+      ? config.widgets
+          .filter(
+            (w: any) => w?.type === "progress" && w.sharedUserId === userId,
+          )
+          .map((w: any) => w.sharedGroupId)
+      : [];
+    const shared = storedSharedWidgetExport(
+      ready ? source!.store : null,
+      userId,
+      Date.now(),
+      preferred,
+      !navigator.onLine,
+    );
+    const cleaned = cleanWidgetSharedSelections(
+      config,
+      accountId,
+      shared.allowed,
+    );
+    if (JSON.stringify(cleaned) !== JSON.stringify(config)) {
+      try {
+        localStorage.setItem(WIDGET_CONFIG_KEY, JSON.stringify(cleaned));
+        window.dispatchEvent(new Event("facta:widget-config"));
+      } catch {
+        toast.error(
+          "Could not save widget selections. Account cleanup will still update the widget file.",
+          { id: "widget-selection-storage" },
+        );
+      }
+    }
+    const configJson = JSON.stringify({ ...cleaned, prefs: readPrefs() });
+    if (accountId !== exportUserId || source !== exportStore) return;
     await invoke("export_data_for_widgets", {
       goalsJson,
       eventsJson,
@@ -97,6 +137,7 @@ async function writeWidgetSnapshot() {
       journalJson,
       actionResultsJson: JSON.stringify(results),
       userId,
+      sharedGoalsJson: JSON.stringify(shared.data),
     });
   } catch (e) {
     console.error("[WidgetExport] failed:", e);

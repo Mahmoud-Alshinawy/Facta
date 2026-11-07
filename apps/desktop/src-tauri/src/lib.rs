@@ -136,7 +136,11 @@ fn export_data_for_widgets(
     journal_json: String,
     action_results_json: String,
     user_id: Option<String>,
+    shared_goals_json: String,
 ) -> Result<(), String> {
+    static EXPORT_LOCK: Mutex<()> = Mutex::new(());
+    let _guard=EXPORT_LOCK.lock().map_err(|_| "Widget export lock failed")?;
+    let shared_goals=widget_shared::parse(&shared_goals_json,user_id.as_deref())?;
     let local_app_data = dirs::data_local_dir()
         .ok_or_else(|| {
             eprintln!("[WidgetExport] failed: could not find local app data directory");
@@ -148,6 +152,8 @@ fn export_data_for_widgets(
         return Err(e.to_string());
     }
     let path = dir.join("widgets.json");
+    let previous_ms=std::fs::read_to_string(&path).ok().and_then(|raw| serde_json::from_str::<serde_json::Value>(&raw).ok()).and_then(|v|v["exported_at_ms"].as_i64()).unwrap_or(0);
+    let exported_ms=widget_shared::next_export_ms(chrono::Utc::now().timestamp_millis(),previous_ms);
 
     let config: serde_json::Value = serde_json::from_str(&config_json)
         .unwrap_or(serde_json::json!({ "widgets": [] }));
@@ -157,10 +163,11 @@ fn export_data_for_widgets(
         "events": serde_json::from_str::<serde_json::Value>(&events_json).unwrap_or(serde_json::json!([])),
         "config": config,
         "user_id": user_id,
+        "shared_goals": shared_goals,
         "journal": serde_json::from_str::<serde_json::Value>(&journal_json).map_err(|e| e.to_string())?,
         "action_results": serde_json::from_str::<serde_json::Value>(&action_results_json).map_err(|e| e.to_string())?,
         "exported_at": chrono::Utc::now().to_rfc3339(),
-        "exported_at_ms": chrono::Utc::now().timestamp_millis(),
+        "exported_at_ms": exported_ms,
     });
 
     let json = serde_json::to_string(&data).unwrap_or_else(|e| {
@@ -517,3 +524,4 @@ pub fn run() {
         }
     });
 }
+mod widget_shared;

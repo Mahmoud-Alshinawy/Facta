@@ -1,5 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
+import DeepLinkBridge from "./components/DeepLinkBridge";
+import { Toaster } from "sonner";
 import { AuthProvider } from "@/hooks/useAuth";
 import { SyncProvider } from "@/hooks/useSync";
 import { GoalsProvider } from "@/hooks/useGoals";
@@ -19,6 +21,8 @@ function renderApp() {
   createRoot(document.getElementById("root")!).render(
     <ErrorBoundary>
       <AuthProvider>
+        <DeepLinkBridge />
+        <Toaster richColors position="bottom-right" />
         <SyncProvider>
           <GoalsProvider>
             <EventsProvider>
