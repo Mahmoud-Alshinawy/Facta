@@ -1,6 +1,26 @@
-# Handoff: shared goals merged; hardening next
+# Handoff: shared goals and hardening merged; publishable key next
 
-## Current state (7 November 2026): shared goals merged
+## Current state (7 November 2026): hardening merged
+
+- Builder B's `feat/hardening` is merged into `main` as a fast-forward at
+  **20bd227** (six commits kept as they are): stricter content security policy,
+  start-with-Windows opt-in, a run-once guard for Facta Widgets, graceful Rust
+  runtime failures instead of panics, and PKCE sign-in callbacks. Details:
+  docs/hardening.md.
+- Checks before the merge: the six browser suites on 20bd227 (248, 35, 567, 78,
+  48, 11) and an end-to-end PKCE check on the local Docker stack (13 of 13).
+  Sanity check after the fast-forward: tsc ok, **479 desktop** tests.
+- **Open item for the owner:** confirm the live project's "Reset Password" email
+  template contains `{{ .Token }}`. The app's reset screen asks for the 6-digit
+  code from that email; without it, in-app password reset can't work. (The local
+  test stack's default template had only a link; `{{ .Token }}` was added there
+  for the check.)
+- Next, in order:
+  1. Owner hand-checks of the hardening changes on the installed build.
+  2. The publishable-key switch (docs/supabase-publishable-key.md), then revoke
+     the legacy HS256 key.
+
+## 7 November 2026: shared goals merged (historical)
 
 - Shared goals are merged into `main` as **cac8711** (squash of
   `feat/shared-goals` at 1995918). The branch stays on GitHub for now.
