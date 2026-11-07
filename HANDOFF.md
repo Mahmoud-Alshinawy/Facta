@@ -1,4 +1,18 @@
-# Handoff: branch 3 — accepted claim risk, local-time deadlines
+# Handoff: shared goals merged; hardening next
+
+## Current state (7 November 2026): shared goals merged
+
+- Shared goals are merged into `main` as **cac8711** (squash of
+  `feat/shared-goals` at 1995918). The branch stays on GitHub for now.
+- Checks on the squashed tree: frozen install; tsc in desktop, widgets and
+  calendar; **471 desktop** / **212 calendar** tests; both builds; both cargo
+  checks; **5** widget Rust tests.
+- Next, in order:
+  1. Install both apps from `main` on the owner's machine and smoke-test.
+  2. Rebase or merge Builder B's `feat/hardening` onto the new `main`, then
+     review and merge it.
+  3. The publishable-key switch (docs/supabase-publishable-key.md), then revoke
+     the legacy HS256 key.
 
 ## Final review and approval (7 November 2026)
 
