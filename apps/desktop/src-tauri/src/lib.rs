@@ -1,4 +1,6 @@
 mod startup;
+#[cfg(test)]
+mod runtime_safety_tests;
 #[cfg(windows)]
 mod startup_windows;
 
@@ -407,6 +409,34 @@ fn configure_linux_webview() {
     }
 }
 
+fn finish_app_build<T, E: std::fmt::Display>(result: Result<T, E>, report: impl FnOnce(&str)) -> Option<T> {
+    match result {
+        Ok(app) => Some(app),
+        Err(error) => {
+            report(&format!("Could not start Facta: {error}"));
+            None
+        }
+    }
+}
+
+fn append_startup_log(dir: &std::path::Path, message: &str) -> std::io::Result<()> {
+    use std::io::Write;
+    std::fs::create_dir_all(dir)?;
+    let mut file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(dir.join("startup-error.log"))?;
+    writeln!(file, "{message}")
+}
+
+fn log_startup_failure(message: &str) {
+    eprintln!("[Facta] {message}");
+    let Some(base) = dirs::data_local_dir() else { return };
+    if let Err(error) = append_startup_log(&base.join("Facta"), message) {
+        eprintln!("[Facta] Could not write startup log: {error}");
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     #[cfg(target_os = "linux")]
@@ -548,9 +578,12 @@ pub fn run() {
         Ok(())
     });
 
-    let app = builder
-        .build(tauri::generate_context!())
-        .expect("error while building tauri application");
+    let Some(app) = finish_app_build(
+        builder.build(tauri::generate_context!()),
+        log_startup_failure,
+    ) else {
+        return;
+    };
 
     app.run(|app_handle, event| {
         match event {

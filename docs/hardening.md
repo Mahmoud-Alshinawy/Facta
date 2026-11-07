@@ -196,3 +196,57 @@ an installer was run, and the real Windows startup entries were not changed.
 After review and integrated installation, the owner should check the first
 Windows login after upgrade for one widget tray icon and one copy of each
 configured widget, then carry out the on/off restart checks above.
+
+## Rust panic hardening and widget guard fallback
+
+The following runtime panic points were changed:
+
+- `clamp_to_monitors`: if passed no monitor information, log the condition and
+  use the same 1920×1080 default work area already used by monitor discovery.
+- `close_widget`: the two lock operations are now one checked operation. If
+  the closed-widget state is poisoned, log it and still close the window; the
+  close cannot be remembered in that case.
+- `save_current_positions`: log a poisoned position lock and skip saving rather
+  than panic or overwrite the previous saved positions.
+- `spawn_or_update_widgets`: return an error for poisoned closed-widget or
+  position state; the existing callers log the error and skip that update.
+- Desktop app build: report a Tauri build error and return instead of panicking.
+  It attempts to append the error to `%LOCALAPPDATA%\Facta\startup-error.log`;
+  if the log cannot be written, it reports that on standard error as well.
+- Widget app run: report a Tauri run error to the widget log and standard error
+  rather than panicking.
+- The widget single-instance guard now logs and starts without a guard if the
+  guard cannot be created. A confirmed duplicate still exits. In the failure
+  case, duplicates are possible until the underlying Windows error is fixed.
+
+Three production `unwrap` calls remain after audit: the queued-action
+acknowledgement is reached only when `ack` is `Some`, and the two widget path
+parents follow fixed `join("Facta").join(filename)` calls, so both paths have
+parents by construction. Other remaining `unwrap`/`expect` calls are in tests.
+Fallback methods such as `unwrap_or` do not panic and were outside this audit.
+
+Tests simulate an empty monitor list, a poisoned state lock, widget and desktop
+runtime failures, an invalid log path, and guard creation failure. Tests do not
+launch the apps, write to the real application data, or touch startup entries.
+Widget logging is redirected to standard error in tests to keep them isolated.
+
+| Check | Result |
+| --- | --- |
+| TypeScript, desktop / widgets / calendar | Passed / passed / passed |
+| Desktop Vitest | 39 files, 375 tests passed |
+| Calendar Vitest | 12 files, 184 tests passed |
+| Desktop and widget production builds | Passed / passed |
+| Desktop and widget `cargo check --offline` | Passed / passed |
+| Desktop `cargo test --offline` | 11 passed |
+| Widget `cargo test --offline` | 9 passed |
+| `pnpm install --frozen-lockfile` | Not run: automatic approval review rejected installation under the no-install instruction; existing dependencies were used for the checks above |
+
+The desktop build still reports the existing large-chunk warning. Neither app,
+an installer, nor an actual login was run. The login-CSRF change remains
+pending until shared goals is merged and this branch is rebased; no live
+Supabase project was used.
+
+After review, merge, and installation by Builder A, open Facta and the widget
+app, close and reopen a widget, move it, quit both apps, and reopen them to
+check normal operation and position saving. If either app fails to open, tell
+the reviewer; the startup logs listed above may help identify the cause.
