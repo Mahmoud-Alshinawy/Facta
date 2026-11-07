@@ -1,7 +1,8 @@
 // Supabase implementation of the collection remotes. Every query is scoped to
 // the signed-in user explicitly, on top of RLS.
 
-import type { PostgrestError } from "@supabase/supabase-js";
+import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/database.types";
 import { supabase } from "@/lib/supabase";
 import type {
   EventRow,
@@ -56,19 +57,22 @@ async function paged<T>(
   }
 }
 
-export function createSupabaseRemotes(userId: string): PlannerRemotes {
+export function createSupabaseRemotes(
+  userId: string,
+  client: SupabaseClient<Database> = supabase,
+): PlannerRemotes {
   return {
     notes: {
       upsert: async (rows: NoteWrite[]) =>
         toResult(
-          await supabase
+          await client
             .from("notes")
             .upsert(rows, { onConflict: "id" })
             .select(),
         ),
       fetchByIds: (ids) =>
         inChunks<NoteRow>(ids, (chunk) =>
-          supabase
+          client
             .from("notes")
             .select("*")
             .eq("user_id", userId)
@@ -76,7 +80,7 @@ export function createSupabaseRemotes(userId: string): PlannerRemotes {
         ),
       fetchAll: () =>
         paged<NoteRow>((from, to) =>
-          supabase
+          client
             .from("notes")
             .select("*")
             .eq("user_id", userId)
@@ -97,7 +101,7 @@ export function createSupabaseRemotes(userId: string): PlannerRemotes {
               },
             };
           const result = toResult(
-            await supabase.rpc("facta_write_diary", {
+            await client.rpc("facta_write_diary", {
               entry: row as unknown as import("@/lib/database.types").Json,
             }),
           );
@@ -117,7 +121,7 @@ export function createSupabaseRemotes(userId: string): PlannerRemotes {
       },
       fetchByIds: (ids) =>
         inChunks<DiaryRow>(ids, (chunk) =>
-          supabase
+          client
             .from("diary_entries")
             .select("*")
             .eq("user_id", userId)
@@ -125,7 +129,7 @@ export function createSupabaseRemotes(userId: string): PlannerRemotes {
         ),
       fetchAll: () =>
         paged<DiaryRow>((from, to) =>
-          supabase
+          client
             .from("diary_entries")
             .select("*")
             .eq("user_id", userId)
@@ -136,14 +140,14 @@ export function createSupabaseRemotes(userId: string): PlannerRemotes {
     goals: {
       upsert: async (rows: GoalWrite[]) =>
         toResult(
-          await supabase
+          await client
             .from("goals")
             .upsert(rows, { onConflict: "id" })
             .select(),
         ),
       fetchByIds: (ids: string[]) =>
         inChunks<GoalRow>(ids, (chunk) =>
-          supabase
+          client
             .from("goals")
             .select("*")
             .eq("user_id", userId)
@@ -151,7 +155,7 @@ export function createSupabaseRemotes(userId: string): PlannerRemotes {
         ),
       fetchAll: () =>
         paged<GoalRow>((from, to) =>
-          supabase
+          client
             .from("goals")
             .select("*")
             .eq("user_id", userId)
@@ -162,14 +166,14 @@ export function createSupabaseRemotes(userId: string): PlannerRemotes {
     events: {
       upsert: async (rows: EventWrite[]) =>
         toResult(
-          await supabase
+          await client
             .from("events")
             .upsert(rows, { onConflict: "id" })
             .select(),
         ),
       fetchByIds: (ids: string[]) =>
         inChunks<EventRow>(ids, (chunk) =>
-          supabase
+          client
             .from("events")
             .select("*")
             .eq("user_id", userId)
@@ -177,7 +181,7 @@ export function createSupabaseRemotes(userId: string): PlannerRemotes {
         ),
       fetchAll: () =>
         paged<EventRow>((from, to) =>
-          supabase
+          client
             .from("events")
             .select("*")
             .eq("user_id", userId)

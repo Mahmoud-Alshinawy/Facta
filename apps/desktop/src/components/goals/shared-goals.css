@@ -1,0 +1,425 @@
+/* Creation/invitation surfaces from GC and GS. Shared overview/detail is Step 4. */
+.fx .shared-workspace {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  flex-direction: column;
+}
+.fx .shared-header h1:focus-visible {
+  outline: 1px solid var(--accent-border);
+  outline-offset: 4px;
+  border-radius: 3px;
+}
+.fx .shared-page .shared-header {
+  justify-content: space-between;
+}
+.fx .shared-wizard {
+  max-width: 760px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 28px 28px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  box-sizing: border-box;
+}
+.fx .shared-card {
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.fx .shared-card h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.fx .shared-card p {
+  margin: 0;
+  line-height: 1.5;
+}
+.fx .shared-fields {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.fx .shared-fields:disabled {
+  opacity: 0.7;
+}
+.fx .shared-page .field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.fx .shared-page .flab,
+.fx .shared-page .field label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+.fx .shared-page .inp {
+  height: 42px;
+  padding: 0 12px;
+  background: var(--bg);
+  border: 1px solid var(--control-border);
+  border-radius: 9px;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.fx .shared-note {
+  font-size: 12.5px;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+.fx .shared-callout {
+  display: flex;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--raised);
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.5;
+  margin: 0;
+}
+.fx .shared-steps {
+  display: flex;
+  align-items: center;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  gap: 18px;
+}
+.fx .shared-steps li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--subtle);
+  font-size: 12.5px;
+}
+.fx .shared-steps b {
+  display: flex;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+  font-size: 11.5px;
+}
+.fx .shared-steps .on {
+  color: var(--text);
+}
+.fx .shared-steps .on b {
+  background: var(--text);
+  color: var(--bg);
+}
+.fx .shared-steps .done b {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+.fx .shared-card [aria-label="Template"] {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.fx .shared-card [aria-label="Template"] .b {
+  min-width: 0;
+  white-space: normal;
+  transform: none;
+  align-items: flex-start;
+  align-self: stretch;
+  justify-content: flex-start;
+  flex-direction: column;
+  height: auto;
+  padding: 16px;
+  gap: 8px;
+  text-align: left;
+  border-radius: 12px;
+}
+.fx .shared-card [aria-label="Template"] .b > span {
+  transform: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.fx .shared-card [aria-label="Template"] strong {
+  font-size: 16px;
+}
+.fx .shared-card [aria-label="Template"] span span {
+  font-size: 12.5px;
+  line-height: 1.5;
+  font-weight: 400;
+}
+.fx .shared-card .sec-h {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.fx .shared-icons,
+.fx .shared-days {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.fx .shared-icons button,
+.fx .shared-days button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--control-border);
+  color: var(--text);
+  border: 0;
+  font-size: 12px;
+}
+.fx .shared-days button {
+  width: 52px;
+}
+.fx .shared-icons button[aria-checked="true"],
+.fx .shared-days button[aria-checked="true"] {
+  background: var(--text);
+  color: var(--bg);
+  box-shadow: none;
+}
+.fx .shared-stepper {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+  align-self: flex-start;
+}
+.fx .shared-stepper button {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--raised-2);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fx .shared-stepper output {
+  min-width: 76px;
+  text-align: center;
+  font:
+    13px "Geist Mono",
+    monospace;
+}
+.fx .shared-page button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.fx .shared-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.fx .shared-facts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.fx .shared-summary {
+  border-bottom: 0;
+}
+.fx .shared-summary strong {
+  font-size: 17px;
+}
+.fx .shared-facts > div {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  min-width: 0;
+}
+.fx .shared-facts strong {
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.fx .shared-link {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  padding: 8px 10px;
+  background: var(--bg);
+  border: 1px solid var(--control-border);
+  border-radius: 9px;
+}
+.fx .shared-link > span {
+  flex: 1;
+  font-size: 12px;
+}
+.fx .shared-link input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font:
+    12px "Geist Mono",
+    monospace;
+}
+.fx .shared-person {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.fx .shared-person small {
+  display: block;
+  font-size: 12px;
+  color: var(--subtle);
+  margin-top: 4px;
+}
+.fx .shared-person > .flex-1 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.fx .shared-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--text);
+  border: 1px solid var(--accent-border);
+  font-size: 11px;
+}
+.fx .shared-avatar.pending {
+  border-style: dashed;
+  color: var(--subtle);
+  background: transparent;
+}
+.fx .shared-section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.fx .shared-message {
+  padding: 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+  background: var(--raised);
+  overflow-wrap: anywhere;
+}
+.fx .shared-invitation {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  margin-top: 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  background: var(--raised);
+}
+.fx .shared-invitation p {
+  margin: 4px 0 0;
+}
+.fx .shared-saved {
+  margin-top: 28px;
+}
+.fx .shared-saved h2 {
+  font-size: 16px;
+}
+.fx .shared-recovery {
+  flex-shrink: 0;
+  max-height: 180px;
+  overflow: auto;
+  padding: 12px 24px;
+  background: var(--raised);
+  border-top: 1px solid var(--border-strong);
+  font-size: 13px;
+}
+.fx .shared-recovery p {
+  margin: 0 0 8px;
+}
+.fx .shared-recovery > div {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 8px;
+}
+.shared-auth-notice {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  padding: 12px 18px;
+  max-width: 90vw;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 13px;
+}
+.shared-auth-notice button {
+  margin-left: 12px;
+  text-decoration: underline;
+}
+@media (max-width: 1200px) {
+  .fx .shared-steps {
+    gap: 10px;
+  }
+  .fx .shared-steps span {
+    display: none;
+  }
+  .fx .shared-invitation {
+    flex-wrap: wrap;
+  }
+  .fx .shared-header {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+}
+@media (max-width: 700px) {
+  .fx .shared-wizard {
+    padding: 20px 16px 32px;
+  }
+  .fx .shared-card {
+    padding: 18px;
+  }
+  .fx .shared-card [aria-label="Template"] {
+    grid-template-columns: 1fr;
+  }
+  .fx .shared-link {
+    flex-wrap: wrap;
+  }
+  .fx .shared-link input {
+    flex-basis: 70%;
+  }
+  .fx .shared-facts {
+    grid-template-columns: 1fr;
+  }
+}

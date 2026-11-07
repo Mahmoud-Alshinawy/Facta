@@ -1,0 +1,446 @@
+# Remaining acceptance: real local Auth/HTTP and native providers
+
+Last updated 7 November 2026. Branch `feat/shared-goals`. **Full acceptance
+remains incomplete; do not merge.** This began as acceptance-only work after
+`dcfe07a`, but the acceptance found problems, so application code has changed
+since then: local-time deadlines, the publishable-key fallback, warm focus
+links, Edit split, the invite and profile screens, first-round wording, widget
+placement and check-in clock skew. One new migration,
+`20261101120000_shared_checkin_clock_skew.sql`; the owner applied it and the
+original shared-goals migration to the live project.
+
+Owner hands-on checks are recorded below. Check-in scoring and the offline toast
+are fixed in source and need rechecking on the installed build after the owner
+runs the new migration. Two separate physical devices are an accepted open
+limitation.
+
+## Final owner check (7 November 2026)
+
+bobross's check-in after the clock-skew migration: pass. The reviewer's final
+review and branch security review found no issues, and the owner approved the
+merge.
+
+## Try again after a clock fix, and a steady check-in button (4 November 2026)
+
+**Owner rechecks of fe1a3c4 on the installed build.** Wi-Fi toast: pass. Check-in:
+the first recheck happened before the migration was applied, so it does not
+count. After the owner applied `20261101120000_shared_checkin_clock_skew.sql`
+(check query `true`), the recheck passed.
+
+**Try again after setting the clock right.** A check-in made with the clock more
+than 5 minutes ahead is refused. If the owner then sets the clock right and
+presses Try again, the old stamp is now in the device's future, and the app
+reported "incomplete or incompatible data". `retryFailed` now re-stamps with the
+current time when the group date is unchanged. When the stamp belongs to a day
+that has not started yet, the row stays and the message says to discard it and
+check in again. Any other stamp is kept, so an offline check-in keeps its real
+time.
+
+**Label flicker.** After a check-in the button went Pending check-in → Check in →
+Checked in (undo the same in reverse). The accepted reply removed the outbox
+entry, but the cached row only changed on the next read, so for one round trip
+the view showed the old row. The reply now updates that row (id, revision,
+checked) in the same save, unless the cached row is already at a later revision.
+Scores still wait for the read. The button also keeps one shape and size in every
+state, and the not-saved toast points to the group.
+
+**Evidence.** Unit tests (engine and cache) and the extended
+`run-shared-client-tests.mjs 55439 --ui --checkin-skew`: the next read is held
+after each reply and the label must go straight from Pending to the final
+state; the device clock is moved back before Try again; button sizes are compared
+across states and screenshots taken in both themes. The browser suite failed on
+fe1a3c4's app code at the held-read step, and with only the re-stamp removed at
+Try again (`[["failed","invalid_date"]]`). Final code: 467 desktop / 212 calendar /
+5 Rust tests; browser `--checkin-skew` 35, `--ui` 248, `--step6` 567,
+`--step6-review` 78, `--deadlines` 48, `--join-review` 11. Both apps rebuilt and
+installed on the real machine.
+
+**Docker-only checks (later on 4 November).** Docker came back with no images,
+containers or volumes, so the disposable stack was recreated (CLI 2.122.0, same
+project id and ports). A fresh start applied all five migrations on PostgreSQL
+17.11; re-running the clock-skew migration gave exit 0 and the check query stayed
+`true`. `--verify-boundaries`: ok, 40 assertions (was 29), the clock-skew checks'
+first real-server run. HTTP suite: ok, 64. HTTP suite with `--publishable-key`:
+ok, 64. The midnight case now has controls: a same-day stamp 20 seconds ahead
+is accepted, and the refused past-midnight request is accepted once the server
+passes midnight. So the refusal is the date rule, not a wrong zone in the test
+setup. Wrong audience and issuer remain accepted, as the accepted risk.
+
+**Wording follow-up.** The discard message now says the check-in "is dated for a
+day that hasn't started yet" rather than "was saved". Such a row shows that
+message at once and offers only Discard, using the same rule (`datedAhead`) as
+Try again. Desktop tests 471; `--checkin-skew` 35.
+
+## Check-in clock skew and the offline toast (1 November 2026)
+
+**Cause of the rejected check-ins.** The app stamps a check-in with the device's
+clock, and `set_checkin` refused any stamp later than the database's clock. A
+device slightly ahead failed when the request arrived quickly. Owner evidence:
+captured 11:22:10.240Z, base revision 0, `invalid_date` at 11:22:11.276Z; Review
+and retry then worked on both accounts. Tests missed it because the app and test
+server shared one clock.
+
+**Fix.** New re-runnable migration
+`20261101120000_shared_checkin_clock_skew.sql` replaces `sg_execute_command`; only
+the capture check differs from the original. A stamp up to 5 minutes ahead is
+accepted. The date rules still apply to the device's stamp, then the stored time
+is clamped to the server's, so there is no scoring gain. Anything further ahead
+is refused. **Known limit:** within 5 minutes of group midnight, a device already
+past midnight sends the new date while the server is still on the old one. That
+is still refused, shows as not saved, and works after midnight.
+
+**Not-saved state.** A refused change no longer reads as "Pending check-in" or
+"Rejected: invalid date". The button says "Not saved", the checked state is the
+server's, and plain words with **Try again** and **Discard** appear on Today, on
+the shared goal card and in group detail. The Progress widget says to open the
+group, and its Open group button goes there.
+
+**Offline toast.** `SharedErrorToasts` re-armed whenever `syncNow` cleared the
+error at the start of a retry. Shared goals now use the same decision as personal
+sync (`lib/sync/toastPolicy.ts`, one toast per distinct problem, fixed ids).
+Offline shows one "Shared goals paused" message, which clears on recovery, and a
+retry no longer blanks the current message.
+
+**Evidence.** `run-shared-client-tests.mjs 55439 --ui --checkin-skew` holds the device
+clock ahead of the database: check in, undo, check in saves all three and stores
+clamped times; 6 minutes ahead shows the plain state with one toast, and Discard and
+Try again both work; offline shows one toast that does not return. Against the old
+migration alone the suite fails with the owner's `invalid_date`. **Not run:** the HTTP
+suites and the new `--verify-boundaries` skew cases, because Windows refused every
+WSL2 VM after the 1 November restart (`HCS/ERROR_NOT_SUPPORTED`, Ubuntu too), so Docker
+cannot start. The migration has run on PostgreSQL 17.5 through the browser fixture, but
+not yet with real Auth/PostgREST.
+
+## Shared goals on the real install after the live migration (29 October 2026)
+
+The owner applied `20261024160000_shared_goals.sql` to the live project. A
+read-only catalog query showed all 10 tables: the six `public.shared_*` with
+RLS on and 2 policies each, the four `facta_private` tables with RLS off and
+no API access. The installed app then dropped "unavailable on this server";
+the widget export reports `unavailable: false`.
+
+The owner did the steps that need a password or a personal choice: account A
+profile, a Gym group "working out" (Sundays, Asia/Riyadh, first round Sun
+1 Nov), opening A's own invite link, then a sign-out and a new account B
+joining with that link on 29 Oct. Claude checked the results in the app, in
+its local cache (WebView DevTools on loopback, closed afterwards) and in the
+widgets.
+
+| Check                                             | Result                                                                                                                                                                                                                                                      |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Account switch via the real UI (A → sign-out → B) | Pass. B sees only its own goals, notes and widget export, none of A's. Device-level widget settings are kept, by design. A's shared cache stays on disk under A's own key, by design (client doc: per-account store, hidden from consumers after sign-out). |
+| Join as a second member                           | Pass. Roster shows 2 people; both memberships have `eligible_round 2026-11-01`, the group's first round. B joined on 29 Oct, before it starts, so B is in from the start, not a week late.                                                                  |
+| Handles                                           | Pass. Unique as designed: A saved handle `bob`, B saved `bobross`. Both use the display name "bobross" (display names are not unique).                                                                                                                      |
+| Waiting state                                     | Pass. Shared card, detail, Today and the Progress widget show Waiting / "Starts 2026-11-01", with check-in disabled.                                                                                                                                        |
+| Widgets: Progress + Open group                    | Pass. Progress widget shows the group. With Facta minimized, Open group restored it on the group detail.                                                                                                                                                    |
+| Scoring with two members                          | **Failed, fixed in source; recheck after install.** Scores count when accepted (a member showed 1 of 4, 25%), but a normal click could be refused with `invalid_date`. See the check-in section at the top.                                                 |
+
+Findings (all fixed 1 November 2026 and installed from 3eac730. Widget placement
+was checked on the real desktop; the other three only in the browser suites. The later
+primary-monitor refinement of placement is in source, not in the installed build):
+
+1. **Own invite link shows a fresh invitation.** As the group's creator, opening
+   your own `facta://join/…` shows "bobross invited you…" with a days-per-week
+   picker and Join. Joining returns `already_joined`, so nothing changes and
+   the picked target is ignored. The preview carries `groupId`, and the local
+   snapshot knows the membership, so the screen could say "You're already in
+   this group" and offer Open group.
+2. **Profile error never clears.** `SharedGoalsPage.tsx` sets `error` on a
+   failed check but never resets it when the input changes, so "Use 3–24
+   lowercase letters…" stays under a username that is now valid.
+3. **First-round wording.** Joining before the first round says "Your
+   eligibility starts Sun 1 Nov… earlier days are not missed", which reads as
+   if the member is late. When `eligible_round` equals the first round it
+   should say the member starts with the first round.
+4. New widgets open at the same default spot, so the Progress widget
+   overlapped the Tasks widget.
+
+## Production-native checks on the real install (task 5, 28 October 2026)
+
+Owner-authorized: `pnpm tauri build` of both apps (repo `.env`: live URL and
+anon key), installed over the owner's real install and signed-in account. No
+SQL or dashboard use by Claude, and no accounts created by Claude. On 28 October
+the live project did not yet have `20261024160000_shared_goals.sql`, so every
+shared-goal flow stopped at "Shared goals are unavailable on this server. Saved
+changes have been retained.", the expected graceful state. The rows below
+record what is now known, including the checks done after the migration.
+
+**Before:** Facta 1.0.0 and Facta Widgets 1.0.0 from 20 Oct (pre-shared-goals) at
+`%LOCALAPPDATA%\Facta` and `…\Facta Widgets`. Run-key autostart for both.
+The `facta://` handler pointed at a **dev `target\debug\facta.exe`**, a stale
+handler left by a debug build. Temporary pre-install data backups were deleted
+on the owner's instruction, unread, on 1 November. The old 20 Oct processes did not respond to a normal close (their WebView
+children were stopped first), so they were force-stopped. No literal Quit
+of the old build.
+
+| Check (installed build, exactly one `facta.exe` from the install path) | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Silent NSIS upgrade over existing install, both apps                   | Pass. Exit 0; exes dated today. Handler now points at the installed exe. Signed-in session and data kept.                                                                                                                                                                                                                                                                                                                                                                                  |
+| Restart while signed in                                                | Pass. Fresh launch: same account, "Synced", both offline-created goals present. A white window shows for ~2–4 s before first paint (cosmetic).                                                                                                                                                                                                                                                                                                                                             |
+| Autostart                                                              | Pass (owner, real restart). Facta and the widgets started on their own and kept their positions. Windows delays startup apps by about 13 s; the widgets log shows 0.8 s from process start to windows created. Run key = `facta.exe --hidden`.                                                                                                                                                                                                                                             |
+| Cold `facta://focus?section=diary`                                     | Pass. Started on Diary.                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| Warm `facta://focus…`                                                  | **Failed on the first build, fixed.** Single-instance forwarding re-serializes path-less links as `facta://focus/?…` (seen via WebView DevTools: `deep-link://new-url` payloads). `parseFactaLink` rejected them, so widget "Open Facta" and note links did nothing while Facta was running. Fix: optional `/` after `focus`, plus 3 Vitest cases. Rebuilt, reinstalled, rechecked: Diary, Notes (from a tray-hidden window) and bare `facta://focus` all open.                            |
+| Warm `facta://group/<uuid>` and `facta://auth/callback?…`              | Forwarded unchanged. Before the migration the group link opened Goals → Shared, showing "unavailable… Retry loading". After it, Open group in the widget opened the group detail. The auth-error link kept the session signed in; its toast was hidden behind the shared toast and could not be read (inconclusive).                                                                                                                                                                       |
+| Invite (`facta://join/…`) and auth success links                       | Invite: pass. New account B joined with the link, and the owner's own link on the installed build shows "You're already in working out" with Open group. Whether Facta was already running each time was not recorded. Auth success: account B ended up signed in after sign-up, but the confirmation-link return was not observed.                                                                                                                                                        |
+| Widget companion                                                       | Pass. Adding a Tasks widget auto-launched the installed companion (one process). It was briefly above Facta at creation, then bottom-stacked after Facta was clicked. File watching: marking a goal done in Facta updated the widget to "1/2 completed" without interaction. Progress widget: Open group restored Facta on the group detail.                                                                                                                                               |
+| OS network outage/reconnect                                            | Data: pass. Two runs by Claude (home Wi-Fi, then the owner's hotspot) and a later owner run: goals created offline were kept and synced after reconnect, with no error, and survived a restart. Toast: **failed, fixed in source; recheck after install.** "Shared goals need attention" reappeared repeatedly while offline. Also: `navigator.onLine` stays `true` here (VMware/WSL/Tailscale adapters), so the footer keeps showing "Synced · just now" for ~49 s until a request fails. |
+| Tray Quit with pending writes                                          | Pass (owner). Tray Quit with an unsaved change.                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Account switch / sign-out cleanup via the real UI                      | Pass (29 October). The owner signed out of A and into new account B; B saw none of A's goals, notes or widget data.                                                                                                                                                                                                                                                                                                                                                                        |
+| Two separate physical devices                                          | **Not tested.** The owner accepts this as an open limitation.                                                                                                                                                                                                                                                                                                                                                                                                                              |
+
+Server-side confirmation of the offline writes is via the app (no sync error,
+"Synced", present after restart). A direct REST read of the live project was
+declined as a production read.
+
+## Accepted claim risk, local-time deadlines, publishable key (after 3eda18c)
+
+- **Audience/issuer: owner-accepted risk.** See the rewritten
+  [accepted-risk note](shared-goals-deployment-policy.md). The suite still
+  sends both probes and records them under `acceptedGaps` (Auth 200 /
+  PostgREST 200 on local defaults) without failing the run. Signed expired and
+  future-`nbf` rejections are now explicit required assertions (Auth 403 /
+  PostgREST 401), alongside tampered/unsigned rejection and the valid control.
+- HTTP publication now asks the server for its first round: a stale proposal
+  must return `confirmation_required` with the server's date, which is then
+  published. No client-clock prediction remains in the HTTP suite.
+- `--verify-boundaries` adds real-server cases at **2026-10-28T20:59:59Z**
+  (Riyadh 28 Oct) and **21:00:00Z** (Riyadh 29 Oct). Each scores 50→100 in
+  one round, and the server refuses the date on the other side of midnight
+  with `invalid_date`.
+- The native fixture's round weekday is the seed day's weekday, so it follows
+  the run date (Sunday rounds when run on a Monday, and so on). Each
+  `--verify-boundaries` case lists its `roundWeekday`.
+
+| Run (disposable stack, 28 Oct 2026)                   | Exit | Result                       |
+| ----------------------------------------------------- | ---- | ---------------------------- |
+| `run-supabase-acceptance.mjs` (legacy anon key)       | 0    | ok, **64** assertions        |
+| `run-supabase-acceptance.mjs --publishable-key`       | 0    | ok, **64** assertions        |
+| `prepare-native-auth-fixture.mjs --verify-boundaries` | 0    | ok, **29** (9 cases, 50→100) |
+| `prepare-native-auth-fixture.mjs` (current day)       | 0    | ok, **2**                    |
+| `run-shared-client-tests.mjs 55439 --ui --deadlines`  | 0    | ok, **48**, 20 captures      |
+
+Not rerun: `--native-background` (12 assertions). It needs the isolated native
+window open, and its polling/export code did not change. Publishable-key readiness is
+in [supabase-publishable-key.md](supabase-publishable-key.md).
+
+## Review of 4b59939: corrected acceptance tests (historical)
+
+**Current result remains incomplete; branch stays unmerged.** No audience/issuer
+policy was applied. [Deployment-side policy proposal](shared-goals-deployment-policy.md)
+defines the proposed claims, server enforcement, origin-bypass requirements and
+verification matrix. It is not client-side validation or a verified gate.
+
+- Replaced the malformed membership INSERT/any-error assertion. A Custom group
+  makes the membership a valid single-row INSERT; Gym membership additionally
+  requires a target-version row in the same transaction. The complete body has
+  a valid joined instant, strictly future eligible round and null Custom target.
+  A separate privileged B-row control proves the constraints accept this shape;
+  unauthorized attempts target nonmember C with fresh UUIDs. The control stays
+  in the disposable fixture, respecting immutable membership history.
+- The red validity control rejected the previous malformed shape with HTTP
+  **400 / SQLSTATE 23514**. Final real HTTP evidence is explicit, not “any error”:
+
+  | Caller                      | HTTP | SQLSTATE                      | Privileged read of its UUID |
+  | --------------------------- | ---- | ----------------------------- | --------------------------- |
+  | Privileged validity control | 201  | none                          | one inserted control row    |
+  | Authenticated group member  | 403  | 42501, permission/RLS message | zero rows                   |
+  | Anonymous caller            | 401  | 42501, permission/RLS message | zero rows                   |
+
+- Both publication fixtures now use the group-local date, the authoritative
+  server creation instant and a strictly later round date. No UTC date slicing
+  determines the publication weekday. The native seed/action pair starts its
+  round on yesterday, so both days count even when today is Monday. The seed
+  capture resolves group-local noon; creation/publication and replay use the
+  same shared test planner.
+- **15 focused Vitest boundary cases passed**, after six reproduced failures
+  with the old calculations. They cover just before/at Riyadh midnight, UTC
+  ahead of Los Angeles, Kiritimati, a year boundary, all seven native weekdays,
+  the Monday midnight transition and join eligibility immediately before/at a
+  round start. The fixture CLI shares the TypeScript planner through the
+  existing Node 24 runtime; no dependency was added.
+- **21 real-server boundary assertions passed** across 26 October–1 November 2026. Each controlled domain-date case publishes strictly after creation and
+  verifies actual scoring-view rows at **1 of 2 / 50%**, then **2 of 2 / 100%**
+  in the same round. Monday uses Sunday 25 October as round/seed start and Monday
+  26 October as the second occurrence. This is a domain-clock replay with real
+  Auth/HTTP, not a claim of native UI testing on seven physical dates.
+- Current-day fixture preparation passed **2 assertions**, then the actual
+  native polling/export/conflict/leave regression passed **12 assertions** with
+  that corrected fixture. Both domain clock functions were restored; Auth/JWT
+  clocks were never moved. Computer Use was reauthorized but no UI input was
+  needed for these focused reruns; production-native gates below remain open.
+- Final full Auth/HTTP run: **59 assertions passed**, with `dml` status/code/row
+  evidence in `http-result.json`. Its overall **`ok:false` / exit 1** still records
+  the unchanged wrong-audience/issuer findings. The prior 48-assertion result
+  did not establish valid unauthorized membership DML or its absence; that claim
+  is superseded by the control and negative checks above.
+- Required checks passed again: frozen install; all three TypeScript checks;
+  **452 desktop / 194 calendar tests**; desktop PORT=1420 BASE_PATH=/ build;
+  widgets build; both production Windows cargo checks. Existing chunk warning
+  remains. No application, migration, deployment configuration or dependency
+  changes, and no standalone SQL/concurrency or full visual rerun for this fix.
+
+Reproduction: the existing HTTP/native entries below, plus
+`node scripts/prepare-native-auth-fixture.mjs --verify-boundaries` for the
+seven-date scoring replay and `vitest run src/test/sharedAcceptanceDates.test.ts`
+in `apps/desktop` for focused logic. `boundary-result.json` and
+`native-fixture-result.json` accompany the existing ignored result files.
+Run clock-moving fixture suites sequentially; they restore both domain clocks
+in `finally` and use only the label-checked disposable container.
+
+The remaining sections record the original 4b59939 checkpoint. The corrected
+evidence above supersedes its affected DML/date claims and counts; all other
+limitations remain unchanged.
+
+## Docker diagnosis and recovery
+
+- Reproduced with `docker desktop start` and `docker info`: Linux engine pipe
+  absent; host backend fails renaming `Docker/run/sailor-ingest.sock` to `.stale`
+  with Windows Error 1920. The runtime directory contained six zero-byte reparse
+  objects; even a read-only reparse query on the affected object failed.
+- With Desktop stopped and no backend process found, renamed only that runtime
+  directory to its sibling `run.facta-acceptance-20261028-1`, preserving its
+  contents, and created an empty `run`. This advanced startup to a second
+  failure at `docker-secrets-engine/engine.sock`. That directory was not changed.
+- The owner then opened the engine through Docker. Verified Engine **29.7.2**
+  responding. After a laptop crash, a normal startup/owner intervention restored
+  the engine again and the disposable database survived. This does **not**
+  establish a permanent repair or prove a specific Windows kernel cause.
+- Ordinary file rename passed. Fresh .NET AF_UNIX bind passed; its endpoint was
+  automatically removed on disposal, so the attempted post-disposal rename was
+  inconclusive. Bundled Python lacks AF_UNIX; an initial .NET path exceeded the
+  socket length limit and was corrected. No general socket-rename conclusion.
+- No factory reset, prune, VM disk deletion/restore, WSL unregister, ACL rewrite,
+  OS security change or Docker settings edit. Original runtime objects remain
+  in the sibling backup. Existing Docker data/resources were not removed.
+
+Upstream reports describe the same host runtime failure and directory-level
+workaround; these are reports, not proof of this machine's underlying cause:
+[Docker #554](https://github.com/docker/desktop-feedback/issues/554),
+[Docker #676](https://github.com/docker/desktop-feedback/issues/676).
+
+## Disposable stack and identity boundary
+
+- Temporary **Supabase CLI 2.122.0**, outside workspace dependencies. Project
+  `facta-acceptance-20261028` lives under ignored `tmp/supabase-acceptance`.
+  API `127.0.0.1:56421`, DB `56422`, local mail capture `56424`.
+- Copied and applied all four repository migration files to this new local
+  stack. No `.env`, linked/cloud project, live credentials or live Supabase.
+  CLI started the full stack despite requested exclusions; unused test services
+  were subsequently stopped by verified project label to reduce laptop load.
+- PostgreSQL **17.11**, PostgREST **16.5**, real GoTrue, gateway and captured mail.
+  Email confirmation enabled; access-token lifetime **120 seconds** to exercise
+  actual expiry. No Auth/PostgREST clock replacement.
+- Auth/HTTP identities below are actual local Auth users with issued sessions.
+  They do not use `fixture.<uuid>`, an `auth.uid()` scaffold or the earlier
+  SQL bridge. Deliberately signed negative JWT probes are identified separately.
+- Local keys, credentials and callback URLs stay in ignored test files and must
+  not be committed. CLI's source-tree version marker was moved into ignored
+  artifacts; unrelated `.agents/` and `skills-lock.json` remain untouched.
+
+## Real Auth/JWT/PostgREST results
+
+Reproducible entry: `node scripts/run-supabase-acceptance.mjs`, after preparing
+the dedicated local stack and privately saving CLI status to
+`tmp/supabase-acceptance/status.json`. The runner rejects any other API URL.
+Result: `http-result.json` in that directory. Its overall **`ok:false` is
+intentional evidence of the remaining claim-validation gaps**, not a baseline
+unit-test failure or an acceptance pass.
+
+The final post-crash run passed **48 assertions**, including a required
+same-signer positive control before the signed negative-claim probes. The
+pre-crash run passed 47 before that explicit assertion was added; both observed
+the same two claim-policy gaps.
+
+The assertions cover:
+
+- Sign-up without premature session, unconfirmed sign-in rejection, real local
+  email capture/confirmation, persisted SDK session restoration and HTTP user
+  validation; refresh rotation with unchanged identity.
+- Password recovery verification/update; old-password rejection and new-password
+  login; sign-out clears the session and the server rejects its refresh token.
+- A naturally issued access token expires on the actual clock, is rejected by
+  both services, and its still-valid refresh session recovers.
+- Production `createSharedRemote`: profiles, draft/publication, identical UUID/
+  body receipt replay, Unicode JSON/date mapping, authenticated preview, join
+  with `eligible_round` and exact receipt replay, snapshot and leave.
+- A nonmember cannot read another group's table rows, archive it or obtain it
+  through a snapshot. All four shared RPCs reject anonymous calls. Anonymous
+  table reads reveal no group rows; direct membership writes and HTTP private
+  token-schema access are rejected; unknown RPC payload keys are rejected.
+
+Claim probes use the **disposable server signing key**, with a valid-claims
+positive control succeeding on both services. They do not demonstrate a client
+forging a token without a signing key. The key never comes from a live project.
+
+| Probe                           | Auth HTTP | PostgREST HTTP |
+| ------------------------------- | --------- | -------------- |
+| Altered signature               | 403       | 401            |
+| Unsigned token                  | 403       | 401            |
+| Same local signer, valid claims | 200       | 200            |
+| Signed expired token            | 403       | 401            |
+| Signed future `nbf`             | 403       | 401            |
+| Signed wrong audience           | **200**   | **200**        |
+| Signed wrong issuer             | **200**   | **200**        |
+
+**Strict audience/issuer rejection is not established by local defaults.**
+There was no `PGRST_JWT_AUD` environment setting. PostgREST documents audience
+validation as configurable ([configuration reference](https://docs.postgrest.org/en/stable/references/configuration.html#jwt-aud)).
+No server policy was silently changed to make these probes pass. A reviewed
+deployment policy/configuration and its verification remain required; no claim
+about a hosted project's settings. Signature, time and RLS results above do not
+substitute for that decision. No production database security change was made.
+
+## Native production-provider evidence, without screen takeover
+
+`prepare-shared-native.mjs --real-auth` builds the actual `main.tsx`, AuthProvider
+and SyncProvider, without identity aliases or manually opened engines. Copies
+use `app.facta.acceptance.*`, separate WebView/shared-data directories under
+`tmp/shared-native-auth`, and **`facta-acceptance://` only**. Test copies retain
+normal widget bottom-stacking and the real quit implementation; no foreground
+override or injected test Quit command. Autostart writes and installed-companion
+launching are disabled in copies. No installer or installed handler was changed.
+
+- `prepare-native-auth-fixture.mjs` provisions/reuses two actual Auth accounts
+  (preconfirmed through the local admin API; not evidence of native sign-up UI).
+  It creates a historical group through authenticated RPCs, temporarily moving
+  **only the private domain creation clock**, restores it in `finally`, then
+  seeds yesterday's occurrence on the normal clock. Auth/JWT clocks stay real.
+- Inspected native signed-out startup. A real password grant obtained a session
+  through HTTP, delivered via the isolated test-scheme callback. Actual Rust
+  export then matched that user, one personal goal and one active shared group
+  with confirmed **50%/0%**, in a **1,607-byte** file. Audit counts showed real
+  token refresh/rotation while the app remained running.
+- The owner pressed physical Escape, then requested no screen interaction
+  during class. **All Computer Use stopped.** No sign-in form, tray menu,
+  companion pointer or subsequent native visual claim is made from this run.
+- Background-only real-session regression passed **12 assertions**, repeated
+  on a fresh group after correcting a test setup field. Two independently
+  signed-in sessions for the same account exercised identical receipt replay
+  and a stale opposing check-in conflict. The production native polling path
+  automatically exported **100%**, matching the real scoring-view snapshot;
+  personal completion was unchanged. Ownership transfer/leave then removed all
+  shared rows from the native export while retaining the personal goal.
+- Entry: `node scripts/run-supabase-acceptance.mjs --native-background`.
+  `native-background-result.json` records the final run. It makes no native
+  pointer/keyboard/visual assertion. Two sessions on one host are not two devices.
+
+## Open gates and environment left for resumption
+
+- Strict audience/issuer enforcement: closed as an owner-accepted risk
+  (28 October 2026); see the accepted-risk note.
+- Windows Sandbox is absent, so the owner authorized production checks on the real
+  install; see the real-install sections at the top.
+- Still open: rechecks after the check-in migration and new build, the auth-success
+  link, and separate hardware devices (accepted by the owner). Earlier
+  synthetic/test-scheme evidence in `shared-goals-step6.md` remains distinct.
+- At the owner's request, the isolated native window is left alone; no forced
+  termination or UI cleanup. Its test-scheme handler and core disposable services
+  remain available for resumption. Original Docker runtime backup is preserved.
+
+Required checks passed: frozen install; all three TypeScript checks;
+**437 desktop / 194 calendar Vitest tests**; desktop PORT=1420 BASE_PATH=/ build;
+widgets build; both production Windows cargo checks. Existing desktop chunk
+warning remains (~808 KB). Earlier full-App/SQL/concurrency suites were not
+rerun for this test/documentation-only follow-up. No application behavior,
+dependency, migration or RLS/scoring source changed in this acceptance follow-up.
+**Do not merge or claim full acceptance.**

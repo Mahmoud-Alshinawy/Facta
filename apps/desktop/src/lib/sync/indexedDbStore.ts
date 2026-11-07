@@ -10,6 +10,7 @@ const PREFIXES = [
   "planner_diary_entries",
   "facta_sync_queue",
   "planner_widget_receipts",
+  "planner_shared",
 ];
 export const plannerKeys = (userId: string) =>
   PREFIXES.map((prefix) => `${prefix}_${userId}`);

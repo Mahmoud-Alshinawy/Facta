@@ -1,6 +1,989 @@
-# Handoff: branch 2 of 3 approved and squash-merged locally — awaiting owner push
+# Handoff: branch 3 — accepted claim risk, local-time deadlines
 
-## Current review decision and next action (24 October 2026)
+## Final review and approval (7 November 2026)
+
+- Owner check: bobross's check-in after the clock-skew migration **PASS**.
+- Reviewer, 2c832c1: no blockers, no should-fix; tsc ok, 471 desktop tests,
+  `--checkin-skew` 35. Branch security review (DB, client, Rust, widgets): no
+  issues introduced by this branch.
+- Two nits left for the next time this code changes: a failed undo's row says
+  "when you checked in" (neutral wording such as "when this was recorded" would
+  fit both), and the not-saved row decides "dated ahead" with `Date.now()` at
+  render, so a row left open across group midnight keeps Discard-only until
+  something re-renders.
+- Owner approved a squash merge into `main`.
+
+## 4 November 2026: Try again after a clock fix, no label flicker, Docker checks (historical)
+
+- Review of fe1a3c4 found no blockers in that fix. Details:
+  docs/shared-goals-auth-native.md (top).
+- Owner rechecks on the installed fe1a3c4 build: Wi-Fi toast **PASS**. Check-in:
+  the first recheck ran before the migration was applied, so it doesn't count;
+  the owner then applied `20261101120000_shared_checkin_clock_skew.sql` to the
+  live project (check query `true`), and the recheck after it is **PASS**.
+- **Try again after setting the clock right.** `retryFailed` reused the old
+  stamp; with a stamp ahead of the corrected clock, `appendCheckin` threw and the
+  user saw "Shared goals returned incomplete or incompatible data". Now a stamp
+  ahead of the device's clock is re-stamped with now if the group date is still
+  the same; if the date no longer matches, the row stays and the user reads
+  "Your clock was ahead when you checked in, so this check-in is dated for a day
+  that hasn't started yet. Discard it, then check in again." (reworded below).
+  Every other stamp is kept,
+  so offline check-ins keep their real time.
+- **No Pending → Check in → Checked in flicker.** An accepted "checked" reply now
+  writes its id, revision and checked state into the cached check-in row in the
+  same save that removes the outbox entry (`confirmCheckin` in
+  `lib/sharedGoals/cache.ts`), unless the cached row is at a later revision.
+  Scores still wait for the next read. Undo is the same in reverse.
+- The check-in button keeps one slanted shape and size in every state (Checked in
+  is the same shape in quiet colours). The not-saved toast now says "Open the
+  group to try again or discard it."
+- Tests first: the engine tests and the extended `--checkin-skew` suite failed on
+  the old code for the reasons above (unit: incompatible-data error, and labels
+  `pending → unchecked → checked`; browser: `"Checked in" shows before the next
+  read` on fe1a3c4's app code, and `Never confirmed completed=true:
+  [["failed","invalid_date"]]` with only the re-stamp removed).
+- Results on the final code: frozen install, three tsc, **467 desktop** (462 + 5) /
+  **212 calendar** / **5 Rust**, both builds, both cargo checks. Browser: `--ui`
+  **248**, `--ui --step6` **567**, `--step6-review` **78**, `--deadlines` **48**,
+  `--join-review` **11**, `--checkin-skew` **35** (was 23). Screenshots:
+  `tmp/shared-goals-runtime/checkin-{checked,unchecked}-{default,light}.png`.
+- **Docker-only checks, run 4 Nov once WSL/Docker worked (Engine 29.9.2):** Docker
+  had come back empty (no images, containers or volumes), so the disposable stack
+  was recreated with the same CLI 2.122.0 and project id; only db, auth, rest,
+  kong and mail capture run. A fresh start applied all five migrations
+  (PostgreSQL 17.11). The clock-skew migration was then run a second time: exit 0,
+  check query `true` before and after.
+  - `prepare-native-auth-fixture.mjs --verify-boundaries`: ok, **40** (was 29;
+    11 clock-skew checks ran for the first time), 15:45:42.
+  - `run-supabase-acceptance.mjs`: ok, **64**, 15:48:42.
+  - `run-supabase-acceptance.mjs --publishable-key`: ok, **64**, 15:51:46.
+  - Wrong audience/issuer still accepted (Auth 200 / REST 200), as the accepted risk.
+  - Midnight case: three controls added. At server 20:59:30Z a stamp 20 s ahead
+    on the 28th is accepted; the past-midnight stamp is refused for both the 29th
+    and the 28th; the same request is accepted once the server reaches 21:00:20Z.
+    So the refusal comes from the date rule, not a wrong zone in the setup.
+  - Nothing failed, so no app code changed.
+- **Reviewer's ddc7b5a review: no blockers.** It re-ran the stack: boundaries 40,
+  HTTP legacy 64, HTTP publishable 64, all ok. Two wording nits from the ec33426
+  review are now fixed:
+  - The message reads "Your clock was ahead when you checked in, so this check-in
+    is dated for a day that hasn't started yet. Discard it, then check in again."
+    (it used to say "was saved", but the row isn't saved).
+  - A refused row whose stamp is ahead of the device and whose day hasn't started
+    here shows that message straight away, with Discard only and no Try again.
+    `datedAhead` in `lib/sync/shared/outbox.ts` decides this for both the row and
+    `retryFailed`.
+  - Results: desktop tsc ok; **471 desktop** tests (467 + 4 new); `--checkin-skew`
+    ok, **35**, 16:08:35. No install for this change, as asked.
+- Renamed Docker folders: `run.facta-acceptance-20261101-1/-2` were already gone.
+  `docker-secrets-engine.facta-20261101-2` was empty and was removed.
+  `docker-secrets-engine.facta-20261101-1` holds one zero-byte broken socket link
+  that Windows refuses to open ("cannot be accessed by the system"); left in
+  place rather than forced. Docker is unaffected.
+- Installed build: both apps from this code (installers exit 0 at 14:36; no
+  backup, as the owner asked). The running Facta was in the tray and did not close
+  on a window close, so it was force-stopped first. Afterwards exactly one
+  `facta.exe`, from the install path; signed in; Today shows the new Checked in
+  button with 2 of 3. Not pressed: that would change the owner's real score.
+
+## 1 November 2026: check-in clock skew and offline toast (fe1a3c4; historical)
+
+- Reviewer raised intermittent `invalid_date` check-ins to a **merge blocker**. Fixes
+  are in; STOP for review. **Do not merge.** Details:
+  docs/shared-goals-auth-native.md (top).
+- **Owner must run** `supabase/migrations/20261101120000_shared_checkin_clock_skew.sql`
+  on the live project. Until then the installed app can still get `invalid_date`,
+  though it now shows it as not saved with a fix on Today.
+- Fix: stamp up to 5 minutes ahead accepted and stored clamped to server time; date
+  rules still apply to the device's stamp; further ahead refused. Known limit near
+  group midnight is documented in the migration and the report.
+- Not saved state: plain words, "Not saved" button, Try again and Discard on Today,
+  the shared card and group detail. `decideSharedToast` shares `toastPolicy.ts`; a
+  retry no longer blanks the message.
+- Owner results: own invite link PASS; tray Quit with an unsaved change PASS; restart
+  autostart PASS (delay about 13 s from Windows, 0.8 s widgets log); Wi-Fi data PASS,
+  repeating toast FAIL (fixed in source, recheck); check-in scoring FAIL (fixed in
+  source, recheck); two physical devices not tested, accepted as open.
+- **Red control:** `--checkin-skew` against the old migration alone fails with
+  `Never confirmed completed=true: [["failed","invalid_date"]]`, the owner's error.
+- Results, new code: frozen install, three tsc, **462 desktop** (455 + 7) / **212 calendar** / **5 Rust**, both builds, both cargo checks. Browser: `--ui` **248**, `--ui --step6` **567**, `--checkin-skew` **23**; before the final Today layout tidy, `--join-review` **11**, `--deadlines` **48**, `--step6-review` **78**. Existing tests changed only for new wording: "Try again", "Discard" and the exact conflict sentence.
+- **NOT RUN: both HTTP suites and `--verify-boundaries`,** including the new real-server
+  skew cases, which have never executed. Since the 14:33 restart Windows refuses every
+  WSL2 VM (`Wsl/Service/CreateInstance/CreateVm/HCS/ERROR_NOT_SUPPORTED`, Ubuntu too),
+  so Docker cannot start. Reinstalling Docker would not help and was not done.
+  No reset. Renamed, contents kept: `%LOCALAPPDATA%\Docker\run.facta-acceptance-20261101-1`
+  and `-2`; `%LOCALAPPDATA%\docker-secrets-engine.facta-20261101-1` and `-2`. The new
+  migration must also be applied to the disposable stack before those suites run.
+- Installed build: both apps from this code (installer exit 0, 15:38 and 15:40; no backup, as the owner asked). Facta running from the install path, signed in, showing Checked in with 1 of 3 and 1 of 4. Fixes not yet exercised there: the skew tolerance needs the migration, and the offline toast needs the owner recheck.
+
+## Review of 32d6c17 (8947842; historical)
+
+- Reviewer approved 32d6c17's code with no blockers. **STOP after this push. Do
+  not merge.** The owner is running check-in scoring, real restart autostart,
+  tray Quit with pending writes and the own invite link, and will send results
+  to record.
+- Deleted, unread, on the owner's instruction: both `tmp/real-install-backup-*`
+  folders and `tmp/task5-backup*.ps1`. Older sections naming them are history.
+- `get_monitor_work_areas` now lists the real primary monitor first, so
+  `free_widget_position` places new widgets on it. Only matters with several
+  monitors; **not in the installed build** and not checked on a real
+  multi-monitor desktop.
+- docs/shared-goals-auth-native.md: top and stale task 5 rows updated.
+
+## Real-install findings fixed (32d6c17; approved, historical)
+
+- Owner asked for the four recorded findings to be fixed. STOP for review after
+  push. **Do not merge.**
+- **Own invite link:** the join screen checks the local snapshot. A current
+  member sees "You're already in …" with Open group, and no Join button or
+  target picker. A stale cache only affects this screen; the server still
+  decides any real join.
+- **Profile form:** the username rule is visible from the start, and editing
+  either field clears the old error.
+- **First-round wording:** joining before the first round now says "You start
+  with the first round on …" and, on the detail page, "That is the group's
+  first round, so you start with it." Later joiners keep the old wording. The
+  widget export's `reason` is unchanged.
+- **New widgets:** `free_widget_position` picks the first grid slot on the
+  primary monitor that doesn't touch another configured widget, then cascades
+  if the screen is full. Saved positions are never moved.
+- Real install, checked by eye on 1 Nov (build d42415d): Edit split Confirm →
+  Done, + → Confirm, − → Done, Done closes; target stays 4. The first round
+  is active with two members (0 of 3, 0 of 4, Check in enabled). No check-in
+  was made, so scoring after a real check-in remains open.
+- Build 3eac730 of both apps is installed (exit 0; one instance of each, signed
+  in as account B). A temporary Events widget landed clear of the others while
+  Tasks and Progress kept their saved spots (those two overlap until moved);
+  it was then removed. Not checked by eye: the already-a-member screen (needs
+  a link from owner account A), the profile form (needs an account with no
+  profile) and first-round wording (the round has started). Those three are
+  covered by the browser suites only.
+- Owner: no more data backups before installing.
+- Results: full mounted browser suite `--ui`: ok, **248** (was 243). `--ui --join-review`: ok, **11**. Rust widgets:
+  **5** tests (4 new). Required checks: frozen install, three tsc, **455
+  desktop / 212 calendar**, both builds, both cargo checks.
+- Open: scoring after a real check-in, literal tray Quit with pending writes,
+  real logon autostart, two physical devices. Facta was found not running on
+  1 Nov with no crash in the Windows log; cause unknown.
+
+## Edit split fix (d42415d; historical)
+
+- Owner report from the real install: after "Confirm target change" the
+  Edit split dialog stayed open, and confirming again resent the same target.
+  The open dialog was intentional (Step 4: confirm, then optionally Cancel
+  pending change in the same dialog). Fix keeps that flow: after a confirmed
+  change the primary button reads **Done** and closes the dialog. Changing
+  the stepper again restores "Confirm target change"; cancelling the pending
+  change also restores it.
+- Tests: two new checks in scripts/shared-step4-tests.mjs (Done label, and
+  Done closes with no extra target command). `run-shared-client-tests.mjs
+  55439 --ui --step4`: ok, **94** (Step 4 76, was 74; review 18 unchanged).
+  Required checks: frozen install, three tsc, **455 desktop / 212 calendar**,
+  both builds, both cargo checks.
+- The earlier findings (own invite link, stuck profile error, first-round
+  wording, overlapping widgets) are still unfixed.
+
+## Shared goals live on the real install (dd10543; historical)
+
+- Owner applied the shared-goals migration to the live project. Verified with
+  a read-only catalog query: 10 tables, six public ones with RLS and 2
+  policies each. Do not merge.
+- The owner made account A's profile and the group "working out", then
+  switched to a new account B, which joined via the invite link. Verified:
+  the account switch leaves none of A's data visible to B; both members start
+  with the first round (Sun 1 Nov); handles are unique (`bob` / `bobross`);
+  Waiting state on all surfaces; the Progress widget's Open group works.
+- Findings, not fixed: own invite link shows a fresh invitation and a
+  target picker; the profile error message never clears; first-round wording
+  sounds late; new widgets overlap. Details in docs/shared-goals-auth-native.md.
+- Open: two-member scoring after the Sun 1 Nov boundary, literal tray Quit
+  with pending writes, real logon autostart, two physical devices.
+- No code changes since 7f40337.
+
+## Task 5 on the real install (7f40337; historical)
+
+- After ee244c0 (review fixes), task 5 ran on the owner's real install.
+  Details and the full result table: docs/shared-goals-auth-native.md (top).
+  **Do not merge.**
+- **Bug found and fixed:** warm `facta://focus` links (widget "Open Facta",
+  note links) were ignored when Facta was already running. Single-instance
+  forwarding delivers them as `facta://focus/?…`, which the parser rejected.
+  The parser now accepts an optional `/`; 3 new Vitest cases; rebuilt,
+  reinstalled and rechecked on the real install.
+- Passed on the installed build: silent upgrade of both apps, the `facta://`
+  handler moved from a stale debug exe to the install, signed-in restart, the
+  `--hidden` autostart command (run by hand, not a real logon), cold and warm
+  links, widget auto-launch + bottom-stacking + file watching, and a Wi-Fi
+  outage/reconnect on two networks (offline goals kept and synced).
+- Finding (not fixed): during an outage the footer shows "Synced · just now"
+  for ~49 s, because `navigator.onLine` stays true on this machine. It only
+  switches to "Offline" after a request fails.
+- Open: literal tray Quit with pending writes (right-click needed), UI account
+  switch/sign-out (owner's password), real logon autostart, the live
+  migration for all shared-goal flows, two devices.
+- Backup of the pre-install data: tmp/real-install-backup-20261028. Test goals
+  "Task 5 offline write" / "… 2" and one Tasks widget remain in the owner's
+  account.
+- Checks for the link fix: desktop tsc, **455** desktop tests, desktop build
+  (PORT=1420 BASE_PATH=/), desktop cargo check. Widgets and calendar
+  unchanged since ee244c0 (212 calendar).
+
+## Review fixes after f77e60b (ee244c0; historical)
+
+- Owner/reviewer approved **f77e60b** except one should-fix. Fixed here, then
+  continue with task 5 on the real install. **Do not merge.**
+- **Should-fix: deadline lines follow the 12h/24h Calendar setting.**
+  `groupDeadlineText` takes `timeFormat` and formats the viewer's wall time
+  with the existing `formatClock` (prefs.ts). Desktop passes `usePrefs()`;
+  the widget passes `prefsFrom(config)` from widgets.json. Default 24h:
+  "Today's check-in closes at 14:00 your time (midnight Asia/Riyadh)".
+- Nit: the round end carries its date ("Round ends Sun 8 Nov at 13:00 your
+  time"), so a round ending exactly a week away is not ambiguous.
+- Nit (report): the deadline UI is covered by the browser suite
+  (`--ui --deadlines`), not by Vitest component tests. Desktop stays at
+  **452**; the new unit tests are in packages/calendar.
+- The import-free midnight code moved to packages/calendar/src/zoneTime.ts
+  (subpath `@facta/calendar/zoneTime`). groupDeadlines.ts now imports
+  prefs.ts, and Node's TypeScript loader in the fixture scripts can't
+  resolve extensionless imports.
+- **Publishable key, steps 1–3 done:** supabase.ts reads
+  `VITE_SUPABASE_PUBLISHABLE_KEY`, falling back to `VITE_SUPABASE_ANON_KEY`;
+  release.yml passes the new secret (the anon one stays, marked as a legacy
+  fallback); docs/supabase.md updated; new empty `.env.example`. Owner's
+  `.env` untouched; it has only the anon key, so builds use the fallback.
+- Results: calendar **212** (9 deadline cases × 2 TZ = 18; was 14), desktop
+  **452**, all three tsc, both builds (known chunk warning), both cargo
+  checks, frozen install. Browser `--ui --deadlines`: **48 assertions,
+  20 captures**, incl. switching Settings → Appearance → Time format to
+  12-hour and rechecking all four surfaces. `--verify-boundaries`: ok **29**.
+  HTTP suites not rerun for this fix (no Auth/RPC code touched; reviewer
+  reran both at 64). The grey Settings Light capture is the existing
+  transparent-background preview, the same as in Step 6.
+
+## Accepted risk and deadlines (f77e60b; approved with one fix, historical)
+
+- Owner instructions: tasks 1–4 below, then checks, commit and push, then STOP
+  for review. Task 5 (production-native checks on the real install) comes
+  after that review. **Do not merge.**
+- **1. Audience/issuer: owner accepts the risk.** The policy proposal was
+  replaced by a short accepted-risk note in
+  docs/shared-goals-deployment-policy.md. The acceptance suite still runs both
+  probes and reports them under `acceptedGaps` (Auth 200 / REST 200) without
+  failing the run. Signed expired and future-`nbf` rejections became explicit
+  required assertions. No gateway, no deployment policy.
+- **2. Deadlines in the viewer's local time.** `groupDeadlineText` in
+  packages/calendar/src/groupDeadlines.ts. The group-midnight resolver moved
+  there unchanged (as `zoneMidnight`); dates.ts imports it, so the desktop
+  and the widgets resolve the same boundary. Shown on the Shared card and
+  detail (`RoundStatus`), and on Today, the Progress widget and the Settings
+  preview (`ProgressState`), only while a round is active, e.g. "Today's
+  check-in closes at 1:00pm your time (midnight Asia/Riyadh)" and "Round ends
+  Sun 1:00pm your time". The widget export contract is unchanged. Nothing is
+  added when the viewer's clock already reads the group's midnight; this
+  includes same-offset aliases such as Asia/Kuwait.
+  14 calendar test runs (7 cases × Riyadh/New York TZ): same zone, Los
+  Angeles viewing Riyadh, Kiritimati, group a day ahead, viewer DST, group
+  DST, PostgreSQL-style midnight gap. Browser suite
+  `run-shared-client-tests.mjs 55439 --ui --deadlines`: **44 assertions,
+  16 captures**. Riyadh viewer: no lines on any surface. Los Angeles viewer:
+  exact lines, group zone visible, no overflow, in all four themes. I
+  inspected captures of all four surfaces across the themes.
+- **3. Publishable key:** supabase-js 2.110.0 works with `sb_publishable_`.
+  The full HTTP suite with `--publishable-key` gives ok, 64 assertions. The
+  proposal and your exact steps are in docs/supabase-publishable-key.md.
+  No code or .env change.
+- **4. Reviewer nits:** (a) real-server cases at 20:59:59Z / 21:00:00Z, with
+  `invalid_date` on the other side of midnight; (b) HTTP publication uses the
+  server's `confirmation_required` first_round_date; (c) the native fixture's
+  round weekday follows the run date (seed day's weekday), now noted in
+  docs/shared-goals-auth-native.md.
+- Acceptance runs (all exit 0): HTTP anon **64**, HTTP publishable **64**,
+  boundaries **29** (9 cases 50→100), current-day fixture **2**. The native
+  background suite (12) was not rerun: it needs the isolated window, and its
+  polling/export code did not change. Domain clocks restored; Auth/JWT
+  clocks unchanged.
+- Required checks: frozen install; desktop/widgets/calendar tsc; **452
+  desktop / 208 calendar tests** (194 + 14 new); desktop build (PORT=1420
+  BASE_PATH=/) and widgets build; both `cargo check --offline`. Existing
+  chunk-size warning only.
+- Still open: task 5, all production-native gates
+  (docs/shared-goals-auth-native.md), two physical devices, and the live
+  migration, which you run yourself. Real install, live Supabase, .env,
+  .agents/ and skills-lock.json untouched. Disposable PostgreSQL on 55439
+  stopped; the disposable Supabase stack is still running.
+
+## Acceptance-test review corrections (3eda18c; historical)
+
+### Decision at that checkpoint (28 October 2026)
+
+- Owner reviewed **4b59939**; keep branch unmerged. Fix only acceptance DML/date
+  issues, rerun affected suites/required checks, propose a deployment-side claim
+  policy, commit/push and STOP for review. **Full acceptance remains incomplete.**
+- Membership INSERT is now complete/valid for Custom (Gym needs a target version
+  in the same transaction). Privileged B-row control returns **201**, stored row
+  count **1**. Authenticated member and anonymous C-row attempts require actual
+  permission/RLS errors: **403/42501** and **401/42501**, then privileged reads
+  prove **zero rows** for each attempted UUID. No any-error success assertion.
+  Control rows stay in the disposable fixture; no immutable history deletion.
+  Red control exposed old malformed shape as **400/23514**.
+- Shared acceptance date planner uses existing group-local date helpers. Both
+  HTTP publication fixtures read authoritative creation instants and choose
+  strictly later local round dates. Native fixture starts its round yesterday,
+  keeping seed/action in one round even on Monday; seed capture is local noon.
+- **15 focused boundary cases pass** (six initially failed old calculations):
+  Riyadh midnight, Los Angeles/Kiritimati, year boundary, all seven weekdays and
+  Monday rollover and exact DML eligibility cutoffs. **21 real Auth/HTTP scoring
+  boundary assertions pass** with
+  controlled domain dates 26 Oct–1 Nov: actual 50→100 rows in the same round.
+  These are server domain-date replays, not seven-day native visual acceptance.
+- Final **59 Auth/HTTP assertions pass**; dml status/code/row evidence is saved.
+  Overall **ok:false / exit 1** deliberately retains the unchanged signed
+  wrong-audience/issuer findings. **2** current-day preparation assertions and
+  **12** native background assertions pass with the corrected fixture.
+  Both domain clocks restored in finally; Auth/JWT clocks unchanged.
+- Deployment-side proposal: docs/shared-goals-deployment-policy.md. Mandatory
+  issuer/audience contract, PostgREST audience plus pre-request guard, Auth
+  enforcement and direct-origin bypass constraints, explicit public/admin
+  routing and staging negative/positive verification. **Proposal only**; no
+  live/local deployment policy applied, no client-side substitution.
+- Required checks rerun: frozen install; desktop/widgets/calendar TypeScript;
+  **452 desktop / 194 calendar tests**; both builds (desktop PORT=1420
+  BASE_PATH=/); both production Windows cargo checks. Existing chunk warning.
+  No app, dependency, migration/RLS or scoring source changes. No standalone
+  SQL/concurrency or full visual rerun; older evidence below is historical.
+- Computer Use authorized again for isolated apps; these focused tests needed
+  no UI input. All production-native gates remain open, as detailed in
+  docs/shared-goals-auth-native.md. No installer/production handler change.
+- Isolated native app/test handler and core disposable stack remain available
+  for resumption. Installed planner/live Supabase and unrelated .agents/ and
+  skills-lock.json untouched. STOP for review after push. Do not merge.
+
+## Initial real Auth/native checkpoint (4b59939; historical)
+
+### Decision at that checkpoint (28 October 2026)
+
+- Owner approved **dcfe07a**; Settings preview finding is resolved. Authorized
+  remaining acceptance only, then checks/report/commit/push and STOP for final
+  review. **Full acceptance remains incomplete. Do not merge.**
+- Docker diagnosis: stale zero-byte runtime reparse objects fail with Error 1920.
+  Preserved only stopped Docker/run as run.facta-acceptance-20261028-1; fresh run
+  advanced startup to a separate docker-secrets-engine socket error. Owner opened
+  Engine 29.7.2; it was available again after the laptop crash/normal startup.
+  No permanent-repair claim, data reset/prune/VHD deletion/WSL unregister or
+  settings/security changes. Original runtime backup remains. Ordinary rename
+  and fresh AF_UNIX bind passed; post-disposal AF_UNIX rename was inconclusive.
+- Disposable Supabase CLI **2.122.0**, project facta-acceptance-20261028 under
+  ignored tmp/supabase-acceptance: API 56421, DB 56422, mail capture 56424.
+  All four copied migrations applied; real PostgreSQL 17.11/GoTrue/PostgREST 16.5.
+  No live/.env/linked project. Unused owned services stopped to reduce load.
+- Final post-crash Auth/HTTP run: **48 assertions passed**, real signup/mail
+  confirmation/sign-in, persisted session/refresh, recovery/password update,
+  logout/revoked refresh, natural expiry, production remote receipt/join/date/
+  Unicode mapping, anonymous/cross-account HTTP, RLS/private-schema rejection.
+  Overall result intentionally **ok:false**: signed wrong-audience/wrong-issuer
+  probes return Auth 200 / REST 200 on local defaults. Valid same-signer control
+  passes; altered/unsigned/expired/future-nbf tokens reject (Auth 403 / REST 401).
+  This is not evidence of forging without the disposable server key. Strict
+  claim policy/configuration and verification remain open; no live policy change.
+- Native real-auth mode mounts actual main.tsx/AuthProvider/SyncProvider, own
+  app IDs/data, facta-acceptance test scheme, normal stacking; no identity alias,
+  manually opened engines, test Quit command or foreground override. Only local
+  domain creation time was temporarily moved/restored; Auth/JWT clocks unchanged.
+  Signed-out startup observed; real HTTP password-grant session dispatched to
+  the test callback. Actual Rust export matched account + personal goal + 50%/0%
+  shared rows; audit showed automatic token rotation.
+- **12 background native assertions passed**, rerun with a fresh group: two real
+  sessions, immutable receipt/stale-revision conflict, automatic native 50→100
+  export/scoring parity, then ownership/leave purge with personal goal unchanged.
+  These are file/HTTP results, not pointer/visual or two-hardware-device claims.
+- Owner pressed Escape and then requested no screen takeover during class.
+  Computer Use stopped; no later UI input. No Windows Sandbox/known disposable
+  VM is available. Production installer/facta://, literal tray Quit, real-Auth
+  native restart, companion interaction/watching, normal stacking, UI account
+  switch, OS-network loss/reconnect and separate hardware remain unverified.
+- Required checks passed: frozen install; desktop/widgets/calendar TypeScript;
+  **437 desktop / 194 calendar tests**; both builds (desktop PORT=1420
+  BASE_PATH=/); both production Windows cargo checks. Existing desktop chunk
+  warning remains. No app/dependency/migration/RLS/scoring source changes.
+  Earlier 567/243/94 and standalone SQL/concurrency evidence is historical,
+  not newly rerun or a substitute for the actual HTTP results above.
+- Exact results, reproduction and gaps: **docs/shared-goals-auth-native.md**;
+  prior report links forward to it. Ignored http-result.json/native-background-
+  result.json retain evidence. CLI source marker moved out of supabase/.temp.
+- The isolated window, test handler and core local services remain available
+  for resumption; left alone at owner's request, not force-closed. Never operate
+  on installed Facta or replace its handler. Live Supabase, installed planner
+  data, .agents/ and skills-lock.json untouched. No merge; stop for final review.
+
+## Settings review fix (dcfe07a; approved, historical)
+
+### Decision at that checkpoint (28 October 2026)
+
+- Owner reviewed **53cd72d** and requested the Settings configured-group fix
+  only. **Full acceptance remains incomplete; STOP for review after commit/push.
+  Do not merge.** Preserve all Auth/JWT/PostgREST and production-native gates
+  recorded below and in docs/shared-goals-step6.md.
+- Settings Progress preview now prioritizes its selected group only when the
+  widget's account matches the active engine account, using the same bounded
+  projection preference as the actual export. The card uses that same ID.
+- New full Settings regression creates 17 additional authorized Gym groups via
+  actual SDK/RPC commands, joins a second eligible member and confirms two days.
+  Before the fix it failed on the missing selected-group name beyond the first
+  16 choices. **78 assertions now pass**, including the name, confirmed 100%/0%
+  rows/ranks, switching to an earlier group and reselecting the late group.
+- Required checks passed: frozen install; all three TypeScript checks;
+  **437 desktop / 194 calendar tests**; both builds (desktop PORT=1420
+  BASE_PATH=/); both production Windows cargo checks. Existing chunk warning
+  remains. Integration reruns: **567 full-App / 243 mounted / 94 data assertions**
+  passed, including creation/recovery, score/date parity and account cleanup.
+- No standalone SQL/security/concurrency suite or native rerun for this focused
+  preview fix; prior evidence and its exact limits remain historical.
+- Installed planner/live Supabase and unrelated .agents/ and skills-lock.json
+  remain untouched. No schema/dependency changes. All browser/fixture runs
+  exited; the owned disposable PostgreSQL cluster was stopped normally.
+
+## Initial Step 6 checkpoint (53cd72d; historical)
+
+### Decision at that checkpoint (28 October 2026)
+
+- Owner approved **9d54740**, completing Step 5, and authorized Step 6 only.
+  Step 6 independent work is complete; **STOP for final branch review. Do not
+  merge. Full acceptance remains incomplete** because the disposable Supabase
+  Auth/JWT/PostgREST prerequisite could not start.
+- Fixed Shared cards to stack at <=1200px and the detail legend to say Green.
+  Fixed Today/Settings incorrectly marking a fresh read stale when it arrived
+  between minute-display ticks. Action capture/retry identity is unchanged.
+  Extracted the two existing engine context providers for a full-App harness;
+  production initialization and account gates retain their behavior.
+- Full App: **567 assertions / 284 captures**, four themes × 1440/1280/1100 ×
+  920/600, Shared overview/detail/wizard, Today and Settings Progress preview.
+  Local approved-component references and all nine contact sheets inspected.
+  Avatar/header spacing and taller server-state labels remain explicit visual
+  deltas; no pixel-identical or hosted-canvas acceptance claim.
+- Integration reruns: **243 mounted / 94 data assertions**, real IndexedDB,
+  SDK and disposable SQL. Two independent browser profiles covered offline
+  competing revisions, eligibility/pause/archive, leave/account cleanup and
+  personal independence; not two separate physical devices.
+- SQL/security rerun: **421 checked assertions plus exception assertions**,
+  migration apply/rerun/personal coexistence and **22 independent-session
+  concurrency cases** passed on PostgreSQL 17.5. SQL roles/claims scaffold
+  establishes no Auth/JWT/PostgREST HTTP properties.
+- Native isolated desktop/companion observed: confirmed 50%/100% parity;
+  Settings Progress creation; actual bounded token-free export/watch; pointer
+  Open group; warm/cold test-scheme links; write→normal quit→restart durability;
+  account/sign-out/leave cleanup with personal goal/widget config preserved.
+  Final native theme/pointer checks used a foreground override in test copies.
+  Identity/engine opening was synthetic/manual, so production Auth startup,
+  literal tray menus and normal bottom-stacking remain unverified.
+- Required checks passed: frozen install; all three TypeScript checks;
+  **437 desktop / 194 calendar tests**; both builds (desktop PORT=1420
+  BASE_PATH=/); both production Windows cargo checks. Existing desktop chunk
+  warning remains. No dependency, migration or SQL source changes.
+- Docker Desktop fails renaming `sailor-ingest.sock` to `.stale`; engine pipe
+  stays absent. No reset/security workaround. Outstanding: full disposable
+  Auth/JWT/PostgREST, installer/production facta:// links, native OS-network
+  offline/reconnect, literal tray and physical-device checks. See
+  **docs/shared-goals-step6.md** for exact evidence, reproductions and limits.
+- All isolated app processes closed; only test scheme unregistered; clock/
+  fixture exited and owned PostgreSQL stopped. Ignored test artifacts remain
+  under tmp/shared-step6 and tmp/shared-goals-runtime. Installed planner data,
+  production handler, live Supabase, .agents/ and skills-lock.json untouched.
+
+## Step 5 review fixes (9d54740; approved, historical)
+
+### Decision at that checkpoint (26 October 2026)
+
+- Owner reviewed **bcb8901** and requested two fixes only. **Step 6 remains
+  unapproved**; stop after verification, commit/push for owner review.
+- Today captures a fresh click instant independently of the minute-refresh
+  display. Shared check-in reprojects the latest authorized cache at that same
+  instant for the group-local date, checked state and eligibility. Midnight
+  cannot undo the previous day; an unconfirmed new round blocks with a visible
+  message. An unseen peer pause is sent with the real click instant for the
+  server's `inactive_period` rejection. Durable receipt retries keep the original
+  capture, UUID and serialized body.
+- High-adherence Shared/Today/Progress bars now use `--event-green`; below 70%
+  retains `--text-2`. Personal accents/statistics remain independent.
+- Added a mounted real-SDK/IndexedDB/disposable-SQL regression for a frozen
+  09:00 display, 09:00:30 peer pause and 09:00:45 action; Riyadh midnight with
+  yesterday already checked; lost reply/immutable retry; unconfirmed next-round
+  cutoff; and actual SQL 100%/0% rows in Midnight/Ember on Today and Progress.
+  Both new theme captures were inspected. See `docs/shared-goals-step5.md`.
+- Required checks rerun successfully: frozen install; three TypeScript checks;
+  **437 desktop / 194 calendar tests**; both builds (desktop PORT=1420
+  BASE_PATH=/); both Windows cargo checks. Existing chunk warning remains.
+  **243 full mounted assertions** passed (85 creation/recovery + 74 Step 4 +
+  18 Step 4 review + 38 Step 5 + 28 new review); focused 28 and **94 data
+  integration assertions** also passed. The invitation keyboard test now waits
+  for actual mounted focus before Escape. No application change for that race.
+- Auth/JWT/PostgREST, deployed HTTP and packaged native UI/IPC/file-watching
+  verification limits remain unchanged. No installed data/live Supabase, SQL,
+  dependency or unrelated untracked-file changes. No standalone SQL/security/
+  concurrency suite or native helper rerun; original evidence below is historical.
+  Stop for owner review after commit/push; **do not begin Step 6**.
+
+## Initial Step 5 checkpoint (bcb8901; historical)
+
+- Owner approved **867128a**, completing Step 4, and authorized **Step 5 only**
+  under the approved plan. Step 6 remains unapproved; STOP after checks,
+  verification report, commit/push for review.
+- Implemented Today shared panel/selector/check-in and Gym/Custom launchers into
+  the existing wizard; Open group routes to Shared detail. The Progress widget
+  retains a separate personal ring and adds a confirmed, read-only leaderboard,
+  stable per-account/widget selection and Open group. Settings selects/previews
+  Progress groups. Today's other personal content/now line stay intact.
+- `shared_goals` export: version 1, at most **16 groups / 64 KiB / four rows per
+  group**, exact server scores/ranks/counts plus group-local dates/status. No
+  tokens/raw sync data. Configured groups are prioritized; truncation is explicit.
+  Export flushes/rechecks its captured store/account; account/access cleanup
+  removes old rows and scoped config choices. Startup keeps known identity while
+  clearing data, so same-account selection survives reopening. Unknown initial
+  auth is not sign-out. Native file timestamps strictly increase; preference
+  storage failure cannot block account cleanup.
+- Required checks passed: frozen install; all three tsc checks; **437 desktop /
+  194 calendar** tests; both builds (desktop PORT=1420 BASE_PATH=/); both Windows
+  cargo checks. Existing main-chunk warning remains. **215 combined UI assertions
+  / 94 data assertions**, plus final focused **38 Step 5** assertions passed.
+  Three native helper tests passed (export contract/order and group URL rules).
+  Coverage includes traveller group dates, SQL parity, independent personal
+  stats/completion, pointer navigation/focus, launchers, pending/stale/inactive,
+  bounded/token-free stored export, selection and account/leave cleanup.
+- See `docs/shared-goals-step5.md` for exact coverage and limits. Four card-theme
+  captures generated; default/light inspected. Full Today/Settings/native visual
+  comparison remains Step 6. Auth/JWT/PostgREST, deployed HTTP and packaged native
+  UI/file watching/warm-cold links remain unverified. No installed data, live
+  Supabase, SQL, dependencies or unrelated untracked files changed. No standalone
+  SQL/security/concurrency rerun; prior 421/22 evidence remains historical.
+  STOP after commit/push for review; **do not begin Step 6**.
+
+## Step 4 review fixes (26 October 2026; historical)
+
+- Owner requested two fixes on **ccece44**; **Step 5 remains unapproved**.
+  Cancellation before first eligibility now falls back to the immutable original
+  join target when no earlier target version exists. Effective boundaries,
+  current/historical targets and command receipt rules stay intact.
+- A fresh successful read distinguishes long waiting from old paused history
+  using a compact SQL-derived snapshot `lifecycle` summary (first scored round,
+  or explicit null for never activated), independent of bounded score pages.
+  Invoker RLS scopes it to visible groups. Matching current-slot coverage remains
+  required; unrelated reads do not freshen scores. Legacy snapshots decode
+  conservatively; summaries persist with the existing record and purge on leave.
+- Reproduced the late-cancellation SQL failure and fresh-device Waiting failure
+  before fixing them. Added mounted cancellation/fresh-store lifecycle tests,
+  strict codec/legacy/coverage tests, SQL summary privacy assertions and a real
+  first-target edit versus cancellation race. Generated SQL copies synchronized.
+- Required checks passed: frozen install, all three tsc checks, **433 desktop /
+  184 calendar** Vitest tests, desktop PORT=1420 BASE_PATH=/ and widgets builds,
+  both Windows cargo check --offline. Existing chunk warning remains.
+  **177 UI assertions** (85 creation/recovery + 74 Step 4 + 18 review) and
+  **94 data assertions** passed on real Edge/native IndexedDB and disposable SQL.
+- **421 checked SQL assertions plus exception assertions, 22 independent-session
+  races** passed. Migration apply/rerun/generated-copy checks, real-role RLS,
+  personal-schema coexistence and history query-plan checks ran. See
+  `docs/shared-goals-step4.md` and `docs/shared-goals-data.md` for exact scope.
+  Full Auth/JWT/PostgREST, deployed HTTP and packaged native UI/link verification
+  remain outstanding. No live Supabase access. Unrelated `.agents/` and
+  `skills-lock.json` remain untouched. STOP after commit/push for review;
+  **do not begin Step 5**.
+
+## Initial Step 4 checkpoint (26 October 2026; historical)
+
+- Owner approved **c882ad5**, completing Step 3, and authorized **Step 4 only**:
+  shared overview/detail, check-in/undo, pending Gym targets, membership/history,
+  leave, ownership transfer and archive. Step 5 remains unapproved.
+- Implemented overview/cards and detail leaderboard/check-ins/targets/history,
+  Gym pending changes/cancellation, explicit offline review, leave/ownership
+  transfer/archive. Scores/ranks/rounds stay SQL-confirmed. Rest/future/inactive/
+  not-yet-eligible days remain distinct; archived/waiting gaps add no scores.
+  Freshness and older pagination use matching group-revision coverage. Unknown
+  next boundaries disable check-in until read; no inferred active/paused state.
+- Focus regressions found/fixed: disabling a modal submit can move focus to BODY;
+  Escape/Tab now remain scoped and focus stays inside. Escape returning from
+  invitations is stopped before it can reach the newly mounted detail listener.
+  Card/dialog/invitation opener focus is restored after mounting.
+- Required checks: frozen install; desktop/widgets/calendar tsc; **431 desktop /
+  184 calendar** Vitest tests; desktop PORT=1420 BASE_PATH=/ and widgets builds;
+  both Windows cargo check --offline. Existing main-chunk warning remains.
+- **94 data assertions** and combined **157 UI assertions** passed (85 existing,
+  including all mounted/reload recovery cases, plus 72 initial Step 4 checks).
+  Final Step 4 suite: **74 assertions**, adding fresh-device history pagination.
+  Real pointer/keyboard, SQL score parity, targets, Custom schedules, offline
+  conflict, pause/resume, archive, transfer/leave, account/access changes covered.
+  24 captures: overview/detail, four themes, 1440/1280/1100; representative
+  captures inspected, no page-width overflow. See `docs/shared-goals-step4.md`.
+- Only disposable PostgreSQL 17.5, real SDK/SQL RPCs and Edge 156/native IndexedDB
+  with synthetic identity claims. Full Auth/JWT/PostgREST, deployed HTTP/native
+  links and native UI smoke remain unverified. No standalone SQL/security/
+  concurrency rerun; baseline/browser checks do not prove these properties.
+  No live Supabase, migrations, dependencies, native/Today/widgets changes or
+  unrelated `.agents/` / `skills-lock.json` changes. STOP for Step 4 review after
+  commit/push; **do not begin Step 5**.
+
+## Restart review fix (25 October 2026; historical)
+
+- Owner requested the confirmed-create/read-outage/restart fix on **e87d281**.
+  **Step 4 is still unapproved. STOP after this focused commit/push for review.**
+  No application scope expansion, migrations, dependencies, native changes or
+  live Supabase access. Preserve unrelated untracked `.agents/` / `skills-lock.json`.
+- Reproduced with an actual `page.reload()` using the same native IndexedDB:
+  a confirmed create followed by failed snapshots left no cached group; resume
+  after restart then created another group when reads recovered. Before the fix,
+  `restoring reads and continuing after reload reuses the original server group,
+  never a second group` failed. Session-only aliases did not carry provenance.
+- The canonical draft now durably carries validated optional `server` metadata:
+  `{ groupId, source: "created", commandId }` from the confirmed command/response.
+  Reconciliation writes identity, provenance and current edits atomically;
+  autosave/close preserve it even without any cached group. The decoder checks
+  exact keys, UUIDs, matching draft/group IDs and source; malformed data is
+  retained/reported instead of reset. The account record remains version 1.
+- Existing three-field drafts remain readable, with edits intact. A cached
+  owner row can establish `source: "snapshot"`; legacy resume without that cache
+  first performs an authorized lookup by its stored ID. Failed reads never imply
+  a new draft. Explicit server-bound drafts remain bound when the row is absent;
+  a successful owner read is required before continuing, updating or Review.
+- Added two real reload scenarios (modern and legacy): **16 assertions** verify
+  snapshot-only failure after confirmed creation, durable original ID/provenance,
+  preserved edits, blocked Next during the outage, authorized recovery, exactly
+  one create UUID/group, and publication/cleanup of the original ID. The normal
+  UI suite also retains all **12 mounted-session recovery assertions**. New pure
+  tests cover legacy compatibility, owner-cache upgrade and invalid provenance.
+- Required checks passed: frozen install; npx offline tsc in desktop/widgets/
+  calendar; **424 desktop / 184 calendar** Vitest tests; desktop PORT=1420
+  BASE_PATH=/ build; widgets build; both Windows cargo check --offline. Existing
+  desktop chunk warning remains. **94 data integration / 85 UI acceptance
+  assertions** passed, retaining all three mounted cases and both actual page
+  reloads. Browser external requests: **0**. The owned disposable cluster was
+  stopped afterward. No visual restyling or new native smoke claim.
+- Verification limits stay explicit: disposable local PostgreSQL 17.5, real SDK
+  and SQL roles/RPCs, Edge 156.0.4314.42/native IndexedDB with synthetic identity
+  claims. No full Auth/JWT/PostgREST, deployed HTTP or packaged native-link
+  verification, installed planner/live backend access, or standalone SQL/security/
+  concurrency-suite rerun. See `docs/shared-goals-step3.md` for the checkpoint.
+
+## Mounted-session review fix (25 October 2026; historical)
+
+- Owner requested duplicate-draft recovery fixes on **21b8a2c**. **Step 4 is
+  still unapproved. STOP for review after this focused commit/push.** No UI
+  scope expansion, schema/native changes, dependencies or live Supabase access.
+- Reproduced the exact mounted-wizard failure in the actual React/SDK/native
+  IndexedDB/disposable SQL harness before fixing it: lost create reply → retry
+  while mounted → Next → publish left the local alias behind. The browser
+  assertion `mounted recovery through publication leaves no local alias` failed.
+- Recovered outcomes now reapply idempotent identity reconciliation. Creation
+  success binds the local alias to its server group for the engine session;
+  consuming it cannot allocate a replacement create UUID. The latest local
+  fields move to the canonical ID in one serialized durable mutation, rather
+  than separate save/remove writes or restoring old command fields.
+- Autosave/close resolve aliases inside the mutation queue. Publication fences
+  further saves before snapshot refresh, removes canonical/alias drafts, and
+  blocks resurrection from stale callbacks. Cached published/archived/deleted
+  groups also reject draft saves. Resume preserves newer local fields and
+  updates the existing server draft before Review; a browser regression first
+  reproduced the previous loss of those fields on resume.
+- Added **12 browser assertions** for mounted recovery through publication,
+  autosave and close/resume after recovery, and closing after recovered
+  publication with the snapshot deliberately held. Real IndexedDB reopen checks
+  one server group per wizard and no alias/completed local drafts. The normal
+  `--ui` suite includes these regressions; `--ui --draft-recovery` runs only them.
+- Required checks passed: frozen install; npx offline tsc in desktop/widgets/
+  calendar; **422 desktop / 184 calendar** Vitest tests; desktop PORT=1420
+  BASE_PATH=/ build; widgets build; both Windows cargo check --offline. Existing
+  desktop main-chunk warning only. **94 data integration / 69 UI acceptance
+  assertions** passed, including the 12 new recovery assertions. Browser external
+  requests: **0**. No visual restyling; the existing UI/theme/keyboard suite also
+  passed. The owned disposable PostgreSQL cluster is stopped after verification.
+- Same verification limits: local PostgreSQL 17.5, real SDK/SQL roles/RPCs and
+  Edge 156.0.4314.42 IndexedDB with synthetic identity claims. Full Supabase
+  Auth/JWT/PostgREST, deployed HTTP and packaged native links remain unverified.
+  No live backend/installed planner access or standalone SQL/security/race-suite
+  rerun. See `docs/shared-goals-step3.md`. Preserve unrelated untracked `.agents/`
+  and `skills-lock.json`.
+
+## Initial Step 3 checkpoint (25 October 2026; historical)
+
+- Owner approved **2e37a49**, resolving both Step 2 findings. Step 3 only is
+  authorized: profile setup, four-step creation, invitations/link paste,
+  signed-out deferral, explicit join/decline and strict routes. Stop for owner
+  review before Step 4. No live Supabase, migrations or new dependencies.
+- Implemented profile setup; Gym/Custom four-step creation and durable local
+  drafts; real link/direct invitations, rotation/copy/revocation; limited
+  authenticated preview and explicit join/decline; pending/expired/revoked/full
+  outcomes; strict auth/join/group/existing widget-focus routing. Shared Mine
+  stays intact. Minimal group/draft rows enable resume/invitation management;
+  overview/detail/scoring/check-in UI remains Step 4.
+- Final publication revalidates the displayed date/revision and requires an
+  explicit updated-date confirmation with a new UUID. Caller-owned session
+  request packets survive form unmount and retry the exact UUID/body. Raw invite
+  tokens stay in memory; no unauthenticated group preview or automatic joining.
+  The bridge sits above the storage gate and clears old-account route intent.
+- Required checks passed: frozen install; npx offline tsc in desktop/widgets/
+  calendar; **422 desktop / 184 calendar** Vitest tests; desktop PORT=1420
+  BASE_PATH=/ build; widgets build; both Windows cargo check --offline. Existing
+  desktop main-chunk warning only. No new dependencies, schema or native code.
+- Disposable local PostgreSQL **17.5**, actual SDK/SQL RPCs, native Edge
+  **156.0.4314.42** IndexedDB: **94 data integration assertions** and **57 UI
+  assertions**. UI covers Gym/all Custom schedules, profile setup/taken handle,
+  explicit join/decline, invitation limits/states, keyboard/mount focus, token
+  replacement, lost-reply receipt retries and Sunday-draft/Wednesday-publication
+  date reconfirmation. Browser external requests: **0**. Captured fit checks in
+  four themes at 1440/1280/1100; selected screenshots visually inspected.
+- See `docs/shared-goals-step3.md` for implementation, repeatable verification
+  and limits. Full Auth/JWT/PostgREST and packaged native OAuth/warm/cold links
+  remain unverified: the local bridge uses synthetic identity claims. Whole-app
+  board parity remains Step 6. No live Supabase or installed planner accessed;
+  the standalone SQL/security/concurrency suite was not rerun in this UI step.
+  The owned disposable PostgreSQL cluster was stopped after the passing runs.
+  Unrelated untracked `.agents/` and `skills-lock.json` remain untouched.
+- Commit/push this checkpoint, then **STOP for review before Step 4**.
+
+## Step 2 review fixes (25 October 2026)
+
+- Addressed both review findings on **dd88028**. Step 3 remains **unapproved**;
+  no UI, routing, migrations or new dependencies. Unrelated untracked `.agents/`
+  and `skills-lock.json` remain untouched.
+- `mapOutcome` accepts optional nullable `eligible_round`, mapped to
+  `SharedOutcome.eligibleRound?: string | null`. Added codec coverage for null,
+  valid dates and invalid dates. Real `createSharedRemote` regressions cover
+  unpublished `not_published`, published `joined` with the eligibility date and
+  exact same-UUID receipt replay. A negative receipt stays negative after
+  publication; a successful receipt survives invite revocation unchanged.
+  The existing next-round join now also uses the adapter, replacing the fixture
+  control-endpoint bypass. Nullable-wire coverage does not claim unpublished
+  groups permit joining: actual SQL returns `not_published`.
+- `projectSharedProgress` uses the newest coverage window matching the selected
+  group revision and containing the displayed round start (inclusive), rather
+  than global cache confirmation. Missing coverage returns `confirmedAt: null`
+  and stays stale. Unrelated history reads retain the old score confirmation;
+  rereading the round's interval refreshes it. Tests also cover wrong group,
+  wrong revision, excluded round start and unordered overlapping windows.
+- Both issues reproduced before the fixes using the TDD skill at the requested
+  adapter/projection seams. Final affected browser integration passed **94
+  assertions**, real Chromium-based Edge **156.0.4314.42** IndexedDB with two
+  reloads, real Supabase SDK requests and real SQL in its own disposable local
+  PostgreSQL **17.5** database. Included actual unrelated/reread history RPCs,
+  all prior persistence/recovery/account/outage regressions and join replay.
+  One preliminary run hit the test adapter's 10-second deadline; subsequent
+  complete 91- and 94-assertion runs passed. Added safe checkpoint diagnostics.
+- Required checks passed: frozen install; npx offline tsc in desktop/widgets/
+  calendar; desktop **403** and calendar **184** Vitest tests; PORT=1420
+  BASE_PATH=/ desktop build; widgets build; Windows cargo check --offline in
+  both native folders. Existing desktop main-chunk warning only.
+- Updated `docs/shared-goals-client.md`; reproducible affected integration report
+  is `tmp/shared-goals-runtime/client-result.json` (ignored). No live Supabase
+  accessed. The full standalone 409-assertion SQL/security suite and 21 races
+  were not rerun in this client-only follow-up; their prior results are below.
+  The bridge uses synthetic identity claims/real roles: Supabase Auth, JWT
+  signatures/refresh and PostgREST/deployed HTTP remain unverified. Quota/open
+  faults are injected at native IndexedDB boundaries; no physical disk-full or
+  packaged Tauri UI smoke claim. Stopped the owned disposable cluster afterward.
+- Commit/push these review fixes, then **STOP for review before Step 3**.
+
+## Initial Step 2 checkpoint (24 October 2026; historical)
+
+- Owner approved Step 1 at **223a044**, including both review fixes, and
+  authorized **Step 2 only** of the approved 5337807 plan. Implemented on
+  `feat/shared-goals`; no Step 3 screens, wizard, routing or native/widget work.
+  No new migration, schema/type changes or application dependencies.
+- Added typed shared contracts and strict snake/camel row/outcome codecs,
+  original-date/eligibility/DST helpers, history reconciliation and a bounded
+  server-score projection for the later Today/Progress handoff. Numeric field
+  `is_at_least_70` survives disk round trips; absent rounds never become zeroes.
+- Added independent `SharedSync`, finite Supabase RPC adapter and a versioned
+  single-record `planner_shared_<uid>` IndexedDB cache/outbox/draft/receipt store.
+  Existing database version, six personal keys and personal full-row queue stay
+  compatible. Local changes and atomic receipt/removal publish after flush.
+  Attempted UUID/body/date/epoch stay immutable across retries/reloads; only
+  unprepared same-key intents coalesce. New edits wait for own acknowledged
+  revisions; other-device conflicts require review and an explicit new UUID.
+  Negative receipts and rejected intent remain reloadable together.
+- Session tokens are pinned per request. Session/SDK resolution and HTTP work
+  share a bounded deadline; disposal aborts requests/listeners/timers and drops
+  old-account responses. Successful leave purges cached access immediately.
+  Online control commands require confirmation and a caller-retained immutable
+  packet for uncertain replies; they are not silently queued. Invite secrets
+  remain memory-only. Shared status/error recovery is available through the
+  auth-scoped hook/provider without blocking personal initialization or sync.
+- Real browser integration: **77 assertions** in fresh Chromium-based Edge
+  **156.0.4314.42**, native IndexedDB and two real page reloads. Actual SQL RPCs
+  exercised through the real Supabase SDK and a disposable loopback HTTP bridge.
+  Verified six-key migration/open failure, actual transaction rollback with
+  injected quota failure, retry saving, queue/draft reopen, lost reply after
+  commit, failed acknowledgement/process loss, byte-identical command retries,
+  captured-date retention, in-flight sequencing, SQL conflicts/explicit retry,
+  token-free durable state, malformed snapshot retention, late account replies,
+  pinned identity, immediate leave purge and revoked access. All four personal
+  collections wrote/read real PostgreSQL rows during a shared-only outage.
+  Pre-pause/gap/resumed captures, next-round joiners, archive receipt exceptions,
+  unsent archive failures and historical round keys eight weeks later passed.
+- Reran actual disposable PostgreSQL **17.5** regressions: **409 checked SQL
+  assertions** plus exception assertions, **21 independent-session concurrency
+  cases**, migration reruns, personal coexistence and authenticated historical
+  EXPLAIN ANALYZE all passed. No SQL/security property is inferred from Vitest.
+- Required checks passed: frozen install; npx offline tsc in desktop, widgets
+  and calendar; desktop **396** and calendar **184** Vitest tests; desktop build
+  with PORT=1420 BASE_PATH=/; widgets build; Windows cargo check --offline in
+  both native folders. Existing desktop main-chunk warning only.
+- Evidence/reproduction: `docs/shared-goals-client.md`,
+  `scripts/run-shared-client-tests.mjs`, `scripts/shared-client-fixture.py` and
+  the test-only `src/test/sharedIntegration.ts`. Ignored reports:
+  `tmp/shared-goals-runtime/client-result.json` and `step2-sql-result.json`.
+  Browser requests were loopback-only; tests create/drop their own random DBs.
+- **Limits:** synthetic auth claims/roles in the disposable bridge are not full
+  Supabase Auth, PostgREST, JWT signature/refresh or deployed HTTP verification.
+  That end-to-end gate remains outstanding. Quota/open denial were injected at
+  real IndexedDB boundaries, not physical disk exhaustion. No packaged Tauri UI
+  smoke test claimed for this data-only checkpoint. No live Supabase accessed.
+- Commit/push this checkpoint, then **STOP for owner review before Step 3**.
+  Unrelated untracked `.agents/` and `skills-lock.json` remain untouched.
+
+## Step 1 review fixes (24 October 2026; historical, approved at 223a044)
+
+- Addressed the two should-fixes from review of **87183cc**. No Step 2 client or
+  UI work. The pending migration remains re-runnable; both embedded test copies
+  are synchronized. No public database type changed: the new relation is private.
+- Added a durable **20 invitation issue/rotation attempts per group per fixed UTC
+  hour** budget, in addition to the existing actor limit. Its private helper
+  obtains the group lock; direct/link issuance and rotation share the counter.
+  Ownership transfer, expiration, acceptance and revocation do not refund it.
+  Expired pending rotation spends the new hour's allowance; rerunning the
+  migration preserves an exhausted counter. Denial scope is `group_invites`.
+- Added **10 profile handle-availability attempts per actor per fixed UTC minute**
+  before availability lookup, including `handle_taken` from profile-less actors.
+  Normal rejections commit their budget/receipt. A concurrent handle claim's
+  unique-constraint loser rolls back only its insert and returns `handle_taken`,
+  retaining its consumed attempt. Existing immutable-handle display-name edits
+  remain usable. Exact receipt retries spend no extra allowance; denial scope
+  is `profile_setup`.
+- Used the TDD skill at the already approved real authenticated RPC seam. Both
+  focused regressions failed before their respective fixes, then passed. Added
+  focused `--only invitation-budget` / `--only profile-budget` runner commands.
+  Documented exact policy, charging, expiry/revoke/transfer and retry behavior in
+  `docs/shared-goals-data.md`.
+- Actual disposable PostgreSQL **17.5** results: **409 checked SQL assertions**
+  plus exception assertions, **21 independent-session concurrency cases**, all
+  passing. Four new races observe real transaction/advisory waits: last group
+  allowance with rotation+ownership transfer, last profile availability slot,
+  two accounts claiming one handle, and concurrent taken-handle receipt replay.
+  Separate committed calls verify failed setup attempts remain limited. Existing
+  lifecycle/RLS/scoring tests, migration reruns, four personal-row preservation
+  checks and authenticated historical EXPLAIN ANALYZE also passed.
+- Required checks rerun and passed: frozen install; npx offline tsc in desktop,
+  widgets and calendar; desktop **378** and calendar **184** Vitest tests;
+  PORT=1420 BASE_PATH=/ desktop build; widgets build; Windows cargo check
+  --offline in both native folders. Existing main-chunk warning only.
+- Same isolated loopback cluster/auth-role scaffold as the initial checkpoint;
+  no live Supabase or application credentials used. Full Supabase Auth,
+  PostgREST and HTTP/JWT integration remain unverified. No new dependencies.
+- This follow-up stopped for schema/security review and was subsequently
+  approved at **223a044**, authorizing the Step 2 checkpoint above. Untracked
+  `.agents/` and `skills-lock.json` were untouched.
+
+## Approved plan and initial Step 1 checkpoint (87183cc; historical)
+
+- Owner approved the revised plan at **5337807**, including proposed defaults
+  and lifecycle contracts. Implemented Step 1 only on `feat/shared-goals`, based
+  on `origin/main` aa7f69a. No shared client, UI, routing or widget work begun.
+- Added `20261024160000_shared_goals.sql`: six RLS-protected public tables,
+  private token digests/receipts/rate budgets, constraints/immutable lifecycle
+  guards/deferred capacity and owner invariants, finite authenticated command
+  RPC, limited invitation reads, invoker snapshot and invoker scoring views.
+  Publication revalidates/finalizes its anchor under lock; scores reconstruct
+  eligible historical rosters, inactive gaps, pause/resume and terminal archive.
+  Receipts bind successful and rejected outcomes to immutable UUID/body pairs;
+  tokens are stripped. No raw shared upsert or personal sync rule changes.
+- Added self-contained rollback SQL tests and a loopback-only Python runner
+  with independent-session lock assertions; generated migration copies are
+  checked for drift. Public database types match disposable catalog metadata.
+  `docs/shared-goals-data.md` documents schema, RPC payloads/results, access,
+  exact lifecycle/cutoff/replay rules, test reproduction and remaining limits.
+- Actual database evidence: fresh disposable **PostgreSQL 17.5** Windows with
+  pgcrypto and real anon/authenticated roles (minimal auth.uid/users scaffold).
+  Standalone suite: **304 checked assertions**, plus exception assertions;
+  migration apply/rerun preserves memberships, check-ins, receipts and archived
+  scores. All five lifecycle scenarios and exact boundary/expiry/grace cutoffs
+  ran, alongside real RLS/RPC/private-helper/anonymous access denials, scoring,
+  target versions, epoch replay, capacity reservations, rate budgets and guards.
+- **17 independent-session concurrency cases passed**, each observing an actual
+  PostgreSQL lock wait: final seat, receipt same/different body, opposing stale
+  states, join/revoke/rotation, archive/check-in and leave/check-in in both orders,
+  future targets, ownership/leave, join/transfer, leave/next-round join and a
+  lock wait crossing a round boundary. These are SQL evidence, not mocked clients.
+- Also applied existing personal migrations in that disposable database, seeded
+  all four personal collections and reran shared migration: personal rows and
+  personal sync guard preserved. Inspected authenticated EXPLAIN ANALYZE for a
+  six-year synthetic group/history window, confirming membership/target
+  index use. This small fixture is not a production load test.
+- Docker Desktop did not expose its engine pipe; full local Supabase/Auth/
+  PostgREST/JWT/HTTP was **not** tested. Temporary native PostgreSQL/psycopg live
+  only under ignored `tmp/`; no application dependencies/lockfile changes.
+  Tests used no application credentials; no live Supabase connection or schema
+  execution occurred. Standalone SQL can still be run by the owner on fresh local
+  Supabase. Build/regression checks do not establish SQL security properties.
+- Required checks passed: frozen install; npx offline tsc in desktop/widgets/
+  calendar; desktop **378** and calendar **184** Vitest tests; desktop build with
+  PORT=1420 BASE_PATH=/; widgets build; Windows cargo check --offline in both
+  native folders. Existing desktop main-chunk warning only.
+- **STOP after commit/push.** Await owner schema/security review before Step 2
+  (shared client/storage/logic). No shared feature native/UI acceptance claimed.
+
+## Previous lifecycle-plan revision (24 October 2026; historical)
+
+- Revised docs/shared-goals-plan.md after review of 32e268b; all other proposed
+  defaults retained. Still documentation only: no application code, migrations,
+  schema execution or new feature acceptance has been performed.
+- Draft start dates are provisional. Final publication recomputes under the
+  group lock against server group-local time and compares the displayed date/
+  draft revision; stale proposals require visible renewed confirmation before
+  published_at/first_round_date and initial eligibility/targets are frozen.
+- Defined candidate slots versus scored rounds, boundary rosters, earliest pause
+  cutoff and terminal archive cutoff. Persist publication/archive timestamps and
+  immutable membership join/eligibility/leave epochs to reconstruct history.
+  Capacity counts accepted members/reservations; activation/resume counts only
+  eligible boundary members. Next-round joiners cannot fill a current eligibility
+  gap. No score rows for waiting/paused slots, and none start at/after archive.
+- Already-started rounds keep historical rosters/full targets and end early on
+  pause/archive. Offline replay may settle a pre-pause active-interval intent
+  within existing grace while the original epoch still has access; gap intents
+  stay rejected after resume. Archive rejects unseen writes; exact committed
+  receipt retries only acknowledge prior results without mutation.
+- Added the five requested acceptance scenarios plus exact cutoff cases, and
+  aligned the schema/view/client acceptance contracts. These scenarios are
+  planned evidence for the first implementation checkpoint, not tests run now.
+- Required baseline checks rerun and passed: frozen install; TypeScript in all
+  three packages (npx offline); desktop 375 + calendar 184 tests; both production
+  builds; both Windows cargo check --offline checks. Existing desktop chunk-size
+  warning only. STOP for plan review after the documentation commit/push.
+
+## Initial branch-3 planning checkpoint (24 October 2026; historical)
+- Branch 2 is approved and squash-merged into main as aa7f69a. Fetched origin and
+  confirmed origin/main and local main at aa7f69afedf9943ba94590e578a0dde5e66ee028.
+  Created feat/shared-goals directly from origin/main; no feature re-merge.
+- Owner recovered the detailed branch-3 brief: 2–8-person shared Gym/Custom goals,
+  shared screens/invitations/link join, individual Gym targets, per-goal rounds,
+  server scoring view, member-only RLS, time zones, leaving and offline behavior.
+  Read GoalsShared, GoalsDetail and GoalsCreate separately, canvas board inventory,
+  and Main/Widget integration details; inspected current Today/Goals Mine,
+  sync/IndexedDB, deep links, widgets and schema. Public PostgreSQL/Supabase docs
+  checked for view/RPC security; no database connection or schema execution.
+- Wrote docs/shared-goals-plan.md. Established requirements/design evidence are
+  separated from proposed schema, RPC/RLS/token/scoring contracts, group dates,
+  membership lifecycle, offline command/cache behavior and integration choices.
+  Ordered implementation has a schema/RLS/scoring checkpoint before client/UI.
+- Review needed on waiting single-owner/link-only groups, capacity reservations,
+  group time zone/first start, invite preview privacy versus the join board,
+  username setup, offline replay grace/conflicts, leave/owner transfer/pause,
+  personal-goal completion coupling and literal green versus themed accents.
+  Proposed defaults are not approvals. STOP: no application code or migrations
+  authorized by this planning task; wait for owner plan review.
+- This checkpoint changes only the plan and HANDOFF. Required checks passed:
+  frozen install; npx (offline) tsc --noEmit in all three packages; desktop 375
+  and calendar 184 tests; both production builds; cargo check --offline in both
+  Windows native folders. Existing desktop main-chunk warning only. These are
+  baseline checks, not branch-3 SQL/RLS/concurrency or UI/native acceptance.
+
+## Previous branch-2 review decision (24 October 2026; historical)
+
 - Reviewer approved step 6 at `7b2f69c`; the Notes listbox Enter finding is
   resolved. No outstanding blocker, should-fix or nit in this focused follow-up.
 - Independently reran frozen install, TypeScript in desktop/widgets/calendar,

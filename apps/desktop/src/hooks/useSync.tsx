@@ -9,10 +9,17 @@ import {
 import type { ReactNode } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import { isSupabaseConfigured } from "@/lib/supabase";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase";
+import { SharedSync } from "@/lib/sync/shared/engine";
+import { createSharedRemote } from "@/lib/sync/shared/remote";
 import { PlannerSync, type SyncStatus } from "@/lib/sync/engine";
 import { IndexedDbStore, storageErrorMessage } from "@/lib/sync/indexedDbStore";
-import { SYNC_TOAST_IDS, decideSyncToast } from "@/lib/sync/toastPolicy";
+import {
+  SHARED_TOAST_IDS,
+  SYNC_TOAST_IDS,
+  decideSharedToast,
+  decideSyncToast,
+} from "@/lib/sync/toastPolicy";
 import { createSupabaseRemotes } from "@/lib/sync/supabaseRemote";
 import {
   requestWidgetExport,
@@ -25,6 +32,26 @@ import {
 let activeUserId: string | null = null;
 
 const SyncContext = createContext<PlannerSync | null>(null);
+const SharedSyncContext = createContext<SharedSync | null>(null);
+
+/** Bind already-opened account engines, including isolated acceptance profiles. */
+export function SyncEngines({
+  engine,
+  shared,
+  children,
+}: {
+  engine: PlannerSync | null;
+  shared: SharedSync | null;
+  children: ReactNode;
+}) {
+  return (
+    <SyncContext.Provider value={engine}>
+      <SharedSyncContext.Provider value={shared}>
+        {children}
+      </SharedSyncContext.Provider>
+    </SyncContext.Provider>
+  );
+}
 
 /**
  * Creates the sync engine once auth has resolved and a user is signed in.
@@ -34,21 +61,27 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   const userId = loading ? null : (user?.id ?? null);
   const [engine, setEngine] = useState<PlannerSync | null>(null);
+  const [shared, setShared] = useState<SharedSync | null>(null);
   const [openError, setOpenError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
+    // An unresolved initial auth read is not a confirmed account change.
+    if (loading) return;
     activeUserId = userId;
     setEngine(null);
+    setShared(null);
     setOpenError(null);
     setWidgetExportStore(userId, null);
     setWidgetExportUser(userId);
+    const exportClock = setInterval(requestWidgetExport, 30_000);
     if (!userId) {
       setEngine(null);
-      return;
+      return () => clearInterval(exportClock);
     }
     let cancelled = false;
     let next: PlannerSync | null = null;
+    let nextShared: SharedSync | null = null;
     let store: IndexedDbStore | null = null;
     void (async () => {
       try {
@@ -95,6 +128,28 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         setWidgetExportStore(userId, store);
         next.start();
         setEngine(next);
+        // Shared initialization/retries never join the personal sync chain.
+        // Missing schema or a damaged shared record must not block Mine/Notes.
+        try {
+          nextShared = new SharedSync({
+            userId,
+            store,
+            remote: isSupabaseConfigured
+              ? createSharedRemote(userId, supabase)
+              : null,
+            currentUserId: () => activeUserId,
+            onCacheWrite: requestWidgetExport,
+          });
+          nextShared.load();
+          nextShared.start();
+          setShared(nextShared);
+        } catch {
+          nextShared?.dispose();
+          toast.error(
+            "Shared goals could not start. Your personal planner is still available.",
+            { id: "shared-sync-start" },
+          );
+        }
       } catch (error) {
         next?.dispose();
         if (!cancelled) setOpenError(storageErrorMessage(error));
@@ -103,13 +158,15 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       }
     })();
     return () => {
+      clearInterval(exportClock);
       cancelled = true;
       if (activeUserId === userId) activeUserId = null;
       setWidgetExportStore(null, null);
       next?.dispose();
+      nextShared?.dispose();
       if (store) void store.close().catch(() => {});
     };
-  }, [userId, attempt]);
+  }, [userId, attempt, loading]);
 
   if (userId && (!engine || engine.userId !== userId))
     return (
@@ -135,16 +192,82 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     );
 
   return (
-    <SyncContext.Provider value={engine}>
+    <SyncEngines engine={engine} shared={shared}>
       {engine && <SyncErrorToasts engine={engine} />}
+      {shared && <SharedErrorToasts engine={shared} />}
       {children}
-    </SyncContext.Provider>
+    </SyncEngines>
   );
 }
 
 /** The engine for the signed-in user, or null before auth has resolved. */
 export function useSyncEngine(): PlannerSync | null {
   return useContext(SyncContext);
+}
+export function useSharedSyncEngine(): SharedSync | null {
+  const engine = useContext(SharedSyncContext);
+  const { user, loading } = useAuth();
+  return !loading && engine?.userId === user?.id ? engine : null;
+}
+
+/** One toast per distinct problem; see lib/sync/toastPolicy.ts. */
+export function SharedErrorToasts({ engine }: { engine: SharedSync }) {
+  const status = useSyncExternalStore(engine.subscribe, engine.getStatus);
+  const shown = useRef<string | null>(null);
+  useEffect(() => {
+    const decision = decideSharedToast(shown.current, status);
+    shown.current = decision.shown;
+    if (decision.clear) {
+      for (const id of SHARED_TOAST_IDS) toast.dismiss(id);
+    }
+    const t = decision.show;
+    if (!t) return;
+    // Only one kind of shared toast at a time.
+    for (const id of SHARED_TOAST_IDS) if (id !== t.id) toast.dismiss(id);
+    if (t.id === "shared-storage") {
+      toast.error("Shared changes could not be saved on this device", {
+        id: t.id,
+        description: t.message,
+        duration: Infinity,
+        action: {
+          label: "Retry saving",
+          onClick: () => {
+            void engine.retrySaving().catch(() => {});
+          },
+        },
+      });
+    } else if (t.id === "shared-offline") {
+      toast.warning("Shared goals paused", {
+        id: t.id,
+        description:
+          "Check-ins are saved on this device and will sync when the connection is back.",
+      });
+    } else if (t.id === "shared-failed") {
+      toast.error(
+        t.failed === 1
+          ? "A check-in wasn't saved"
+          : `${t.failed} check-ins weren't saved`,
+        {
+          id: t.id,
+          description: "Open the group to try again or discard it.",
+        },
+      );
+    } else {
+      toast.error("Shared goals need attention", {
+        id: t.id,
+        description: t.message,
+      });
+    }
+  }, [engine, status]);
+  // A different account must not inherit this account's message.
+  useEffect(
+    () => () => {
+      shown.current = null;
+      for (const id of SHARED_TOAST_IDS) toast.dismiss(id);
+    },
+    [engine],
+  );
+  return null;
 }
 
 const NO_ENGINE_STATUS: SyncStatus = {

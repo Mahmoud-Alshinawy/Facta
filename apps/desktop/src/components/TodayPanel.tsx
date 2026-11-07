@@ -8,9 +8,12 @@ import { useNow } from "@/hooks/useNow";
 import { isCompletedToday, localDay, overdueGoals, planDay } from "@/lib/goalDates";
 import { buildTimeline, formatDuration } from "@/lib/eventTimeline";
 import type { GoalCategory } from "@/types/planner";
+import TodaySharedPanel from "./goals/TodaySharedPanel";
 import { LetGoStore } from "@/lib/letGo";
 
 interface TodayPanelProps {
+  onOpenGroup: (id: string) => void;
+  onCreateShared: (template: "gym" | "custom") => void;
   onNewEvent: (date: string, time?: string) => void;
   onEditEvent: (event: CalendarEvent) => void;
 }
@@ -52,7 +55,7 @@ function letGoWithUndo(goal: Goal, deleteGoal: (id: string) => void) {
   });
 }
 
-export default function TodayPanel({ onNewEvent, onEditEvent }: TodayPanelProps) {
+export default function TodayPanel({ onNewEvent, onEditEvent, onOpenGroup, onCreateShared }: TodayPanelProps) {
   const { goals, updateGoal, deleteGoal, toggleComplete } = useGoals();
   const { getEventsForDate } = useEvents();
   const now = useNow();
@@ -178,7 +181,7 @@ export default function TodayPanel({ onNewEvent, onEditEvent }: TodayPanelProps)
 
         {/* ===== Right: shared goals and events ===== */}
         <aside aria-label="Shared goals and events" className="flex min-w-0 flex-[1_1_380px] flex-col gap-5">
-          <SharedGoalsEmpty />
+          <TodaySharedPanel onOpenGroup={onOpenGroup} onCreate={onCreateShared} now={now.getTime()} />
 
           <section className="flex flex-col gap-3.5 rounded-2xl border border-border bg-card px-[22px] py-5">
             <div className="flex items-center justify-between">
@@ -307,54 +310,6 @@ function GoalRow({ goal, done, isNext, popping, onToggle, onToggleBell }: {
         </button>
       </span>
     </li>
-  );
-}
-
-function SharedGoalsEmpty() {
-  return (
-    <section aria-label="Shared goals" className="flex flex-col gap-4 rounded-2xl border border-border bg-card px-[22px] py-5">
-      <div className="flex flex-col gap-1">
-        <span className="text-xs text-subtle">Shared goals</span>
-        <h2 className="m-0 text-[17px] font-semibold tracking-[-0.02em]">Do it with friends</h2>
-        <p className="m-0 text-[13px] text-text-2">Start a shared goal and see who keeps it up each week.</p>
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        <SharedTile icon={<DumbbellIcon />} title="Gym" detail="Template" />
-        <SharedTile icon={<Plus aria-hidden="true" size={17} strokeWidth={2.2} />} title="Custom" detail="Set your own goal" />
-      </div>
-    </section>
-  );
-}
-
-/** Disabled until shared goals exist; the tooltip says so. */
-function SharedTile({ icon, title, detail }: { icon: React.ReactNode; title: string; detail: string }) {
-  return (
-    <span className="tip" data-tip="Coming soon">
-      <button
-        type="button"
-        disabled
-        aria-label={`${title}: coming soon`}
-        className="flex w-full cursor-not-allowed flex-col items-start gap-2.5 rounded-xl border border-input bg-background p-3.5 text-left opacity-70"
-      >
-        <span className="flex h-8 w-8 items-center justify-center rounded-[9px] bg-raised-2 text-foreground">{icon}</span>
-        <span className="flex flex-col gap-0.5">
-          <span className="text-sm font-semibold">{title}</span>
-          <span className="text-xs text-subtle">{detail}</span>
-        </span>
-      </button>
-    </span>
-  );
-}
-
-function DumbbellIcon() {
-  return (
-    <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14.4 14.4 9.6 9.6" />
-      <path d="M18.657 21.485a2 2 0 1 1-2.829-2.828l-1.767 1.768a2 2 0 1 1-2.829-2.829l6.364-6.364a2 2 0 1 1 2.829 2.829l-1.768 1.767a2 2 0 1 1 2.828 2.829z" />
-      <path d="m21.5 21.5-1.4-1.4" />
-      <path d="M3.9 3.9 2.5 2.5" />
-      <path d="M6.404 12.768a2 2 0 1 1-2.829-2.829l1.768-1.767a2 2 0 1 1-2.828-2.829l2.828-2.828a2 2 0 1 1 2.829 2.828l1.767-1.768a2 2 0 1 1 2.829 2.829z" />
-    </svg>
   );
 }
 
