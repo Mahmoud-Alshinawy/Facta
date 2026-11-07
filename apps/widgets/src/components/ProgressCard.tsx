@@ -55,7 +55,7 @@ export default function ProgressCard({
     >
       <header className="progress-head" data-tauri-drag-region>
         <Target size={14} />
-        <span>PROGRESS</span>
+        <span>Progress</span>
       </header>
       <div className="progress-personal">
         <div className="progress-ring-box">

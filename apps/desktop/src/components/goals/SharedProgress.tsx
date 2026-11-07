@@ -352,14 +352,14 @@ export function SharedOverview({
     <>
       <section className="shared-overview" aria-label="Shared goals summary">
         <div>
-          <span className="mono sec">ACTIVE ROUNDS</span>
+          <span className="mono sec">Active rounds</span>
           <strong>{active.length}</strong>
           <small>
             {active.map((v) => v.group.name).join(", ") || "No active rounds"}
           </small>
         </div>
         <div>
-          <span className="mono sec">YOUR RANK</span>
+          <span className="mono sec">Your rank</span>
           {active
             .filter((v) => v.ownScore)
             .map((v) => (
@@ -375,7 +375,7 @@ export function SharedOverview({
           )}
         </div>
         <div>
-          <span className="mono sec">CHECK-INS LEFT TODAY</span>
+          <span className="mono sec">Check-ins left today</span>
           <strong>
             {left.length}
             <small> of {due.length}</small>
@@ -443,7 +443,7 @@ export function SharedOverview({
               )}
               <div className="shared-ci">
                 <div>
-                  <span className="mono sec">YOUR CHECK-IN</span>
+                  <span className="mono sec">Your check-in</span>
                   <p>{v.reason ?? dateLabel(v.today)}</p>
                 </div>
                 <CheckinAction

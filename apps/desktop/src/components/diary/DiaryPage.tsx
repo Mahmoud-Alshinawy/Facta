@@ -39,7 +39,7 @@ const VIEWS = [
 ] as const;
 const CHEAT = [
   {
-    title: "ANYWHERE",
+    title: "Anywhere",
     rows: [
       ["W", "Write today's line"],
       ["T", "Today"],
@@ -50,7 +50,7 @@ const CHEAT = [
     ],
   },
   {
-    title: "WRITING",
+    title: "Writing",
     rows: [
       ["Enter", "Save the line"],
       ["1 to 5", "Mood 1 to 5"],
@@ -60,7 +60,7 @@ const CHEAT = [
     ],
   },
   {
-    title: "TIMELINE AND CALENDAR",
+    title: "Timeline and calendar",
     rows: [
       ["[", "Previous month"],
       ["]", "Next month"],
@@ -102,7 +102,7 @@ function EntryRow({
     >
       <div className="diary-date">
         <span className="mono">
-          {format(noonOf(entry.date), "EEEE").toUpperCase()}
+          {format(noonOf(entry.date), "EEEE")}
         </span>
         <strong>{format(noonOf(entry.date), "d MMM")}</strong>
         <span>
@@ -334,12 +334,12 @@ export default function DiaryPage({
     <div className="diary-page">
       <header className="hd diary-header">
         <div>
-          <span className="mono diary-subtitle">
-            {entries.length} {entries.length === 1 ? "ENTRY" : "ENTRIES"} ·{" "}
+          <span className="sec diary-subtitle">
+            {entries.length} {entries.length === 1 ? "Entry" : "Entries"} ·{" "}
             {format(
               view === "calendar" || view === "timeline" ? month : now,
               "MMMM yyyy",
-            ).toUpperCase()}
+            )}
           </span>
           <h1>Diary</h1>
         </div>
@@ -485,7 +485,7 @@ export default function DiaryPage({
             <aside className="diary-col" aria-label="Today for context">
               <section className="diary-card">
                 <span className="sec">
-                  {streak.paused ? "LAST RUN" : "STREAK"}
+                  {streak.paused ? "Last run" : "Streak"}
                 </span>
                 <div className="diary-streak">
                   <Flame size={30} />
@@ -530,7 +530,7 @@ export default function DiaryPage({
               </section>
               <section className="diary-card" aria-label="Today at a glance">
                 <div className="diary-row">
-                  <span className="sec">TODAY, FOR CONTEXT</span>
+                  <span className="sec">Today, for context</span>
                   <button
                     type="button"
                     className="b b-quiet"
@@ -555,7 +555,7 @@ export default function DiaryPage({
                 <small>Read only. Edit goals and events in Today.</small>
               </section>
               <section className="diary-card" aria-label="On this day">
-                <span className="sec">ON THIS DAY</span>
+                <span className="sec">On this day</span>
                 {onThisDay.length ? (
                   onThisDay.map((e) => (
                     <button
@@ -601,7 +601,7 @@ export default function DiaryPage({
                   role="group"
                   aria-label="Filter by mood"
                 >
-                  <span className="sec">MOOD</span>
+                  <span className="sec">Mood</span>
                   {MOODS.map((m) => (
                     <button
                       key={m.value}
@@ -620,7 +620,7 @@ export default function DiaryPage({
                   role="group"
                   aria-label="Filter by tag"
                 >
-                  <span className="sec">TAG</span>
+                  <span className="sec">Tag</span>
                   {allTags.map((t) => (
                     <button
                       type="button"
@@ -687,7 +687,7 @@ export default function DiaryPage({
                       }
                     }}
                   >
-                    <span className="sec">TODAY'S LINE</span>
+                    <span className="sec">Today's line</span>
                     <label className="sr-only" htmlFor="diary-timeline-line">
                       Today's line
                     </label>
@@ -724,7 +724,7 @@ export default function DiaryPage({
                 {!!onThisDay.length && (
                   <section className="diary-col">
                     <span className="sec">
-                      ON THIS DAY, {format(now, "d MMM").toUpperCase()}
+                      On this day, {format(now, "d MMM")}
                     </span>
                     <div className="diary-recalls">
                       {onThisDay.map((e) => (

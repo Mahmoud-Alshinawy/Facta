@@ -144,8 +144,8 @@ export default function SharedGoalDetail({
         </button>
         <div className="shared-detail-title">
           <span className="mono sec">
-            {view.group.template.toUpperCase()} · ROUNDS START{" "}
-            {WEEKDAYS[view.group.roundWeekday].toUpperCase()}
+            {view.group.template[0].toUpperCase() + view.group.template.slice(1)} · Rounds start{" "}
+            {WEEKDAYS[view.group.roundWeekday]}
           </span>
           <h1 ref={title} tabIndex={-1}>
             {view.group.name}
@@ -493,7 +493,7 @@ export default function SharedGoalDetail({
                 tabIndex={0}
               >
                 <h2>Week by week</h2>
-                <span className="mono sec">SERVER GROUP AVERAGE</span>
+                <span className="mono sec">Server group average</span>
                 {historical.map((r) => {
                   const scores = snapshot.scores.filter(
                       (s) => s.groupId === id && s.roundStart === r.roundStart,

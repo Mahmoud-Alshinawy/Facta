@@ -20,7 +20,7 @@ export function agendaTitle(start: Date) {
   const sameMonth = start.getMonth() === end.getMonth();
   return {
     title: `Next ${AGENDA_DAYS} days`,
-    subtitle: `AGENDA · ${start.getDate()}${sameMonth ? "" : ` ${monthShort(start.getMonth()).toUpperCase()}`}–${end.getDate()} ${monthShort(end.getMonth()).toUpperCase()} ${end.getFullYear()}`,
+    subtitle: `Agenda · ${start.getDate()}${sameMonth ? "" : ` ${monthShort(start.getMonth())}`}–${end.getDate()} ${monthShort(end.getMonth())} ${end.getFullYear()}`,
   };
 }
 
@@ -136,7 +136,7 @@ export default function AgendaView({ start, now, prefs, actions, filter, onFilte
           const title = isToday ? "Today" : sameDay(g.dt, tomorrow) ? "Tomorrow" : dowLong(g.dt.getDay());
           return (
             <section key={g.key} className="dgroup" aria-label={dayLabel(g.dt)}>
-              <div className={`dh2${isToday ? " is-today" : ""}`}><span className="dd">{title}</span><span className="mono sec">{g.dt.getDate()} {monthShort(g.dt.getMonth()).toUpperCase()}</span></div>
+              <div className={`dh2${isToday ? " is-today" : ""}`}><span className="dd">{title}</span><span className="mono sec">{g.dt.getDate()} {monthShort(g.dt.getMonth())}</span></div>
               {g.rows.map((r) => {
                 if (r.kind === "now") {
                   return <div key="now" className="nowrow" aria-hidden="true"><span className="mono p">{C.full(r.at)}</span></div>;

@@ -292,8 +292,8 @@ export default function GoalsPage({
       <header className="hd">
         <div className="flex min-w-[150px] flex-col gap-0.5">
           <span className="mono sec">
-            WEEK OF {format(stats.week.start, "d MMM").toUpperCase()} ·{" "}
-            {format(addDays(stats.week.start, 6), "d MMM").toUpperCase()}
+            Week of {format(stats.week.start, "d MMM")} ·{" "}
+            {format(addDays(stats.week.start, 6), "d MMM")}
           </span>
           <h1>Goals</h1>
         </div>
@@ -385,7 +385,7 @@ export default function GoalsPage({
                   ))}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="mono sec">SORT</span>
+                  <span className="mono sec">Sort</span>
                   <div className="seg" role="radiogroup" aria-label="Sort by">
                     {(
                       [
