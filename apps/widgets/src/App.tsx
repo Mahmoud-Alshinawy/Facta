@@ -70,7 +70,7 @@ export default function App() {
 
   return (
     <div
-      className={`w-full h-full relative overflow-hidden select-none flex flex-col ${themeClass} ${containerBg}`}
+      className={`w-full h-full relative overflow-hidden select-none flex flex-col ${themeClass} ${containerBg}${translucent && theme === "light" ? " widget-light-trans" : ""}`}
     >
       <div
         data-tauri-drag-region
