@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "typecheck": "pnpm -r --filter \"./apps/**\" --if-present run typecheck",
+    "typecheck": "pnpm -r --filter \"./apps/**\" --filter \"./packages/calendar\" --if-present run typecheck",
     "build": "pnpm -r --if-present run build",
     "test": "pnpm -r --if-present run test"
   },
