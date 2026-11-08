@@ -218,7 +218,7 @@ export default function DayView({ anchor, now, prefs, actions, onAnchor, say }: 
               <li key={g.goal.id} className="grow">
                 <Check done={g.done} label={g.goal.title} onToggle={() => toggle(g)} tabIndex={0} />
                 <span className="gt" style={{ textDecoration: g.done ? "line-through" : "none", color: g.done ? "var(--text-2)" : "var(--text)" }}>{g.goal.title}</span>
-                {g.at !== null && <span className="em">{C.chip(g.at)}</span>}
+                {g.at !== null && <span className="em time-mono">{C.chip(g.at)}</span>}
               </li>
             ))}
           </ul>
@@ -231,7 +231,7 @@ export default function DayView({ anchor, now, prefs, actions, onAnchor, say }: 
               <li key={`${e.id}:${at}`} className="grow">
                 <span className="evdot" style={{ ["--c" as string]: colorVar(e.color) }} />
                 <button type="button" className="gt grow-btn" onClick={() => actions.editEvent(e)}>{e.title}</button>
-                <span className="em">{at < 0 ? (e.allDay ? "All day" : "Spanning") : C.chip(at)}</span>
+                <span className={at < 0 ? "em" : "em time-mono"}>{at < 0 ? (e.allDay ? "All day" : "Spanning") : C.chip(at)}</span>
               </li>
             ))}
           </ul>

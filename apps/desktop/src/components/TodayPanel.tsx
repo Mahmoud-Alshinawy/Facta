@@ -96,7 +96,7 @@ export default function TodayPanel({ onNewEvent, onEditEvent, onOpenGroup, onCre
           {/* Progress */}
           <div className="flex flex-col gap-3.5 rounded-2xl border border-border bg-card px-6 py-[22px]">
             <div className="flex flex-wrap items-baseline gap-2.5">
-              <span className="font-mono text-5xl font-medium leading-none tracking-[-0.04em] tabular">{plan.done}</span>
+              <span className="text-5xl font-medium leading-none tracking-[-0.04em] tabular">{plan.done}</span>
               <span className="text-lg font-medium text-text-2">of {plan.total} done today</span>
               {plan.total > 0 && left === 0 && (
                 <span className="ml-1 rounded-[7px] bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground">Clean sweep</span>
@@ -122,7 +122,7 @@ export default function TodayPanel({ onNewEvent, onEditEvent, onOpenGroup, onCre
               <p className="m-0 min-w-0 flex-[1_1_260px] text-sm text-text-2">
                 Left over from {firstOverdue.date === yesterday ? "yesterday" : format(parseISO(firstOverdue.date), "EEE d MMM")}:{" "}
                 <span className="text-foreground">{firstOverdue.title}</span>
-                {overdue.length > 1 && <span className="ml-2 font-mono text-xs text-subtle">+{overdue.length - 1} more</span>}
+                {overdue.length > 1 && <span className="ml-2 text-xs text-subtle">+{overdue.length - 1} more</span>}
               </p>
               <div className="flex gap-1">
                 <button
@@ -159,7 +159,7 @@ export default function TodayPanel({ onNewEvent, onEditEvent, onOpenGroup, onCre
                     ))}
                   </span>
                   <h2 className="m-0 text-sm font-semibold tracking-[-0.01em]">{meta.label}</h2>
-                  <span className="font-mono text-xs text-subtle">{group.done} of {group.items.length}</span>
+                  <span className="text-xs text-subtle">{group.done} of {group.items.length}</span>
                 </div>
                 <ul className="m-0 flex list-none flex-col gap-0.5 rounded-[14px] border border-border bg-card p-1">
                   {group.items.map((goal) => (
@@ -186,7 +186,7 @@ export default function TodayPanel({ onNewEvent, onEditEvent, onOpenGroup, onCre
           <section className="flex flex-col gap-3.5 rounded-2xl border border-border bg-card px-[22px] py-5">
             <div className="flex items-center justify-between">
               <h2 className="m-0 text-[15px] font-semibold tracking-[-0.01em]">Today's events</h2>
-              <span className="font-mono text-xs text-subtle">{timeline.allDay.length + timeline.timed.length}</span>
+              <span className="text-xs text-subtle">{timeline.allDay.length + timeline.timed.length}</span>
             </div>
 
             {timeline.allDay.length + timeline.timed.length === 0 ? (

@@ -335,7 +335,7 @@ export default function DiaryPage({
       <header className="hd diary-header">
         <div>
           <span className="sec diary-subtitle">
-            {entries.length} {entries.length === 1 ? "Entry" : "Entries"} ·{" "}
+            {entries.length} {entries.length === 1 ? "entry" : "entries"} ·{" "}
             {format(
               view === "calendar" || view === "timeline" ? month : now,
               "MMMM yyyy",

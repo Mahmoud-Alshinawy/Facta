@@ -613,13 +613,13 @@ export default function NotesPage({
       {!focus && (
         <header className="hd notes-header">
           <div className="notes-heading">
-            <span className="sec">{live.length} notes</span>
+            <span className="sec">{live.length} {live.length === 1 ? "note" : "notes"}</span>
             <h1>Notes</h1>
           </div>
           <div className="seg" role="group" aria-label="Notes layout">
             <button
               type="button"
-              aria-pressed={view === "list"}
+              aria-pressed={view === "list" && !collapsed}
               onClick={() => {
                 setView("list");
                 setCollapsed(false);

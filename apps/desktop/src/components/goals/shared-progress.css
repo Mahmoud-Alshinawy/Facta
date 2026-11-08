@@ -286,8 +286,8 @@
 }
 .fx .shared-check-table thead th {
   font:
-    10px "Geist Mono",
-    monospace;
+    10px "Geist",
+    sans-serif;
   color: var(--subtle);
   text-align: center;
 }
@@ -344,8 +344,8 @@
 }
 .fx .shared-history-row .ctl {
   font:
-    10px "Geist Mono",
-    monospace;
+    10px "Geist",
+    sans-serif;
   padding: 0 6px;
   height: 28px;
 }
