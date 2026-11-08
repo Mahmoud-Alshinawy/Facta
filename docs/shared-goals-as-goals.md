@@ -1,8 +1,9 @@
 # Shared goals as goals: plan
 
-8 November 2026. **Approved.** Batch 1 (steps 1–4) is built and on `main`
-(5d94a26..09a1c27), waiting for review; batch 2 (steps 5–6) follows. See
-"Built in batch 1" at the end.
+8 November 2026. **Approved.** Batch 1 (steps 1–4) is built, reviewed and
+installed (5d94a26..7ef69b2). Batch 2 (steps 5–6) is built and on `main`
+(dda0d0f..a4576c2), waiting for review. See "Built in batch 1" and "Built in
+batch 2" at the end.
 
 Original plan text follows. Owner requests A (plain status text)
 and B (a shared goal shows up and acts like a normal goal). Builder B's
@@ -255,3 +256,23 @@ Steps 1–4 as planned, with these differences:
   check-in is saved for; the Gym/Custom launcher checks were removed with the
   launchers. `--ui` is 232 assertions (was 248) as a result; `--step6` is 569
   (one check split in two).
+
+## Built in batch 2 (8 November 2026)
+
+Steps 5–6 as planned, with these details:
+
+- **Goals > Mine:** shared rows appear under the All filter only (they have no
+  priority) and after your own goals in each section; the Board view, which is
+  arranged by priority, leaves them out. Done rows for earlier days are shown
+  with a static tick: a past check-in can't be changed from here. The Mine count
+  adds shared goals due today and not ticked.
+- **Calendar:** `DayGoal` carries `id`, `title`, `done` and `at` for both kinds,
+  so the views read those instead of `goal.*`. Shared goals are untimed, so they
+  sit in each view's untimed list. Earlier days show ticks from any week still
+  in the cache (about eight weeks back). Future days appear only for fixed-days
+  goals and only within the current week.
+- **Labels:** on the calendar a shared checkbox says "Check in: X" or "Undo
+  check-in: X" today and "Open group X" on other days (`dayGoalLabel`).
+- **Tests:** unit tests for `sharedMineRows`, `sharedDayGoals` and
+  `dayGoalLabel`; `--checkin-skew` checks Mine (two rows, Shared tag, opens the
+  group), the week view and the agenda on the real app.

@@ -1,9 +1,36 @@
 # Handoff: publishable key switch complete; legacy keys revoked
 
-## Current state (8 November 2026): shared goals as goals, batch 1 for review
+## Current state (8 November 2026): shared goals as goals, batch 2 for review
 
-- Batch 1 (steps 1–4 of docs/shared-goals-as-goals.md) is on `main`. **STOP for
-  review**; install for the owner after the review.
+- Batch 1 was approved with one should-fix, done in **7ef69b2**: an optional row
+  says "optional today", a met one "target met this week". Batch 1 plus that fix
+  is installed (14:25:53 / 14:25:58, one instance each). Smoke on the real
+  install: the Shared group shows "working out · with bobross · 1 of 4 this week
+  · optional today"; unticking and re-ticking from Today checked in and out, the
+  group page agreed both times, and the owner's check-in ended as it began.
+- Batch 2 (steps 5–6) is on `main`. **STOP for review; install after review.**
+  - dda0d0f Goals > Mine: `sharedMineRows` gives a Today row (checkbox checks
+    in), one recurring row per group with its plain status, and Done rows for
+    this week's earlier check-ins (read-only). Under the All filter only, after
+    your own goals, tagged Shared; E, Enter or the arrow button opens the group.
+    Not in the Board view (it is by priority).
+  - 1edb9c2 Calendar, agenda and Diary: `DayGoal` is personal or shared;
+    `sharedDayGoals` gives today, earlier checked-in days (any week still
+    cached) and, for fixed-days goals only, this week's scheduled days ahead.
+    `useDayGoals` feeds Agenda, Day, Week, Month and the Diary context;
+    `toggleDay` checks in today and opens the group on other days, which
+    `dayGoalLabel` says on the checkbox.
+  - a4576c2 `--checkin-skew` also checks Mine, the week view and the agenda.
+- Results on a4576c2: frozen install; tsc ×3; **503 desktop** / **222 calendar**
+  tests; both builds; both cargo checks; **17** widget Rust tests. Browser:
+  `--ui` **232**, `--checkin-skew` **39** (35 + 4), `--step6` **569**,
+  `--step6-review` **78**, `--deadlines` **48**, `--join-review` **11**.
+- Step 7 (widgets Tasks/Day) only if the owner asks.
+
+## 8 November 2026: shared goals as goals, batch 1 (historical)
+
+- Batch 1 (steps 1–4 of docs/shared-goals-as-goals.md) is on `main`; approved
+  after review with one should-fix (see above).
   - 5d94a26 Plain status text: Today and the Progress widget show no round
     dates, zone or UTC time while all is normal (`progressStatusLines`,
     `lastUpdatedText` in `@facta/calendar`); reasons, cards, group page, join
