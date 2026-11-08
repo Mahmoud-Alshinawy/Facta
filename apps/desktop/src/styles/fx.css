@@ -72,7 +72,7 @@
 .fx .seg button .mono{font-size:10.5px;color:var(--subtle)}
 .fx .seg button[aria-pressed="true"] .mono,.fx .seg button[aria-checked="true"] .mono{color:var(--bg);opacity:.7}
 .fx .cb{width:16px;height:16px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:5px;border:0;background:transparent;box-shadow:inset 0 0 0 1.5px var(--control-border);flex:0 0 auto;color:var(--accent-text)}
-.fx .cb[aria-checked="true"]{background:var(--accent);box-shadow:none}
+.fx .cb[aria-checked="true"],.fx .cb.on{background:var(--accent);box-shadow:none}
 .fx .cb:hover{box-shadow:inset 0 0 0 1.5px var(--accent)}
 .fx .cb[aria-checked="true"]:hover{box-shadow:none}
 .fx .evdot{width:7px;height:7px;border-radius:4px;background:var(--c);flex:0 0 auto}

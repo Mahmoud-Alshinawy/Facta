@@ -112,13 +112,22 @@ const shortDay = (date: string) =>
     .format(Date.parse(`${date}T12:00:00Z`))
     .replace(",", "");
 
-/** "with Ana, Ben +1 · 2 of 4 this week", plus the group's day when it isn't yours. */
-export function sharedSubline(item: SharedTodayItem, localDay: string): string {
-  const shown = item.others.slice(0, 2).join(", "),
-    more = item.others.length - 2;
+/** "with Ana, Ben +1 · 2 of 4 this week". */
+function weekText(others: string[], weekDone: number, weekTarget: number) {
+  const shown = others.slice(0, 2).join(", "),
+    more = others.length - 2;
   return [
-    item.others.length ? `with ${shown}${more > 0 ? ` +${more}` : ""}` : null,
-    `${item.weekDone} of ${item.weekTarget} this week`,
+    others.length ? `with ${shown}${more > 0 ? ` +${more}` : ""}` : null,
+    `${weekDone} of ${weekTarget} this week`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+/** The week so far, whether today is optional, and the group's day when it isn't yours. */
+export function sharedSubline(item: SharedTodayItem, localDay: string): string {
+  return [
+    weekText(item.others, item.weekDone, item.weekTarget),
     item.due === "met"
       ? "target met this week"
       : item.due === "optional"
@@ -141,4 +150,86 @@ export function combineDay(
     total: plan.total + counted.length,
     counted: counted.map((i) => i.id),
   };
+}
+
+/** A shared goal in Goals > Mine. Opening it shows the group, never a personal edit. */
+export interface SharedMineRow {
+  key: string;
+  section: "today" | "rules" | "done";
+  groupId: string;
+  title: string;
+  /** The group's date for today and done rows. */
+  date: string;
+  done: boolean;
+  /** Plain words: who it's with and the week so far, or why there is no week. */
+  status: string;
+  /** Set on today rows, which check in through the outbox. */
+  today?: SharedTodayItem;
+}
+
+/** Today rows, one recurring row per group you're in, and this week's earlier check-ins. */
+export function sharedMineRows(
+  state: SharedState,
+  userId: string,
+  now: number,
+  weekStart: string,
+): SharedMineRow[] {
+  if (state.userId !== userId || !state.cache) return [];
+  const s = state.cache.snapshot;
+  const todayItems = sharedTodayItems(state, userId, now);
+  const today: SharedMineRow[] = [],
+    rules: SharedMineRow[] = [],
+    done: SharedMineRow[] = [];
+  for (const g of s.groups.filter((g) => g.publishedAt && !g.deletedAt)) {
+    const view = sharedGroupView(state, userId, g.id, now);
+    if (!view) continue;
+    const item = todayItems.find((i) => i.groupId === g.id);
+    if (item)
+      today.push({
+        key: `shared:today:${g.id}`,
+        section: "today",
+        groupId: g.id,
+        title: g.name,
+        date: item.day,
+        done: item.done,
+        status: sharedSubline(item, item.day),
+        today: item,
+      });
+    const names = new Map(s.profiles.map((p) => [p.userId, p.displayName]));
+    const others = view.members
+      .filter((m) => m.userId !== userId && !m.leftAt)
+      .map((m) => names.get(m.userId) ?? "Someone");
+    rules.push({
+      key: `shared:rule:${g.id}`,
+      section: "rules",
+      groupId: g.id,
+      title: g.name,
+      date: view.today,
+      done: false,
+      status:
+        view.reason ??
+        weekText(
+          others,
+          item?.weekDone ?? view.ownScore?.completedDays ?? 0,
+          item?.weekTarget ?? view.effectiveTarget ?? 7,
+        ),
+    });
+    for (const c of s.checkins)
+      if (
+        c.membershipId === view.member.id &&
+        c.completed &&
+        c.checkinDate >= weekStart &&
+        c.checkinDate < view.today
+      )
+        done.push({
+          key: `shared:done:${g.id}:${c.checkinDate}`,
+          section: "done",
+          groupId: g.id,
+          title: g.name,
+          date: c.checkinDate,
+          done: true,
+          status: "Checked in",
+        });
+  }
+  return [...today, ...rules, ...done];
 }

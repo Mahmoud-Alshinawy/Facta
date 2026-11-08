@@ -3,7 +3,12 @@ import { emptySharedState, type SharedState } from "@/lib/sync/shared/state";
 import type { CheckinIntent } from "@/lib/sync/shared/outbox";
 import { mapSnapshot } from "./contracts";
 import { reconcileSnapshot } from "./cache";
-import { combineDay, sharedSubline, sharedTodayItems } from "./asGoals";
+import {
+  combineDay,
+  sharedMineRows,
+  sharedSubline,
+  sharedTodayItems,
+} from "./asGoals";
 import {
   sharedRpcFixture,
   SHARED_USER,
@@ -31,7 +36,7 @@ function state(edit: (rows: Rows) => void = () => {}): SharedState {
 const own = (rows: Rows) => rows.scores.find((r) => r.user_id === SHARED_USER)!;
 const checkedToday = (rows: Rows, date = "2026-10-20") =>
   rows.checkins.push({
-    id: "88888888-8888-4888-8888-888888888888",
+    id: crypto.randomUUID(),
     group_id: SHARED_GROUP,
     user_id: SHARED_USER,
     membership_id: SHARED_MEMBER,
@@ -207,5 +212,60 @@ describe("N of M done today", () => {
       total: 0,
       counted: [],
     });
+  });
+});
+
+describe("shared goals in Goals > Mine", () => {
+  // The viewer's week starts Monday 19 Oct.
+  const rows = (s: SharedState, now = SHARED_NOW) =>
+    sharedMineRows(s, SHARED_USER, now, "2026-10-19");
+
+  it("lists an active group today, as a recurring rule with its week, and nothing done yet", () => {
+    const out = rows(state());
+    expect(out.map((r) => [r.section, r.title])).toEqual([
+      ["today", "Exercise"],
+      ["rules", "Exercise"],
+    ]);
+    expect(out[0].today?.id).toBe(`shared:${SHARED_GROUP}`);
+    expect(out[1].status).toBe("with Person 1 · 0 of 2 this week");
+  });
+
+  it("lists this week's earlier check-ins as done, but not last week's", () => {
+    const out = rows(
+      state((r) => {
+        checkedToday(r, "2026-10-19");
+        checkedToday(r, "2026-10-18");
+      }),
+    );
+    expect(
+      out.filter((r) => r.section === "done").map((r) => [r.date, r.done]),
+    ).toEqual([["2026-10-19", true]]);
+  });
+
+  it("gives groups without an active week a plain status and no today row", () => {
+    const waiting = state((r) => {
+      r.rounds = [];
+      r.scores = [];
+      for (const m of r.memberships) m.eligible_round = "2026-10-26";
+    });
+    expect(rows(waiting).map((r) => [r.section, r.status])).toEqual([
+      ["rules", "Starts Mon 26 Oct 2026"],
+    ]);
+    const archived = state(
+      (r) =>
+        ((r.groups[0] as { archived_at: string | null }).archived_at =
+          "2026-10-20T08:00:00Z"),
+    );
+    expect(rows(archived).map((r) => [r.section, r.status])).toEqual([
+      ["rules", "Archived"],
+    ]);
+  });
+
+  it("leaves out a group you left", () => {
+    const left = structuredClone(state());
+    left.cache!.snapshot.memberships.find(
+      (m) => m.userId === SHARED_USER,
+    )!.leftAt = "2026-10-20T08:00:00Z";
+    expect(rows(left)).toEqual([]);
   });
 });

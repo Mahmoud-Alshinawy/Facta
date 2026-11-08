@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { addDays, format } from "date-fns";
-import { formatClock, parseClock } from "@facta/calendar";
+import { formatClock, parseClock, startOfWeekFor } from "@facta/calendar";
 import { toast } from "sonner";
 import { useGoals, type NewGoal } from "@/hooks/useGoals";
 import { useCreateGoal } from "@/hooks/useCreateGoal";
@@ -22,6 +22,7 @@ import { Check, Commit } from "../calendar/common";
 import { FootHints } from "../shell/Shortcuts";
 import {
   IconBell,
+  IconCheck,
   IconDown,
   IconEdit,
   IconPlus,
@@ -31,7 +32,15 @@ import {
 import GoalOverview from "./GoalOverview";
 import SharedGoalsPage from "./SharedGoalsPage";
 import { useSharedSyncEngine } from "@/hooks/useSync";
-import type { LinkIntent } from "@/lib/sharedGoals/deepLinks";
+import { useSharedGoals } from "@/hooks/useSharedGoals";
+import { appLinks, type LinkIntent } from "@/lib/sharedGoals/deepLinks";
+import { sharedMineRows, type SharedMineRow } from "@/lib/sharedGoals/asGoals";
+import { toggleSharedCheckin } from "@/lib/sharedGoals/checkin";
+
+/** Personal rows, plus shared goals derived from the shared cache. */
+type MineRow = GoalRow | SharedMineRow;
+const isShared = (row: MineRow): row is SharedMineRow => "groupId" in row;
+const openGroup = (id: string) => appLinks.receive({ kind: "group", id });
 
 const PRIORITIES: [GoalCategory, string, string, number][] = [
   ["must-do", "Must", "must", 3],
@@ -83,14 +92,33 @@ export default function GoalsPage({
     () => goalsMineSections(goals, now, prefs),
     [goals, now, prefs],
   );
+  const { data: sharedData } = useSharedGoals();
+  // Shared goals have no priority, so they show under All only, after your own.
+  const shared = useMemo(
+    () =>
+      sharedEngine && sharedData
+        ? sharedMineRows(
+            sharedData,
+            sharedEngine.userId,
+            now.getTime(),
+            format(startOfWeekFor(now, prefs.weekStart), "yyyy-MM-dd"),
+          )
+        : [],
+    [sharedEngine, sharedData, now, prefs.weekStart],
+  );
   const sections = allSections.map((section) => ({
     ...section,
-    rows: sortGoalRows(
-      section.rows.filter(
-        (row) => filter === "all" || row.goal.category === filter,
+    rows: [
+      ...sortGoalRows(
+        section.rows.filter(
+          (row) => filter === "all" || row.goal.category === filter,
+        ),
+        sort,
       ),
-      sort,
-    ),
+      ...(filter === "all"
+        ? shared.filter((row) => row.section === section.id)
+        : []),
+    ] as MineRow[],
   }));
   const boardRows = sortGoalRows(
     allSections
@@ -99,7 +127,7 @@ export default function GoalsPage({
       .filter((row) => filter === "all" || row.goal.category === filter),
     sort,
   );
-  const flat =
+  const flat: MineRow[] =
     view === "board"
       ? PRIORITIES.flatMap(([category]) =>
           boardRows.filter((row) => row.goal.category === category),
@@ -120,7 +148,20 @@ export default function GoalsPage({
     setLive(message);
     toast.message(message);
   };
-  const toggle = (row: GoalRow) => {
+  const toggle = (row: MineRow) => {
+    if (isShared(row)) {
+      if (!row.today?.canCheck) return openGroup(row.groupId);
+      if (!sharedEngine) return;
+      toggleSharedCheckin(sharedEngine, row.groupId, Date.now())
+        .then(() => {
+          if (navigator.onLine) void sharedEngine.syncNow();
+          setLive(
+            `${row.done ? "Check-in undone" : "Checked in"}: ${row.title}`,
+          );
+        })
+        .catch((e: Error) => say(e.message));
+      return;
+    }
     if (row.rule) {
       setDialog({ goal: row.goal });
       return;
@@ -155,7 +196,64 @@ export default function GoalsPage({
     return () => window.removeEventListener("keydown", onKey);
   }, [keyboardBlocked, dialog, tab]);
 
-  const rowContent = (row: GoalRow, board = false) => {
+  const sharedRowContent = (row: SharedMineRow) => (
+    <div
+      key={row.key}
+      id={`goal-${row.key}`}
+      role="option"
+      aria-selected={active?.key === row.key}
+      className={`gr${row.done ? " is-done" : ""}${active?.key === row.key ? " is-cur" : ""}`}
+      onClick={() => {
+        setCurrent(row.key);
+        listRef.current?.focus({ preventScroll: true });
+      }}
+      onDoubleClick={() => openGroup(row.groupId)}
+    >
+      {row.section === "today" ? (
+        <Check
+          done={row.done}
+          label={row.title}
+          ariaLabel={`${row.done ? "Undo check-in" : "Check in"}: ${row.title}`}
+          onToggle={() => {
+            toggle(row);
+            listRef.current?.focus({ preventScroll: true });
+          }}
+        />
+      ) : row.section === "rules" ? (
+        <span className="rule-icon">
+          <IconRepeat size={12} />
+        </span>
+      ) : (
+        <span className="cb on" role="img" aria-label="Checked in">
+          <IconCheck size={10} />
+        </span>
+      )}
+      <span className="goal-row-title">
+        <span className="tt">{row.title}</span>
+      </span>
+      <span className="chp">Shared</span>
+      <span className="sp" />
+      <button
+        type="button"
+        className="b b-icon edit"
+        tabIndex={-1}
+        aria-label={`Open group ${row.title}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          openGroup(row.groupId);
+        }}
+      >
+        <IconRight size={14} />
+      </button>
+      <span className="mt">
+        {row.section === "done"
+          ? format(new Date(row.date + "T12:00"), "EEE d MMM")
+          : row.status}
+      </span>
+    </div>
+  );
+  const rowContent = (row: MineRow, board = false) => {
+    if (isShared(row)) return sharedRowContent(row);
     const [, label, cls, bars] = PRIORITIES.find(
       ([category]) => category === row.goal.category,
     )!;
@@ -306,12 +404,12 @@ export default function GoalsPage({
           >
             Mine{" "}
             <span className="mono">
-              {
-                allSections
-                  .slice(0, 2)
-                  .flatMap((section) => section.rows)
-                  .filter((row) => !row.done).length
-              }
+              {allSections
+                .slice(0, 2)
+                .flatMap((section) => section.rows)
+                .filter((row) => !row.done).length +
+                shared.filter((row) => !row.done && row.today?.due === "due")
+                  .length}
             </span>
           </button>
           <button
@@ -518,7 +616,8 @@ export default function GoalsPage({
                     return;
                   } else if ((key === "e" || key === "enter") && active) {
                     e.preventDefault();
-                    setDialog({ goal: active.goal });
+                    if (isShared(active)) openGroup(active.groupId);
+                    else setDialog({ goal: active.goal });
                     return;
                   } else return;
                   e.preventDefault();
@@ -600,7 +699,7 @@ export default function GoalsPage({
       </div>
       <FootHints view="goals" />
       <div className="sr-only" aria-live="polite">
-        {active?.goal.title}
+        {active && (isShared(active) ? active.title : active.goal.title)}
         {live ? `. ${live}` : ""}
       </div>
       <GoalDialog
