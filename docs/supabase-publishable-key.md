@@ -1,7 +1,7 @@
 # Moving to a publishable key
 
-28 October 2026. **Code change done on `feat/shared-goals` (steps 1–3 below);
-no `.env` or project setting changed.** The owner steps further down remain.
+28 October 2026; updated 8 November 2026. The code change is merged. Owner
+steps 1–3 are done (see "Result of the switch" at the end); steps 4–6 remain.
 
 The desktop app used to read only `VITE_SUPABASE_URL` and
 `VITE_SUPABASE_ANON_KEY` (`apps/desktop/src/lib/supabase.ts`). The anon key is a legacy JWT signed with
@@ -50,3 +50,16 @@ publishable key (`sb_publishable_...`) is not a JWT and survives the revocation.
 6. **JWT Keys**: confirm ECC P-256 is the current key, then revoke the legacy
    HS256 secret. Access tokens it signed stop working; signed-in apps refresh
    their session automatically, because refresh tokens are not JWTs.
+
+## Result of the switch (8 November 2026)
+
+- Local `.env` now has `VITE_SUPABASE_PUBLISHABLE_KEY`. The existing
+  `VITE_SUPABASE_ANON_KEY` line already held the same publishable key rather than
+  the legacy anon JWT. `.env` stays git-ignored.
+- Both apps built from `main` (1ad6fbc) and installed on the owner's machine.
+  The built desktop JS contains the publishable key and no legacy anon JWT.
+- On the installed build the owner signed out and back in; a personal change
+  showed Synced, the shared card loaded and the shared group opened. Pass.
+- For step 4, `.env` already has no legacy key; only the GitHub secrets need
+  changing. Before step 5, make sure no install you use was built from an older
+  `.env` that still held the legacy anon key.

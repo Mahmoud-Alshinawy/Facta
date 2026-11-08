@@ -1,6 +1,27 @@
-# Handoff: shared goals and hardening merged; publishable key next
+# Handoff: publishable key in use; legacy keys next (owner)
 
-## Current state (7 November 2026): hardening merged
+## Current state (8 November 2026): publishable key installed
+
+- Step 3 of docs/supabase-publishable-key.md is done. The local `.env` (git-ignored,
+  not committed) has `VITE_SUPABASE_PUBLISHABLE_KEY`. Its existing
+  `VITE_SUPABASE_ANON_KEY` line already held the **same publishable key**, not
+  the legacy anon JWT, so `.env` has no legacy key at all.
+- Both apps built from `main` at 1ad6fbc and installed over the real install
+  (exit 0 at 08:58:45 and 08:58:49, no backup, one instance of each).
+- Built desktop JS: the new publishable key is present; **no legacy anon JWT**
+  (no HS256 or other JWT-shaped string). The widgets bundle carries no Supabase
+  key, as expected.
+- Owner check on the installed build: sign out, sign in, a small personal change
+  showed Synced, the shared card loaded and Goals → Shared opened the group:
+  **PASS**.
+- Next (owner, see the doc's steps 4–6): remove `VITE_SUPABASE_ANON_KEY` from
+  `.env` and the GitHub secrets, add the GitHub secret
+  `VITE_SUPABASE_PUBLISHABLE_KEY`, disable the legacy API keys, then revoke the
+  legacy HS256 secret. Any install built before `.env` switched to the
+  publishable key may still carry the legacy key and stops syncing at step 5.
+- Still open: confirm the live "Reset Password" template contains `{{ .Token }}`.
+
+## 7 November 2026: hardening merged (historical)
 
 - Builder B's `feat/hardening` is merged into `main` as a fast-forward at
   **20bd227** (six commits kept as they are): stricter content security policy,
