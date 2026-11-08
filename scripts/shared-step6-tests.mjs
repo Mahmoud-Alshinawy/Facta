@@ -82,14 +82,14 @@ export async function runSharedAcceptance({
   await page.clock.setFixedTime(new Date("2026-10-27T12:00:10Z"));
   await page.evaluate(() => window.acceptance.sync());
   await page
-    .locator('[data-progress-surface="today"] [data-score]')
+    .locator('[data-progress-surface="today"] [role="checkbox"]')
     .first()
     .waitFor();
   check(
     !(
       await page.locator('[data-progress-surface="today"]').innerText()
-    ).includes("Last updated"),
-    "a fresh read between display ticks remains confirmed",
+    ).includes("Not saved"),
+    "a fresh read between display ticks shows the shared goal as a normal row",
   );
   const nav = (name) =>
     page
@@ -254,9 +254,9 @@ export async function runSharedAcceptance({
       if (surface === "today")
         check(
           (await page
-            .locator('[data-progress-surface="today"] [data-score]')
-            .count()) >= 2,
-          "full Today production hook is bound to confirmed shared rows",
+            .locator('[data-progress-surface="today"] [role="checkbox"]')
+            .count()) >= 1,
+          "full Today production hook lists the confirmed shared goal as a row",
         );
       if (surface === "settings") {
         await nav("Settings");
@@ -377,9 +377,6 @@ export async function runSharedAcceptance({
     await reference.close();
     await nav("Today");
     const primaryToday = page.locator('[data-progress-surface="today"]');
-    await primaryToday
-      .getByLabel("Today shared group")
-      .selectOption(config.groupId);
     const personalBefore = await page.evaluate(() =>
       JSON.stringify(window.acceptance.personal()),
     );
@@ -400,12 +397,9 @@ export async function runSharedAcceptance({
       await peer.waitForFunction(() => !!window.acceptance);
       await peer.evaluate((id) => window.acceptance.actor(id), config.owner);
       const peerToday = peer.locator('[data-progress-surface="today"]');
-      await peerToday
-        .getByLabel("Today shared group")
-        .selectOption(config.groupId);
       await context.setOffline(true);
       await primaryToday
-        .getByRole("button", {
+        .getByRole("checkbox", {
           name: "Undo check-in: Client integration",
           exact: true,
         })
@@ -418,7 +412,7 @@ export async function runSharedAcceptance({
         "first device persists an offline pending undo without optimistic scores",
       );
       await peerToday
-        .getByRole("button", {
+        .getByRole("checkbox", {
           name: "Undo check-in: Client integration",
           exact: true,
         })
@@ -436,7 +430,7 @@ export async function runSharedAcceptance({
         config.groupId,
       );
       await peerToday
-        .getByRole("button", {
+        .getByRole("checkbox", {
           name: "Check in: Client integration",
           exact: true,
         })
@@ -467,20 +461,34 @@ export async function runSharedAcceptance({
         )) === personalBefore,
         "two-device shared conflict leaves personal records unchanged",
       );
+      const ownScore = await page.evaluate(
+        ({ owner, gid }) =>
+          window.acceptance
+            .snapshot()
+            .cache.snapshot.scores.find(
+              (s) =>
+                s.userId === owner &&
+                s.groupId === gid &&
+                s.roundStart === "2026-10-26",
+            )?.adherencePct,
+        { owner: config.owner, gid: config.groupId },
+      );
       check(
-        Number(
-          await primaryToday
-            .locator(`[data-score="${config.owner}"]`)
-            .getAttribute("data-percent"),
-        ) === 100,
+        ownScore === 100,
         "reconnecting device retains server-confirmed score after opposing intent conflict",
       );
+      const rowText = await primaryToday.innerText();
+      check(
+        rowText.includes("Not saved"),
+        `the Today row says the conflicting change was not saved (row: ${JSON.stringify(rowText.slice(0, 300))})`,
+      );
       await primaryToday
-        .getByRole("button", { name: "Open group", exact: true })
+        .getByRole("button", {
+          name: "Open group Client integration",
+          exact: true,
+        })
         .click();
-      await page
-        .getByRole("button", { name: "Discard", exact: true })
-        .click();
+      await page.getByRole("button", { name: "Discard", exact: true }).click();
       await page.waitForFunction(
         () => window.acceptance.snapshot().outbox.length === 0,
       );
@@ -504,16 +512,12 @@ export async function runSharedAcceptance({
     );
     await page.evaluate((id) => window.acceptance.actor(id), config.third);
     await nav("Today");
-    await page.getByLabel("Today shared group").selectOption(config.groupId);
     check(
-      await page
+      (await page
         .locator('[data-progress-surface="today"]')
-        .getByRole("button", {
-          name: "Check in: Client integration",
-          exact: true,
-        })
-        .isDisabled(),
-      "next-round member cannot check in early",
+        .getByRole("checkbox", { name: /Client integration$/ })
+        .count()) === 0,
+      "next-round member has no Today row, so cannot check in early",
     );
     await page.evaluate((id) => window.acceptance.actor(id), config.owner);
     check(
@@ -522,10 +526,11 @@ export async function runSharedAcceptance({
     );
     await page.evaluate(() => window.acceptance.sync());
     await nav("Today");
-    await page.getByLabel("Today shared group").selectOption(config.groupId);
     check(
-      (await primaryToday.innerText()).includes("Paused"),
-      "accepted-but-ineligible member cannot prevent the pause",
+      (await primaryToday
+        .getByRole("checkbox", { name: /Client integration$/ })
+        .count()) === 0,
+      "accepted-but-ineligible member cannot prevent the pause: the paused group leaves Today",
     );
     for (const theme of ["default", "midnight", "ember", "light"])
       await frame("paused-today", theme, 1100, 600);
@@ -535,8 +540,10 @@ export async function runSharedAcceptance({
     );
     await page.evaluate(() => window.acceptance.sync());
     check(
-      (await primaryToday.innerText()).includes("Archived"),
-      "archived Today state stays read-only with confirmed history",
+      (await primaryToday
+        .getByRole("checkbox", { name: /Client integration$/ })
+        .count()) === 0,
+      "an archived group has no Today row to check in from",
     );
     check(
       (await command(config.owner, "leave", { group_id: config.groupId })).ok,

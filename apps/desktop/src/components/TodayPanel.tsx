@@ -8,13 +8,14 @@ import { useNow } from "@/hooks/useNow";
 import { isCompletedToday, localDay, overdueGoals, planDay } from "@/lib/goalDates";
 import { buildTimeline, formatDuration } from "@/lib/eventTimeline";
 import type { GoalCategory } from "@/types/planner";
-import TodaySharedPanel from "./goals/TodaySharedPanel";
+import TodaySharedSection from "./goals/TodaySharedSection";
 import GoalRowView from "./GoalRowView";
+import { useSharedGoals } from "@/hooks/useSharedGoals";
+import { combineDay, sharedTodayItems } from "@/lib/sharedGoals/asGoals";
 import { LetGoStore } from "@/lib/letGo";
 
 interface TodayPanelProps {
   onOpenGroup: (id: string) => void;
-  onCreateShared: (template: "gym" | "custom") => void;
   onNewEvent: (date: string, time?: string) => void;
   onEditEvent: (event: CalendarEvent) => void;
 }
@@ -56,7 +57,7 @@ function letGoWithUndo(goal: Goal, deleteGoal: (id: string) => void) {
   });
 }
 
-export default function TodayPanel({ onNewEvent, onEditEvent, onOpenGroup, onCreateShared }: TodayPanelProps) {
+export default function TodayPanel({ onNewEvent, onEditEvent, onOpenGroup }: TodayPanelProps) {
   const { goals, updateGoal, deleteGoal, toggleComplete } = useGoals();
   const { getEventsForDate } = useEvents();
   const now = useNow();
@@ -64,6 +65,14 @@ export default function TodayPanel({ onNewEvent, onEditEvent, onOpenGroup, onCre
   const today = localDay(now);
 
   const plan = useMemo(() => planDay(goals, now), [goals, now]);
+  // Shared goals are derived from the shared cache here, never stored as goals.
+  const { engine, data } = useSharedGoals();
+  const shared = useMemo(
+    () => (engine && data ? sharedTodayItems(data, engine.userId, now.getTime()) : []),
+    [engine, data, now],
+  );
+  const day = combineDay(plan, shared);
+  const sharedCounted = shared.filter((i) => day.counted.includes(i.id));
   const overdue = useMemo(() => overdueGoals(goals, now).filter((g) => !hidden.has(g.id)), [goals, now, hidden]);
   const timeline = useMemo(() => buildTimeline(getEventsForDate(today), now), [getEventsForDate, today, now]);
 
@@ -79,12 +88,13 @@ export default function TodayPanel({ onNewEvent, onEditEvent, onOpenGroup, onCre
     if (willBeDone) popTimer.current = setTimeout(() => setPopId(null), 1_100);
   }
 
-  const left = plan.total - plan.done;
+  const left = day.total - day.done;
+  const nextTitle = plan.next?.title ?? sharedCounted.find((i) => !i.done)?.title;
   let subline: string;
-  if (plan.total === 0) subline = "Nothing planned for today yet. Add a goal to get going.";
+  if (day.total === 0) subline = "Nothing planned for today yet. Add a goal to get going.";
   else if (left === 0) subline = "Day closed. Every box ticked.";
-  else if (left === 1) subline = `One left: ${plan.next?.title}. Finish it.`;
-  else subline = `${left} left. Next up: ${plan.next?.title}.`;
+  else if (left === 1) subline = `One left: ${nextTitle}. Finish it.`;
+  else subline = `${left} left. Next up: ${nextTitle}.`;
 
   const firstOverdue = overdue[0];
   const yesterday = format(subDays(now, 1), "yyyy-MM-dd");
@@ -97,18 +107,18 @@ export default function TodayPanel({ onNewEvent, onEditEvent, onOpenGroup, onCre
           {/* Progress */}
           <div className="flex flex-col gap-3.5 rounded-2xl border border-border bg-card px-6 py-[22px]">
             <div className="flex flex-wrap items-baseline gap-2.5">
-              <span className="text-5xl font-medium leading-none tracking-[-0.04em] tabular">{plan.done}</span>
-              <span className="text-lg font-medium text-text-2">of {plan.total} done today</span>
-              {plan.total > 0 && left === 0 && (
+              <span className="text-5xl font-medium leading-none tracking-[-0.04em] tabular">{day.done}</span>
+              <span className="text-lg font-medium text-text-2">of {day.total} done today</span>
+              {day.total > 0 && left === 0 && (
                 <span className="ml-1 rounded-[7px] bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground">Clean sweep</span>
               )}
             </div>
-            {plan.total > 0 && (
+            {day.total > 0 && (
               <div aria-hidden="true" className="flex gap-1.5 pl-[3px]">
-                {plan.goals.map((g, i) => (
+                {Array.from({ length: day.total }, (_, i) => (
                   <span
-                    key={g.id}
-                    className={`h-2.5 flex-1 -skew-x-[18deg] rounded-[3px] transition-colors duration-300 ${i < plan.done ? "bg-primary" : "bg-raised-2"}`}
+                    key={i}
+                    className={`h-2.5 flex-1 -skew-x-[18deg] rounded-[3px] transition-colors duration-300 ${i < day.done ? "bg-primary" : "bg-raised-2"}`}
                   />
                 ))}
               </div>
@@ -178,11 +188,19 @@ export default function TodayPanel({ onNewEvent, onEditEvent, onOpenGroup, onCre
               </div>
             );
           })}
+          {engine && (
+            <TodaySharedSection
+              engine={engine}
+              items={shared}
+              localDay={today}
+              now={Date.now}
+              onOpenGroup={onOpenGroup}
+            />
+          )}
         </section>
 
-        {/* ===== Right: shared goals and events ===== */}
-        <aside aria-label="Shared goals and events" className="flex min-w-0 flex-[1_1_380px] flex-col gap-5">
-          <TodaySharedPanel onOpenGroup={onOpenGroup} onCreate={onCreateShared} now={now.getTime()} />
+        {/* ===== Right: events ===== */}
+        <aside aria-label="Today's events" className="flex min-w-0 flex-[1_1_380px] flex-col gap-5">
 
           <section className="flex flex-col gap-3.5 rounded-2xl border border-border bg-card px-[22px] py-5">
             <div className="flex items-center justify-between">

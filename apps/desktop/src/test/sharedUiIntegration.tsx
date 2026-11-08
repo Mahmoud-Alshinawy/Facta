@@ -12,7 +12,9 @@ import {
   parseSharedWidgetExport,
 } from "@facta/calendar";
 import { goalStats } from "@/lib/goalStats";
-import { TodaySharedContent } from "@/components/goals/TodaySharedPanel";
+import TodaySharedSection from "@/components/goals/TodaySharedSection";
+import { sharedTodayItems } from "@/lib/sharedGoals/asGoals";
+import { localDay } from "@/lib/goalDates";
 import ProgressCard from "../../../widgets/src/components/ProgressCard";
 import { SharedSync } from "@/lib/sync/shared/engine";
 import { sharedStorageKey } from "@/lib/sync/shared/state";
@@ -282,16 +284,15 @@ function Step5Surface({ engine }: { engine: SharedSync }) {
           }}
         >
           <div style={{ width: 420 }}>
-            <TodaySharedContent
-              engine={engine}
-              data={data}
-              now={clock}
-              onOpenGroup={open}
-              onCreate={(template) => {
-                setLaunch({ key: Date.now(), template });
-                setMode("shared");
-              }}
-            />
+            {data && (
+              <TodaySharedSection
+                engine={engine}
+                items={sharedTodayItems(data, engine.userId, clock)}
+                localDay={localDay(new Date(clock))}
+                now={actionNow}
+                onOpenGroup={open}
+              />
+            )}
           </div>
           <div style={{ width: 300, height: 480 }}>
             <ProgressCard

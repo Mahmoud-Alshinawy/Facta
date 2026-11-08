@@ -40,9 +40,15 @@ export async function runSharedStep5Tests({ context, url, fixture, root }) {
   const today = page.locator('[data-progress-surface="today"]'),
     widget = page.locator('[data-progress-surface="widget"]');
   const select = async (id) => {
-    await today.getByLabel("Today shared group").selectOption(id);
     await widget.getByLabel("Progress shared group").selectOption(id);
   };
+  // Today lists every shared goal as its own row; find one by its checkbox.
+  const row = (name) =>
+    today.locator("li", {
+      has: page.getByRole("checkbox", {
+        name: new RegExp(`^(Check in|Undo check-in): ${name}$`),
+      }),
+    });
   try {
     await page.goto(target.href);
     await page.waitForFunction(() => !!window.sharedUi);
@@ -83,17 +89,16 @@ export async function runSharedStep5Tests({ context, url, fixture, root }) {
     await page.evaluate(() => window.sharedUi.seedPersonal("2026-10-20"));
     await select(gym.id);
     check(
-      (await today.innerText()).includes("2026-10-21") &&
-        (await widget.innerText()).includes("2026-10-21") &&
-        (await today.innerText()).includes("2026-10-19 – 2026-10-25") &&
-        (await widget.innerText()).includes("2026-10-19 – 2026-10-25"),
-      "traveller Today and Progress use the group date, not the device's October 20",
+      (await row(gym.name).innerText()).includes("0 of 2 this week") &&
+        (await row(gym.name).innerText()).includes("for Wed 21 Oct") &&
+        !(await widget.innerText()).includes("2026-10-19 – 2026-10-25"),
+      "Los Angeles device on 20 Oct: Today lists the Riyadh group as a goal for its own day, 21 Oct, and no surface shows round dates",
     );
     const personalBefore = await page.evaluate(() =>
       JSON.stringify(window.sharedUi.personal()),
     );
     await today
-      .getByRole("button", { name: `Check in: ${gym.name}`, exact: true })
+      .getByRole("checkbox", { name: `Check in: ${gym.name}`, exact: true })
       .click();
     await page.waitForFunction(
       (gid) =>
@@ -103,6 +108,28 @@ export async function runSharedStep5Tests({ context, url, fixture, root }) {
             (s) => s.groupId === gid && s.completedDays === 1,
           ),
       gym.id,
+    );
+    check(
+      await page.evaluate(
+        (gid) =>
+          window.sharedUi
+            .snapshot()
+            .cache.snapshot.checkins.some(
+              (c) =>
+                c.groupId === gid &&
+                c.checkinDate === "2026-10-21" &&
+                c.completed,
+            ),
+        gym.id,
+      ),
+      "the Today check-in is saved for the group date, not the device's UTC October 20",
+    );
+    check(
+      (await row(gym.name).innerText()).includes("1 of 2 this week") &&
+        (await today
+          .getByRole("checkbox", { name: `Undo check-in: ${gym.name}` })
+          .getAttribute("aria-checked")) === "true",
+      "the Today row shows the server's week count and is ticked",
     );
     const parity = async (id) => {
       const scores = await page.evaluate(
@@ -114,15 +141,15 @@ export async function runSharedStep5Tests({ context, url, fixture, root }) {
             ),
         id,
       );
-      for (const surface of [today, widget])
-        for (const s of scores) {
-          const row = surface.locator(`[data-score="${s.userId}"]`);
-          check(
-            Number(await row.getAttribute("data-percent")) === s.adherencePct &&
-              Number(await row.getAttribute("data-rank")) === s.rank,
-            "Today/Progress exactly preserve server adherence and rank",
-          );
-        }
+      // Ranks live in the Progress widget and the group page, not on Today.
+      for (const s of scores) {
+        const rank = widget.locator(`[data-score="${s.userId}"]`);
+        check(
+          Number(await rank.getAttribute("data-percent")) === s.adherencePct &&
+            Number(await rank.getAttribute("data-rank")) === s.rank,
+          "Progress exactly preserves server adherence and rank",
+        );
+      }
     };
     await parity(gym.id);
     check(
@@ -185,20 +212,21 @@ export async function runSharedStep5Tests({ context, url, fixture, root }) {
       .click();
     check(
       (await widget.getByLabel("Progress shared group").inputValue()) ===
-        gym.id &&
-        (await today.getByLabel("Today shared group").inputValue()) === gym.id,
+        gym.id,
       "selection survives surface unmount/remount",
     );
-    await select(other.id);
     check(
-      (await widget.innerText()).includes("2026-10-20") &&
-        (await today.innerText()).includes("2026-10-20"),
-      "changing groups consistently uses the New York group date",
+      (await row(other.name).innerText()).includes("0 of 2 this week") &&
+        !(await row(other.name).innerText()).includes(" for "),
+      "the New York group shares the device's 20 October, so its row names no other day",
     );
     await select(gym.id);
     await isolated.setOffline(true);
     await today
-      .getByRole("button", { name: `Undo check-in: ${gym.name}`, exact: true })
+      .getByRole("checkbox", {
+        name: `Undo check-in: ${gym.name}`,
+        exact: true,
+      })
       .click();
     await page.waitForFunction(
       () => window.sharedUi.snapshot().outbox.length === 1,
@@ -217,16 +245,15 @@ export async function runSharedStep5Tests({ context, url, fixture, root }) {
     await parity(gym.id);
     await clock("2026-10-20T23:34:00Z");
     check(
-      (await widget.innerText()).includes("Last updated") &&
-        (await today.innerText()).includes("Last updated"),
-      "retained scores age stale consistently without a new read",
+      (await widget.innerText()).includes("Last updated"),
+      "retained scores age stale without a new read",
     );
     await select(waiting.id);
     check(
       (await widget.innerText()).includes("Waiting") &&
         (await widget.locator("[data-score]").count()) === 0 &&
-        (await today.locator("[data-score]").count()) === 0,
-      "waiting group has no invented zero-score leaderboard",
+        (await row(waiting.name).count()) === 0,
+      "waiting group has no invented zero-score leaderboard and no Today row",
     );
     await select(gym.id);
     await clock("2026-10-21T09:00:00Z");
@@ -234,11 +261,8 @@ export async function runSharedStep5Tests({ context, url, fixture, root }) {
     await sync();
     check(
       (await widget.innerText()).includes("Paused") &&
-        (await today.innerText()).includes("Paused") &&
-        (await today
-          .getByRole("button", { name: `Check in: ${gym.name}`, exact: true })
-          .isDisabled()),
-      "pause is consistent and Today stops accepting check-ins",
+        (await row(gym.name).count()) === 0,
+      "a paused group leaves Today, so it stops accepting check-ins",
     );
     await mkdir(path.join(root, "tmp/shared-goals-runtime/step5-shots"), {
       recursive: true,
@@ -288,7 +312,7 @@ export async function runSharedStep5Tests({ context, url, fixture, root }) {
     check(
       (await widget.innerText()).includes("Group unavailable") &&
         !(await widget.innerText()).includes(gym.name) &&
-        !(await today.innerText()).includes(gym.name),
+        !(await today.allTextContents()).join().includes(gym.name),
       "leave removes rows/names and leaves the old selection unavailable rather than switching silently",
     );
     check(
@@ -296,50 +320,6 @@ export async function runSharedStep5Tests({ context, url, fixture, root }) {
         (g) => g.groupId === gym.id,
       ),
       "confirmed leave removes the group from the next durable export",
-    );
-    await actor(config.seats[0]);
-    for (const g of await page.evaluate(
-      () => window.sharedUi.snapshot().cache.snapshot.groups,
-    ))
-      await command(config.seats[0], "leave", { group_id: g.id });
-    await sync();
-    await today
-      .getByRole("button", { name: "Start shared Gym", exact: true })
-      .click();
-    await page
-      .getByRole("heading", { name: "New shared goal", exact: true })
-      .waitFor();
-    check(
-      (await page
-        .getByRole("button", {
-          name: "One more day: Your days per week",
-          exact: true,
-        })
-        .count()) === 1,
-      "Today Gym launcher opens the preselected Gym details",
-    );
-    await page.keyboard.press("Escape");
-    await page
-      .getByRole("button", { name: "Test Today surface", exact: true })
-      .click();
-    await today
-      .getByRole("button", { name: "Start shared Custom", exact: true })
-      .click();
-    await page
-      .getByRole("heading", { name: "New shared goal", exact: true })
-      .waitFor();
-    await page.getByRole("radio", { name: "Every day", exact: true }).waitFor();
-    check(
-      (await page
-        .getByRole("button", {
-          name: "One more day: Your days per week",
-          exact: true,
-        })
-        .count()) === 0 &&
-        (await page
-          .getByRole("radio", { name: "Every day", exact: true })
-          .count()) > 0,
-      "Today Custom launcher opens Custom without a Gym target",
     );
     await actor(null);
     check(
@@ -354,7 +334,7 @@ export async function runSharedStep5Tests({ context, url, fixture, root }) {
       checks: [
         "Today/Progress/Shared SQL parity, group-local traveller dates, independent personal completion and stats",
         "read-only widget rows, bounded token-free durable export, stable selection/remount, pending/stale/waiting/paused and account/leave cleanup",
-        "Today Gym/Custom launchers and mounted group navigation",
+        "Today rows: group date, week count, offline state, waiting/paused absent; mounted group navigation",
       ],
     };
   } catch (e) {

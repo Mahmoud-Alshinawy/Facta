@@ -54,7 +54,6 @@ export async function runSharedStep5ReviewTests({
   const today = page.locator('[data-progress-surface="today"]');
   const widget = page.locator('[data-progress-surface="widget"]');
   const select = async (id) => {
-    await today.getByLabel("Today shared group").selectOption(id);
     await widget.getByLabel("Progress shared group").selectOption(id);
   };
   try {
@@ -97,7 +96,7 @@ export async function runSharedStep5ReviewTests({
     check(left.ok, "peer pauses the group after Today rendered");
     await clock("2026-10-20T09:00:45Z", false);
     await today
-      .getByRole("button", { name: `Check in: ${paused.name}`, exact: true })
+      .getByRole("checkbox", { name: `Check in: ${paused.name}`, exact: true })
       .click();
     await page.waitForFunction((id) => {
       const s = window.sharedUi.snapshot();
@@ -143,19 +142,24 @@ export async function runSharedStep5ReviewTests({
     check(previous.ok, "previous group-local day is confirmed checked");
     await sync();
     await today
-      .getByRole("button", {
+      .getByRole("checkbox", {
         name: `Undo check-in: ${daily.name}`,
         exact: true,
       })
       .waitFor();
     await clock("2026-10-20T21:00:01Z", false);
     check(
-      (await today.innerText()).includes("2026-10-20"),
+      (await today
+        .getByRole("checkbox", {
+          name: `Undo check-in: ${daily.name}`,
+          exact: true,
+        })
+        .count()) === 1,
       "Today display has not refreshed across Riyadh midnight",
     );
     await control({ action: "drop_command" });
     await today
-      .getByRole("button", {
+      .getByRole("checkbox", {
         name: `Undo check-in: ${daily.name}`,
         exact: true,
       })
@@ -220,7 +224,8 @@ export async function runSharedStep5ReviewTests({
             requestAnimationFrame(() => requestAnimationFrame(r)),
           ),
       );
-      for (const surface of [today, widget]) {
+      // Ranks live in the Progress widget and the group page, not on Today.
+      for (const surface of [widget]) {
         for (const [user, high] of [
           [config.owner, true],
           [config.other, false],
@@ -260,7 +265,7 @@ export async function runSharedStep5ReviewTests({
     ).length;
     await clock("2026-10-25T21:00:01Z", false);
     await today
-      .getByRole("button", { name: `Check in: ${daily.name}`, exact: true })
+      .getByRole("checkbox", { name: `Check in: ${daily.name}`, exact: true })
       .click();
     await today
       .getByRole("status")
@@ -280,7 +285,7 @@ export async function runSharedStep5ReviewTests({
       assertions,
       checks: [
         "mounted post-pause SQL rejection, frozen-display midnight/round transitions, immutable lost-reply replay",
-        "actual SQL 100% and 0% rows: Today/Progress computed green/grey colors in Midnight and Ember",
+        "actual SQL 100% and 0% rows: Progress computed green/grey colors in Midnight and Ember",
       ],
     };
   } catch (e) {
@@ -298,7 +303,7 @@ export async function runSharedStep5ReviewTests({
     );
     console.error(
       "Step 5 review visible:",
-      (await today.innerText()).slice(0, 1800),
+      (await today.allTextContents()).join(" | ").slice(0, 1800),
     );
     throw e;
   } finally {
