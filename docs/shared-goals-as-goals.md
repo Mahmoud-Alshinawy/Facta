@@ -1,6 +1,10 @@
 # Shared goals as goals: plan
 
-8 November 2026. Plan only; no code yet. Owner requests A (plain status text)
+8 November 2026. **Approved.** Batch 1 (steps 1–4) is built and on `main`
+(5d94a26..09a1c27), waiting for review; batch 2 (steps 5–6) follows. See
+"Built in batch 1" at the end.
+
+Original plan text follows. Owner requests A (plain status text)
 and B (a shared goal shows up and acts like a normal goal). Builder B's
 `feat/ui-polish` touches `TodayPanel`, `SharedProgress` and the widget files and
 merges first; this work starts from `main` after that merge.
@@ -224,3 +228,26 @@ depend on each other.
   contains the local stack's publishable key in 1 file and its anon JWT in
   none, so the new `define` is applied. The native app itself was not launched
   (needs Docker).
+
+## Built in batch 1 (8 November 2026)
+
+Steps 1–4 as planned, with these differences:
+
+- **Status lines** live in `@facta/calendar` (`progressStatusLines`,
+  `lastUpdatedText`) so the Progress widget and the desktop share them, with
+  their own tests (run in two zones).
+- **Item shape:** refused check-ins are carried as `failed` on the item and shown
+  with the existing compact Try again / Discard panel, which already handles the
+  dated-ahead Discard-only case; there is no separate `datedAhead` state.
+- **Deadlines on Today:** a row for a group in another zone shows the check-in
+  close and week end in the viewer's clock (the earlier decision), under the
+  week count. A viewer in the group's zone sees none.
+- **Header count:** the Shared group header says how many shared goals are
+  ticked of those listed; the big "N of M" uses `combineDay`.
+- **Test page:** the `--ui` page mounts the same `TodaySharedSection`, capturing
+  check-ins on its live action clock like the app's `Date.now`.
+- **Suite changes:** Today no longer shows ranks, so the Today-side rank
+  comparisons became checks on the row's "x of y this week" and on the date the
+  check-in is saved for; the Gym/Custom launcher checks were removed with the
+  launchers. `--ui` is 232 assertions (was 248) as a result; `--step6` is 569
+  (one check split in two).

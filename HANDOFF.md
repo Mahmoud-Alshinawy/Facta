@@ -1,6 +1,37 @@
 # Handoff: publishable key switch complete; legacy keys revoked
 
-## Current state (8 November 2026): ui-polish merged
+## Current state (8 November 2026): shared goals as goals, batch 1 for review
+
+- Batch 1 (steps 1–4 of docs/shared-goals-as-goals.md) is on `main`. **STOP for
+  review**; install for the owner after the review.
+  - 5d94a26 Plain status text: Today and the Progress widget show no round
+    dates, zone or UTC time while all is normal (`progressStatusLines`,
+    `lastUpdatedText` in `@facta/calendar`); reasons, cards, group page, join
+    and people screens reworded.
+  - e640549 `sharedTodayItems`, `combineDay`, `sharedSubline` in
+    `lib/sharedGoals/asGoals.ts`: derived from the shared cache, never stored.
+  - ffd0887 `GoalRowView` (one row for personal and shared goals),
+    `SharedGoalRow`, `toggleSharedCheckin` + `useSharedCheckin` (the group
+    page's check-in uses them too).
+  - db4b436 Restores ui-polish's sentence-case "Next" marker, which the row
+    extraction had briefly undone.
+  - 09a1c27 Today: a "Shared" group below the priority groups; the right-hand
+    card, its group picker and its Start Gym/Custom launchers are gone.
+- Choices made while building, for the reviewer:
+  - Rows for a group in another zone keep the local-time deadline lines (the
+    earlier decision), under the week count; same-zone viewers see none.
+  - Paused, waiting, archived and next-round groups have no Today row.
+  - The browser suites drive the rows. Today-side rank comparisons became
+    checks on the row's week count and the check-in's saved date; the Today
+    Gym/Custom launcher checks were removed with the launchers.
+- Results on 09a1c27: frozen install; tsc ×3; **494 desktop** (480 + 14) /
+  **222 calendar** (212 + 10) tests; both builds; both cargo checks; **17**
+  widget Rust tests. Browser: `--ui` **232** (was 248), `--checkin-skew` **35**,
+  `--step6` **569** (was 567), `--step6-review` **78**, `--deadlines` **48**,
+  `--join-review` **11**.
+- Next: batch 2 (Goals → Mine rows; calendar/agenda/Diary) after review.
+
+## 8 November 2026: ui-polish merged (historical)
 
 - Builder B's `feat/ui-polish` (reviewed at 4473606, 8 commits) is on `main`,
   rebased onto b76dd51 and fast-forwarded to **fdd2e0f**; commits kept as they
@@ -12,7 +43,7 @@
   drag handles, with moves kept clear of Windows snap.
 - Checks on fdd2e0f: frozen install; tsc ×3; **480 desktop** / **212 calendar**
   tests; both builds; both cargo checks; **17** widget Rust tests.
-- Next: batch 1 of docs/shared-goals-as-goals.md (approved; steps 1–4).
+- Then batch 1 of docs/shared-goals-as-goals.md (above).
 
 ## Shared goals as goals (plan approved, 8 November 2026)
 
