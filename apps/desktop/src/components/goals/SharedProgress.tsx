@@ -13,7 +13,7 @@ import {
 } from "@/lib/sharedGoals/creation";
 import { SharedIcon } from "./SharedParts";
 import { addDays } from "@/lib/sharedGoals/dates";
-import { groupDeadlineText } from "@facta/calendar";
+import { groupDeadlineText, lastUpdatedText } from "@facta/calendar";
 import { usePrefs } from "@/hooks/usePrefs";
 import {
   CHECKIN_FROM_AHEAD,
@@ -57,10 +57,7 @@ export function PendingReview({
       {!compact && (
         <>
           <h2>Pending changes</h2>
-          <p className="shared-note">
-            Checkmarks can be pending. Scores and ranks remain server-confirmed
-            until sync.
-          </p>
+          <p className="shared-note">Scores update after your changes sync.</p>
         </>
       )}
       {unavailable && (
@@ -220,7 +217,7 @@ export function SharedRanking({
   return (
     <div
       role="list"
-      aria-label="Server-confirmed leaderboard"
+      aria-label="Leaderboard"
       className={compact ? "shared-ranking compact" : "shared-ranking"}
     >
       {rows.map((r) => (
@@ -257,11 +254,7 @@ export function SharedRanking({
           <span className="mono pc">{percent(r.adherencePct)}</span>
         </div>
       ))}
-      {!rows.length && (
-        <p className="shared-note">
-          No confirmed scored round. No ranks or zero scores are assigned.
-        </p>
-      )}
+      {!rows.length && <p className="shared-note">No scores yet.</p>}
       {compact && view.scores.length > 4 && (
         <span className="shared-note">
           +{view.scores.length - 4} more in detail
@@ -303,7 +296,7 @@ function RoundPhase({ view }: { view: SharedGroupView }) {
   return (
     <span className="shared-note">
       {view.phase === "active"
-        ? "Active round"
+        ? "This week"
         : view.phase === "waiting"
           ? "Waiting"
           : view.phase === "paused"
@@ -312,19 +305,40 @@ function RoundPhase({ view }: { view: SharedGroupView }) {
               ? "Archived"
               : view.phase === "draft"
                 ? "Private draft"
-                : "Current lifecycle unconfirmed"}
-      {view.round && (
+                : "Can't confirm this week yet. Connect to update."}
+      {view.round && view.phase !== "unconfirmed" && (
         <>
           {" "}
           · {dateLabel(view.round.roundStart)} –{" "}
           {dateLabel(addDays(view.round.roundEnd, -1))}
           {!view.current || view.round.roundStart !== view.current.roundStart
-            ? " · historical"
+            ? " (past week)"
             : ""}
         </>
       )}
     </span>
   );
+}
+/** Nothing while scores are fresh; otherwise what's waiting and when they were read. */
+export function UpdatedNote({
+  view,
+  now,
+}: {
+  view: SharedGroupView;
+  now: number;
+}) {
+  const { timeFormat } = usePrefs();
+  const parts = [
+    ...(view.intentions.length > view.failed.length
+      ? ["Your check-in will sync soon."]
+      : []),
+    ...((view.stale || !navigator.onLine) && view.confirmedAt !== null
+      ? [lastUpdatedText(view.confirmedAt, { now, timeFormat })]
+      : []),
+  ];
+  return parts.length ? (
+    <div className="shared-note">{parts.join(" · ")}</div>
+  ) : null;
 }
 export function SharedOverview({
   engine,
@@ -352,10 +366,10 @@ export function SharedOverview({
     <>
       <section className="shared-overview" aria-label="Shared goals summary">
         <div>
-          <span className="mono sec">Active rounds</span>
+          <span className="mono sec">Active this week</span>
           <strong>{active.length}</strong>
           <small>
-            {active.map((v) => v.group.name).join(", ") || "No active rounds"}
+            {active.map((v) => v.group.name).join(", ") || "None active"}
           </small>
         </div>
         <div>
@@ -371,7 +385,7 @@ export function SharedOverview({
               </div>
             ))}
           {!active.some((v) => v.ownScore) && (
-            <small>No current eligible rank</small>
+            <small>Not ranked this week</small>
           )}
         </div>
         <div>
@@ -382,16 +396,14 @@ export function SharedOverview({
           </strong>
           <small>
             {left.map((v) => v.group.name).join(", ") ||
-              (due.length
-                ? "All checked in (pending changes labelled below)"
-                : "Nothing due today")}
+              (due.length ? "All checked in" : "Nothing due today")}
           </small>
         </div>
       </section>
       {!!views.length && (
         <div className="shared-section-title shared-goals-heading">
           <h2>Shared goals</h2>
-          <span className="shared-note">Each goal has its own round start</span>
+          <span className="shared-note">Each goal has its own week start</span>
         </div>
       )}
       <div className="shared-cards">
@@ -453,23 +465,12 @@ export function SharedOverview({
                   now={now}
                 />
               </div>
-              <div className="shared-note">
-                {v.stale || v.phase !== "active"
-                  ? "Last confirmed"
-                  : "Confirmed"}
-                :{" "}
-                {v.confirmedAt
-                  ? new Date(v.confirmedAt).toLocaleString()
-                  : "No round coverage"}
-                {v.intentions.length
-                  ? " · Pending changes; ranks remain server-confirmed"
-                  : ""}
-              </div>
+              <UpdatedNote view={v} now={now()} />
               <div className="shared-actions">
                 <small className="flex-1 shared-note">
                   {prior.length
-                    ? `Previous round average ${percent(prior[0].groupAveragePct)}`
-                    : "No previous confirmed round"}
+                    ? `Last week's average ${percent(prior[0].groupAveragePct)}`
+                    : "No previous week"}
                 </small>
                 {v.group.ownerId === engine.userId && !v.group.archivedAt && (
                   <button

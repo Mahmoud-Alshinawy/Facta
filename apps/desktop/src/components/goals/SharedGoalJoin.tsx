@@ -236,7 +236,7 @@ export default function SharedGoalJoin({
                 )}
                 <Callout>
                   {preview.published
-                    ? "Joining is explicit. Your eligibility starts at the server-confirmed round boundary. You will see the roster and everyone's targets after joining."
+                    ? "Nothing happens until you press Join. You start with the next week, and you'll see everyone in the group and their targets after joining."
                     : "This draft has not been published. The owner must publish it before you can join."}
                 </Callout>
                 {full && <p role="status">This goal is full (8 people).</p>}

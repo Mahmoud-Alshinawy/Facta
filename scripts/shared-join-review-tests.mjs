@@ -95,7 +95,7 @@ export async function runJoinReviewTests({ page, url, fixture }) {
   await button("Join Join review").click();
   await text("You start with the first round on Mon 19 Oct 2026.").waitFor();
   check(
-    (await text("Your eligibility starts").count()) === 0,
+    (await text("You start the week of").count()) === 0,
     "an early joiner is not told about a later boundary",
   );
   await route(`facta://group/${draft.groupId}`);
@@ -103,7 +103,7 @@ export async function runJoinReviewTests({ page, url, fixture }) {
     "That is the group's first round, so you start with it.",
   ).waitFor();
   check(
-    (await text("earlier days are not missed").count()) === 0,
+    (await text("earlier days don't count against you").count()) === 0,
     "group detail does not read as if the early joiner were late",
   );
 
@@ -112,13 +112,13 @@ export async function runJoinReviewTests({ page, url, fixture }) {
   await actor(config.other);
   await route(link);
   await button("Join Join review").click();
-  await text("Your eligibility starts Mon 26 Oct 2026.").waitFor();
+  await text("You start the week of Mon 26 Oct 2026.").waitFor();
   check(
     (await text("You start with the first round").count()) === 0,
     "a later joiner is told about the next round",
   );
   await route(`facta://group/${draft.groupId}`);
-  await text("earlier days are not missed").waitFor();
+  await text("earlier days don't count against you").waitFor();
   check(
     (await text("That is the group's first round").count()) === 0,
     "group detail keeps the later-joiner wording",

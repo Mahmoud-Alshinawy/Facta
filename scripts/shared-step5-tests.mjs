@@ -204,8 +204,8 @@ export async function runSharedStep5Tests({ context, url, fixture, root }) {
       () => window.sharedUi.snapshot().outbox.length === 1,
     );
     check(
-      (await widget.innerText()).includes("Pending changes") &&
-        (await today.innerText()).includes("Pending changes"),
+      (await widget.innerText()).includes("Not synced yet") &&
+        (await today.innerText()).includes("Not synced yet"),
       "offline desired-state checkmark is labelled pending on both surfaces",
     );
     await parity(gym.id);
@@ -217,8 +217,8 @@ export async function runSharedStep5Tests({ context, url, fixture, root }) {
     await parity(gym.id);
     await clock("2026-10-20T23:34:00Z");
     check(
-      (await widget.innerText()).includes("Last confirmed") &&
-        (await today.innerText()).includes("Last confirmed"),
+      (await widget.innerText()).includes("Last updated") &&
+        (await today.innerText()).includes("Last updated"),
       "retained scores age stale consistently without a new read",
     );
     await select(waiting.id);

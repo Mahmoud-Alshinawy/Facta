@@ -1,6 +1,7 @@
 import type { SharedGroup, SharedMembership } from "@/types/sharedGoals";
 import type { SharedState } from "@/lib/sync/shared/state";
 import { addDays, groupDate, roundStart, roundInterval } from "./dates";
+import { dateLabel } from "./creation";
 
 export function roundConfirmation(
   state: SharedState,
@@ -186,17 +187,17 @@ export function sharedGroupView(
       })
     : [];
   const reason = group.archivedAt
-    ? "Archived · read only"
+    ? "Archived"
     : !member.eligibleRound
-      ? "Not published"
+      ? "Draft"
       : slot === null || member.eligibleRound > slot
-        ? `Starts ${member.eligibleRound}`
+        ? `Starts ${dateLabel(member.eligibleRound)}`
         : phase === "paused"
-          ? "Paused · waiting for an eligible boundary"
+          ? "Paused. It restarts at the start of a week with two people in."
           : phase === "waiting"
-            ? "Waiting for two eligible members at a round boundary"
+            ? "Starts once two people have joined."
             : !active
-              ? "Reconnect to confirm the current round"
+              ? "Connect to the internet to update this group."
               : failed.length
                 ? "A check-in wasn't saved. Open the group to fix it."
                 : rest

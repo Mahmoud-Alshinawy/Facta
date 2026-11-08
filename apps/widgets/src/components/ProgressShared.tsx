@@ -1,5 +1,5 @@
 import {
-  groupDeadlineText,
+  progressStatusLines,
   type SharedProgress,
   type SharedWidgetExport,
   type TimeFormat,
@@ -47,7 +47,7 @@ export function ProgressScores({
   return (
     <ol
       className={`progress-scores${counts ? " with-counts" : ""}`}
-      aria-label="Server-confirmed leaderboard"
+      aria-label="Leaderboard"
     >
       {group.rows.map((r) => (
         <li
@@ -105,51 +105,13 @@ export function ProgressState({
   timeFormat: TimeFormat;
   now?: number;
 }) {
-  const deadlines =
-    group.phase === "active" && group.round?.active
-      ? groupDeadlineText({
-          today: group.today,
-          timeZone: group.timeZone,
-          roundEnd: group.round.end,
-          now,
-          timeFormat,
-        })
-      : [];
   return (
     <div className="progress-status" role="status">
-      <span>
-        {group.phase === "unconfirmed"
-          ? "Current round unconfirmed"
-          : group.phase === "active"
-            ? "Active round"
-            : group.phase[0].toUpperCase() + group.phase.slice(1)}{" "}
-        · {group.today} · {group.timeZone}
-      </span>
-      {group.round && (
-        <span>
-          {group.round.active ? "Round" : "Historical round"}{" "}
-          {group.round.start} –{" "}
-          {new Date(Date.parse(`${group.round.end}T00:00:00Z`) - 86_400_000)
-            .toISOString()
-            .slice(0, 10)}
-        </span>
-      )}
-      {deadlines.map((line) => (
-        <span key={line} data-deadline>
-          {line}
+      {progressStatusLines(group, { now, timeFormat }).map((line) => (
+        <span key={line.text} data-deadline={line.deadline || undefined}>
+          {line.text}
         </span>
       ))}
-      {group.reason && <span>{group.reason}</span>}
-      {!group.rows.length && (
-        <span>No confirmed scored round. No ranks assigned.</span>
-      )}
-      <span>
-        {group.pending ? "Pending changes · " : ""}
-        {group.stale ? "Last confirmed" : "Confirmed"}
-        {group.confirmedAt !== null
-          ? ` ${new Date(group.confirmedAt).toISOString().slice(0, 16).replace("T", " ")} UTC`
-          : ": no score coverage"}
-      </span>
     </div>
   );
 }
