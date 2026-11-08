@@ -136,6 +136,10 @@ installed **both** integrated apps:
 5. Restore whichever setting you prefer. Tell the reviewer about any mismatch,
    error message, missing widget, or duplicated widget.
 
+Result, 8 November 2026 (owner, installed build): pass. Restart as is started
+Facta in the tray plus widgets with one widget tray icon; switch off and restart
+started neither; switch on and restart started both.
+
 ### Startup commit checks
 
 | Check | Result |

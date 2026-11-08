@@ -11,9 +11,13 @@
   - Supabase: legacy JWT-based API keys (anon, service_role) disabled; current
     JWT signing key confirmed ECC P-256; legacy HS256 secret revoked. Facta kept
     syncing after each step.
+- Owner Windows hand-checks on the installed hardening build: **PASS**. Restart
+  as is: Facta in the tray plus widgets, one widget tray icon. Startup switch off
+  and restart: neither starts. Switch on and restart: both start.
+- Closed: the live "Reset Password" email template now contains `{{ .Token }}`,
+  so the in-app reset code arrives.
 - Next on `main`: remove the now-unused anon-key fallback from the code, the
   release workflow and the docs.
-- Still open: confirm the live "Reset Password" template contains `{{ .Token }}`.
 
 ## 8 November 2026: publishable key installed (historical)
 
