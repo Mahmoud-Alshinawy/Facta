@@ -34,7 +34,7 @@ export default function GoalRowView({
   /** Makes the title a button, e.g. to open a shared group. */
   onOpen?: () => void;
   openLabel?: string;
-  /** Before the title, e.g. the NEXT marker. */
+  /** Before the title, e.g. the Next marker. */
   lead?: ReactNode;
   /** At the end of the row, e.g. the repeat tag, time and bell. */
   trailing?: ReactNode;

@@ -254,7 +254,7 @@ function GoalRow({ goal, done, isNext, popping, onToggle, onToggleBell }: {
       isNext={isNext}
       popping={popping}
       lead={isNext && (
-        <span className="shrink-0 rounded-[5px] bg-raised-2 px-1.5 py-[3px] font-mono text-[10px] font-medium tracking-[0.08em] text-foreground">NEXT</span>
+        <span className="shrink-0 rounded-[5px] bg-raised-2 px-1.5 py-[3px] text-[10px] font-medium text-subtle">Next</span>
       )}
       trailing={
         <>
