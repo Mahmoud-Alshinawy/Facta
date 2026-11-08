@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PORT: '1420'
+  BASE_PATH: '/'
+
+jobs:
+  checks:
+    name: Windows checks
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # pnpm 11 requires Node 22; set it up before installing pnpm.
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Restore pnpm cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Restore Rust caches
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            apps/desktop/src-tauri -> target
+            apps/widgets/src-tauri -> target
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck workspace
+        run: pnpm typecheck
+
+      - name: Typecheck desktop
+        run: pnpm --dir apps/desktop exec tsc --noEmit
+
+      - name: Typecheck widgets
+        run: pnpm --dir apps/widgets exec tsc --noEmit
+
+      - name: Typecheck calendar
+        run: pnpm --dir packages/calendar exec tsc --noEmit
+
+      - name: Test desktop
+        run: pnpm --dir apps/desktop exec vitest run
+
+      - name: Test calendar
+        run: pnpm --dir packages/calendar exec vitest run
+
+      - name: Build desktop
+        run: pnpm --dir apps/desktop build
+
+      - name: Build widgets
+        run: pnpm --dir apps/widgets build
+
+      - name: Check desktop Rust
+        run: cargo check --locked --manifest-path apps/desktop/src-tauri/Cargo.toml
+
+      - name: Check widget Rust
+        run: cargo check --locked --manifest-path apps/widgets/src-tauri/Cargo.toml
+
+      - name: Test widget Rust
+        run: cargo test --locked --manifest-path apps/widgets/src-tauri/Cargo.toml
