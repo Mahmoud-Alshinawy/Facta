@@ -1,13 +1,28 @@
 # Handoff: publishable key switch complete; legacy keys revoked
 
-## Next: shared goals as goals (plan, 8 November 2026)
+## Current state (8 November 2026): ui-polish merged
 
-- Plan for review in docs/shared-goals-as-goals.md: plain status text (A) and
+- Builder B's `feat/ui-polish` (reviewed at 4473606, 8 commits) is on `main`,
+  rebased onto b76dd51 and fast-forwarded to **fdd2e0f**; commits kept as they
+  are. `feat/ui-polish` stays on GitHub.
+- What it brings: IBM Plex Sans/Mono through the `--font-ui` and `--font-mono`
+  variables (use those, never literal font names); sentence case for quiet
+  labels; Notes keeps the editor focused, and "Notes N" goes back to the grid;
+  lighter transparent widgets in the light theme; widget headers as reliable
+  drag handles, with moves kept clear of Windows snap.
+- Checks on fdd2e0f: frozen install; tsc ×3; **480 desktop** / **212 calendar**
+  tests; both builds; both cargo checks; **17** widget Rust tests.
+- Next: batch 1 of docs/shared-goals-as-goals.md (approved; steps 1–4).
+
+## Shared goals as goals (plan approved, 8 November 2026)
+
+- Plan in docs/shared-goals-as-goals.md, approved by the owner and reviewer: plain status text (A) and
   shared goals shown and ticked like normal goals in Today, Goals → Mine and the
   calendar (B). No code yet; starts after Builder B's `feat/ui-polish` merges.
 - 67289fc check: the native test app build injects the local publishable key
-  (direct build check passed). `--verify-boundaries` not run: Docker was not
-  running; it doesn't load that script anyway, but runs next time as asked.
+  (direct build check passed; accepted, so `--verify-boundaries` is dropped).
+- Two review batches: steps 1–4, then 5–6; step 7 (widgets) only if the owner
+  asks.
 
 ## Current state (8 November 2026): legacy keys disabled and HS256 revoked
 
