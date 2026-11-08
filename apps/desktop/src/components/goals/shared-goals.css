@@ -221,8 +221,7 @@
   min-width: 76px;
   text-align: center;
   font:
-    13px "Geist",
-    sans-serif;
+    13px var(--font-ui);
 }
 .fx .shared-page button:disabled {
   opacity: 0.45;
@@ -279,8 +278,7 @@
   background: transparent;
   color: var(--text);
   font:
-    12px "Geist",
-    sans-serif;
+    12px var(--font-ui);
 }
 .fx .shared-person {
   display: flex;
