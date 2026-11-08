@@ -5,8 +5,8 @@
 import { useRef, useState } from "react";
 import type { CalendarPrefs } from "@facta/calendar";
 import { useEvents } from "@/hooks/useEvents";
-import { useGoals } from "@/hooks/useGoals";
-import { durationText, goalsOn, keyOf, splitDay, toggledOn } from "@/lib/calendarData";
+import { useDayGoals } from "@/hooks/useDayGoals";
+import { dayGoalLabel, durationText, keyOf, splitDay, type DayGoal } from "@/lib/calendarData";
 import type { CalendarEvent } from "@/types/planner";
 import { IconPlus } from "@/components/shell/Icons";
 import { Check, Commit, Kbd, addDays, clocks, colorVar, dayLabel, dowLong, monthShort, sameDay, startOfDay, useDeletingEvents } from "./common";
@@ -36,11 +36,11 @@ interface Props {
 type Row =
   | { kind: "now"; at: number }
   | { kind: "ev"; at: number; event: CalendarEvent; key: string; end: number; allDay: boolean; past: boolean }
-  | { kind: "goal"; at: number; g: ReturnType<typeof goalsOn>[number]; key: string; past: boolean };
+  | { kind: "goal"; at: number; g: DayGoal; key: string; past: boolean };
 
 export default function AgendaView({ start, now, prefs, actions, filter, onFilter }: Props) {
   const { getEventsForDate } = useEvents();
-  const { goals, updateGoal } = useGoals();
+  const { dayGoals, toggleDay } = useDayGoals();
   const deleting = useDeletingEvents();
   const C = clocks(prefs);
   const [cur, setCur] = useState(0);
@@ -57,7 +57,7 @@ export default function AgendaView({ start, now, prefs, actions, filter, onFilte
     const isToday = sameDay(dt, now);
     const evs = getEventsForDate(key).filter((e) => !deleting.has(e.id));
     const { allDay, timed } = splitDay(evs, key);
-    const gs = goalsOn(goals, key);
+    const gs = dayGoals(key);
     goalsTotal += gs.length;
     goalsDone += gs.filter((g) => g.done).length;
     const rows: Row[] = [];
@@ -82,7 +82,7 @@ export default function AgendaView({ start, now, prefs, actions, filter, onFilte
 
   const act = (r: (typeof flat)[number]) => {
     if (r.kind === "ev") actions.editEvent(r.event);
-    else updateGoal(r.g.goal.id, toggledOn(r.g.goal, r.key));
+    else toggleDay(r.g, r.key);
   };
 
   const onKey = (e: React.KeyboardEvent) => {
@@ -158,12 +158,12 @@ export default function AgendaView({ start, now, prefs, actions, filter, onFilte
                   );
                 }
                 return (
-                  <div key={`${r.g.goal.id}:${g.key}`} className={`arow${r.past ? " is-past" : ""}`} role="listitem" id={`ai-${i}`} data-ai={i}>
+                  <div key={`${r.g.id}:${g.key}`} className={`arow${r.past ? " is-past" : ""}`} role="listitem" id={`ai-${i}`} data-ai={i}>
                     <span className="mono tm">{time}</span>
                     <div className={`bd ${curCls}`} onClick={() => setCur(i)}>
-                      <Check done={r.g.done} label={r.g.goal.title} onToggle={() => updateGoal(r.g.goal.id, toggledOn(r.g.goal, r.key))} />
-                      <span className="t" style={{ textDecoration: r.g.done ? "line-through" : "none" }}>{r.g.goal.title}</span>
-                      <span className="m">Goal</span>
+                      <Check done={r.g.done} label={r.g.title} ariaLabel={dayGoalLabel(r.g)} onToggle={() => toggleDay(r.g, r.key)} />
+                      <span className="t" style={{ textDecoration: r.g.done ? "line-through" : "none" }}>{r.g.title}</span>
+                      <span className="m">{r.g.shared ? "Shared goal" : "Goal"}</span>
                     </div>
                   </div>
                 );

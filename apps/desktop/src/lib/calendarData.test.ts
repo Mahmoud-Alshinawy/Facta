@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { eventOccursOn, spanLanes } from "@facta/calendar";
-import { allDaySpans, clockValue, durationText, eventMinutes, goalsOn, isoWeek, keyOf, noonOf, splitDay, toggledOn } from "./calendarData";
+import { dayGoalLabel, allDaySpans, clockValue, durationText, eventMinutes, goalsOn, isoWeek, keyOf, noonOf, splitDay, toggledOn } from "./calendarData";
 import type { CalendarEvent, Goal } from "@/types/planner";
 
 const goal = (over: Partial<Goal>): Goal => ({
@@ -121,5 +121,25 @@ describe("timed spanning band", () => {
     expect(splitDay([e],e.date,true).timed[0]).toMatchObject({start:1320,end:1440});
     expect(splitDay([e],e.endDate,true).timed[0]).toMatchObject({start:0,end:120});
     expect(allDaySpans([e.date,e.endDate!],k=>eventOccursOn(e,k)?[e]:[])).toEqual([]);
+  });
+});
+
+describe("dayGoalLabel", () => {
+  const shared = (done: boolean, canCheck: boolean) => ({
+    id: "shared:g:2026-10-20",
+    title: "Gym",
+    done,
+    at: null,
+    shared: { groupId: "g", canCheck },
+  });
+  it("checks in or undoes today, and opens the group on other days", () => {
+    expect(dayGoalLabel(shared(false, true))).toBe("Check in: Gym");
+    expect(dayGoalLabel(shared(true, true))).toBe("Undo check-in: Gym");
+    expect(dayGoalLabel(shared(true, false))).toBe("Open group Gym");
+  });
+  it("leaves your own goals to the usual Mark done label", () => {
+    expect(
+      dayGoalLabel({ id: "p", title: "Run", goal: {} as never, done: false, at: null }),
+    ).toBeUndefined();
   });
 });

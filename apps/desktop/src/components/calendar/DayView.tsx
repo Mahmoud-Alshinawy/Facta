@@ -6,8 +6,8 @@ import { useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { conflicts, layoutColumns, minutesAt, type CalendarPrefs } from "@facta/calendar";
 import { useEvents } from "@/hooks/useEvents";
-import { useGoals } from "@/hooks/useGoals";
-import { goalsOn, keyOf, splitDay, toggledOn } from "@/lib/calendarData";
+import { useDayGoals } from "@/hooks/useDayGoals";
+import { dayGoalLabel, keyOf, splitDay } from "@/lib/calendarData";
 import type { CalendarEvent } from "@/types/planner";
 import { IconWarn } from "@/components/shell/Icons";
 import { Check, Commit, Kbd, addDays, bandTooltip, clocks, colorVar, dayLabel, deleteEventWithUndo, sameDay, useDeletingEvents } from "./common";
@@ -29,7 +29,7 @@ interface Props {
 
 export default function DayView({ anchor, now, prefs, actions, onAnchor, say }: Props) {
   const { getEventsForDate, addEvent, deleteEvent } = useEvents();
-  const { goals, updateGoal } = useGoals();
+  const { dayGoals: goalsFor, toggleDay } = useDayGoals();
   const deleting = useDeletingEvents();
   const C = clocks(prefs);
   const key = keyOf(anchor);
@@ -38,7 +38,7 @@ export default function DayView({ anchor, now, prefs, actions, onAnchor, say }: 
   const nowMin = now.getHours() * 60 + now.getMinutes();
   const events = getEventsForDate(key).filter((e) => !deleting.has(e.id));
   const { allDay, timed } = splitDay(events, key, true);
-  const dayGoals = goalsOn(goals, key);
+  const dayGoals = goalsFor(key);
   const [slot, setSlot] = useState(() => Math.min(SLOTS - 1, Math.floor(nowMin / 30)));
   const [qa, setQa] = useState<{ a: number; b: number } | null>(null);
   const [detailAt, setDetailAt] = useState(0);
@@ -64,7 +64,7 @@ export default function DayView({ anchor, now, prefs, actions, onAnchor, say }: 
     return () => ro.disconnect();
   }, [isToday, nowMin]);
 
-  const toggle = (g: (typeof dayGoals)[number]) => updateGoal(g.goal.id, toggledOn(g.goal, key));
+  const toggle = (g: (typeof dayGoals)[number]) => toggleDay(g, key);
 
   // Events side by side; timed goals sit on top at their time.
   const laid = layoutColumns(timed.map((t) => ({ ...t, end: Math.max(t.end, t.start + 30), realEnd: t.end })));
@@ -96,7 +96,7 @@ export default function DayView({ anchor, now, prefs, actions, onAnchor, say }: 
       e.preventDefault();
       const t0 = slot * 30;
       const gg = dayGoals.find((g) => g.at !== null && g.at >= t0 && g.at < t0 + 30);
-      if (gg) { toggle(gg); say(`${gg.done ? "Not done" : "Done"} · ${gg.goal.title}`); return; }
+      if (gg) { toggle(gg); say(`${gg.done ? "Not done" : "Done"} · ${gg.title}`); return; }
       const hit = timed.find((t) => t.start <= t0 && t.end > t0);
       if (hit) { setDetail(hit.event.id); setDetailAt(t0); return; }
       setQa({ a: slot, b: Math.min(SLOTS - 1, slot + 1) });
@@ -168,9 +168,9 @@ export default function DayView({ anchor, now, prefs, actions, onAnchor, say }: 
                   ? { top: (t / 60) * H, left: "calc(100% - 236px)", width: 230, boxShadow: "inset 0 0 0 1px var(--control-border), 0 6px 16px color-mix(in srgb,var(--shadow-ink) 35%,transparent)" }
                   : { top: (t / 60) * H + 1, left: `calc(${LEFT}px + 6px)`, width: `calc(100% - ${LEFT + 6}px)` };
                 return (
-                  <div key={g.goal.id} className={`dgc${g.done ? " is-done" : ""}`} style={style} onMouseDown={(e) => e.stopPropagation()}>
-                    <Check done={g.done} label={g.goal.title} onToggle={() => toggle(g)} tabIndex={0} />
-                    <span className="gt">{g.goal.title}</span><span className="em">{C.chip(t)}</span>
+                  <div key={g.id} className={`dgc${g.done ? " is-done" : ""}`} style={style} onMouseDown={(e) => e.stopPropagation()}>
+                    <Check done={g.done} label={g.title} ariaLabel={dayGoalLabel(g)} onToggle={() => toggle(g)} tabIndex={0} />
+                    <span className="gt">{g.title}</span><span className="em">{C.chip(t)}</span>
                   </div>
                 );
               })}
@@ -215,9 +215,10 @@ export default function DayView({ anchor, now, prefs, actions, onAnchor, say }: 
           <div className="dbar" aria-hidden="true"><i style={{ width: `${dayGoals.length ? Math.round((done / dayGoals.length) * 100) : 0}%` }} /></div>
           <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 1 }}>
             {dayGoals.map((g) => (
-              <li key={g.goal.id} className="grow">
-                <Check done={g.done} label={g.goal.title} onToggle={() => toggle(g)} tabIndex={0} />
-                <span className="gt" style={{ textDecoration: g.done ? "line-through" : "none", color: g.done ? "var(--text-2)" : "var(--text)" }}>{g.goal.title}</span>
+              <li key={g.id} className="grow">
+                <Check done={g.done} label={g.title} ariaLabel={dayGoalLabel(g)} onToggle={() => toggle(g)} tabIndex={0} />
+                <span className="gt" style={{ textDecoration: g.done ? "line-through" : "none", color: g.done ? "var(--text-2)" : "var(--text)" }}>{g.title}</span>
+                {g.shared && <span className="em">Shared</span>}
                 {g.at !== null && <span className="em time-mono">{C.chip(g.at)}</span>}
               </li>
             ))}

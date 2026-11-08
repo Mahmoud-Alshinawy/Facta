@@ -11,9 +11,9 @@ import { formatClock, formatRange } from "@facta/calendar";
 import { useDiary } from "@/hooks/useDiary";
 import { useNow } from "@/hooks/useNow";
 import { usePrefs } from "@/hooks/usePrefs";
-import { useGoals } from "@/hooks/useGoals";
+import { useDayGoals } from "@/hooks/useDayGoals";
 import { useEvents } from "@/hooks/useEvents";
-import { goalsOn, keyOf, noonOf, splitDay } from "@/lib/calendarData";
+import { keyOf, noonOf, splitDay } from "@/lib/calendarData";
 import {
   dayUnit,
   diaryDayState,
@@ -192,7 +192,7 @@ export default function DiaryPage({
   }, [yesterday]);
   const searchRef = useRef<HTMLInputElement>(null);
   const prefs = usePrefs();
-  const { goals } = useGoals();
+  const { dayGoals } = useDayGoals();
   const { getEventsForDate } = useEvents();
   const byDate = useMemo(
     () => new Map(entries.map((e) => [e.date, e])),
@@ -305,9 +305,9 @@ export default function DiaryPage({
     return `${n} MONTH${n === 1 ? "" : "S"} AGO · ${format(noonOf(date), "d MMM yyyy")}`;
   };
   const context = [
-    ...goalsOn(goals, today).map(({ goal, done, at }) => ({
-      id: goal.id,
-      title: goal.title,
+    ...dayGoals(today).map(({ id, title, done, at }) => ({
+      id,
+      title,
       mark: done ? "✓" : "○",
       time: at === null ? "" : formatClock(at, prefs.timeFormat),
     })),

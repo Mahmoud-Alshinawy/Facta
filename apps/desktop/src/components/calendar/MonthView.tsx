@@ -7,8 +7,8 @@ import { useRef } from "react";
 import type { CSSProperties } from "react";
 import { isWeekend, monthChips, monthMatrix, spanLanes, weekdayOrder, type CalendarPrefs } from "@facta/calendar";
 import { useEvents } from "@/hooks/useEvents";
-import { useGoals } from "@/hooks/useGoals";
-import { allDaySpans, goalsOn, isoWeek, keyOf, splitDay, toggledOn } from "@/lib/calendarData";
+import { useDayGoals } from "@/hooks/useDayGoals";
+import { allDaySpans, dayGoalLabel, isoWeek, keyOf, splitDay, type DayGoal } from "@/lib/calendarData";
 import { IconClose, IconPlus } from "@/components/shell/Icons";
 import { useDialogFocus } from "@/hooks/useDialogFocus";
 import { Check, Commit, Kbd, addDays, bandTooltip, clocks, colorVar, dayLabel, dowLong, dowShort, monthLong, sameDay, useDeletingEvents } from "./common";
@@ -34,7 +34,7 @@ export function monthTitle(anchor: Date, prefs: CalendarPrefs) {
 
 export default function MonthView({ anchor, now, prefs, actions, onAnchor, onOpenDay, popOpen, onPop }: Props) {
   const { getEventsForDate } = useEvents();
-  const { goals, updateGoal } = useGoals();
+  const { dayGoals, toggleDay } = useDayGoals();
   const deleting = useDeletingEvents();
   const C = clocks(prefs);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -50,7 +50,7 @@ export default function MonthView({ anchor, now, prefs, actions, onAnchor, onOpe
     const spans = spanLanes(allDaySpans(keys, eventsOn), keys);
     return { days, keys, spans, lanes: spans.lanes };
   });
-  const monthEmpty = rows.every((r) => r.keys.every((k, i) => r.days[i].getMonth() !== M || (eventsOn(k).length === 0 && goalsOn(goals, k).length === 0)));
+  const monthEmpty = rows.every((r) => r.keys.every((k, i) => r.days[i].getMonth() !== M || (eventsOn(k).length === 0 && dayGoals(k).length === 0)));
 
   let popPos: { w: number; i: number } | null = null;
   rows.forEach((r, w) => r.days.forEach((d, i) => { if (sameDay(d, anchor)) popPos = { w, i }; }));
@@ -76,7 +76,7 @@ export default function MonthView({ anchor, now, prefs, actions, onAnchor, onOpe
           {r.days.map((dt, i) => {
             const key = r.keys[i];
             const { timed } = splitDay(eventsOn(key), key, true);
-            const gs = goalsOn(goals, key);
+            const gs = dayGoals(key);
             const out = dt.getMonth() !== M;
             const isToday = sameDay(dt, today);
             const sel = sameDay(dt, anchor);
@@ -136,8 +136,8 @@ export default function MonthView({ anchor, now, prefs, actions, onAnchor, onOpe
           rows={rows.length}
           prefsClocks={C}
           events={eventsOn(keyOf(anchor))}
-          goals={goalsOn(goals, keyOf(anchor))}
-          onToggle={(g) => updateGoal(g.goal.id, toggledOn(g.goal, keyOf(anchor)))}
+          goals={dayGoals(keyOf(anchor))}
+          onToggle={(g) => toggleDay(g, keyOf(anchor))}
           onEdit={actions.editEvent}
           onAdd={() => actions.newEvent({ date: keyOf(anchor) })}
           onOpenDay={() => onOpenDay(anchor)}
@@ -162,8 +162,8 @@ export default function MonthView({ anchor, now, prefs, actions, onAnchor, onOpe
 
 function DayPopover({ day, pos, rows, prefsClocks: C, events, goals, onToggle, onEdit, onAdd, onOpenDay, onClose, today }: {
   day: Date; pos: { w: number; i: number }; rows: number; prefsClocks: ReturnType<typeof clocks>;
-  events: ReturnType<ReturnType<typeof useEvents>["getEventsForDate"]>; goals: ReturnType<typeof goalsOn>;
-  onToggle: (g: ReturnType<typeof goalsOn>[number]) => void; onEdit: (e: (typeof events)[number]) => void;
+  events: ReturnType<ReturnType<typeof useEvents>["getEventsForDate"]>; goals: DayGoal[];
+  onToggle: (g: DayGoal) => void; onEdit: (e: (typeof events)[number]) => void;
   onAdd: () => void; onOpenDay: () => void; onClose: () => void; today: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -201,9 +201,9 @@ function DayPopover({ day, pos, rows, prefsClocks: C, events, goals, onToggle, o
             <button type="button" className="gt mpop-btn" onClick={() => onEdit(it.t.event)}>{it.t.event.title}</button>
             <span className="em time-mono">{C.chipRange(it.t.start, it.t.end)}</span></li>
         ) : (
-          <li key={it.g.goal.id}>
-            <Check done={it.g.done} label={it.g.goal.title} onToggle={() => onToggle(it.g)} tabIndex={0} />
-            <span className="gt" style={{ textDecoration: it.g.done ? "line-through" : "none" }}>{it.g.goal.title}</span>
+          <li key={it.g.id}>
+            <Check done={it.g.done} label={it.g.title} ariaLabel={dayGoalLabel(it.g)} onToggle={() => onToggle(it.g)} tabIndex={0} />
+            <span className="gt" style={{ textDecoration: it.g.done ? "line-through" : "none" }}>{it.g.title}</span>
             {it.g.at !== null && <span className="em time-mono">{C.chip(it.g.at)}</span>}
           </li>
         ))}
