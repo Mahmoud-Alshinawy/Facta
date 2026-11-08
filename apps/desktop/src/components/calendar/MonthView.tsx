@@ -199,12 +199,12 @@ function DayPopover({ day, pos, rows, prefsClocks: C, events, goals, onToggle, o
         {items.map((it) => it.kind === "ev" ? (
           <li key={it.t.id}><span className="evdot" style={{ ["--c" as string]: colorVar(it.t.event.color) }} />
             <button type="button" className="gt mpop-btn" onClick={() => onEdit(it.t.event)}>{it.t.event.title}</button>
-            <span className="em">{C.chipRange(it.t.start, it.t.end)}</span></li>
+            <span className="em time-mono">{C.chipRange(it.t.start, it.t.end)}</span></li>
         ) : (
           <li key={it.g.goal.id}>
             <Check done={it.g.done} label={it.g.goal.title} onToggle={() => onToggle(it.g)} tabIndex={0} />
             <span className="gt" style={{ textDecoration: it.g.done ? "line-through" : "none" }}>{it.g.goal.title}</span>
-            {it.g.at !== null && <span className="em">{C.chip(it.g.at)}</span>}
+            {it.g.at !== null && <span className="em time-mono">{C.chip(it.g.at)}</span>}
           </li>
         ))}
         {events.length === 0 && goals.length === 0 && <li style={{ color: "var(--subtle)" }}>Nothing on this day</li>}
