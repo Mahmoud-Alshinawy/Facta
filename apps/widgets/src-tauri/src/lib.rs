@@ -10,7 +10,8 @@ use tauri_plugin_opener::OpenerExt;
 use std::collections::{HashMap, HashSet};
 use std::io::{Read, Seek};
 use std::path::PathBuf;
-use std::sync::Mutex;
+use std::sync::{mpsc, Mutex};
+use std::time::Duration;
 use fs2::FileExt;
 
 fn tray_icon(theme: tauri::Theme) -> tauri::image::Image<'static> {
@@ -59,6 +60,8 @@ fn tray_theme(_fallback: impl FnOnce() -> tauri::Theme) -> tauri::Theme {
 }
 
 // ─── State ────────────────────────────────────────────────────────────────────
+
+struct PositionSaveRequests(mpsc::SyncSender<()>);
 
 struct WidgetState {
     user_closed: Mutex<HashSet<String>>,
@@ -282,10 +285,10 @@ fn clamp_to_monitors(
         )
     });
     
-    // Clamp to ensure at least 50px of the window is visible
-    let min_visible = 50.0;
-    let clamped_x = x.max(mon_x - width + min_visible).min(mon_x + mon_w - min_visible);
-    let clamped_y = y.max(mon_y - height + min_visible).min(mon_y + mon_h - min_visible);
+    // Keep the full widget in the selected work area when it fits. For a
+    // widget larger than the work area, keep its top-left corner reachable.
+    let clamped_x = x.max(mon_x).min(mon_x + (mon_w - width).max(0.0));
+    let clamped_y = y.max(mon_y).min(mon_y + (mon_h - height).max(0.0));
     
     (clamped_x, clamped_y)
 }
@@ -324,6 +327,8 @@ fn close_widget(app: tauri::AppHandle, state: tauri::State<WidgetState>, label: 
         user_closed.insert(id);
         save_user_closed(&user_closed);
     }
+    // Closing immediately after a drag must not outrun the debounced save.
+    save_current_positions(&app, &state);
     if let Some(window) = app.get_webview_window(&label) {
         let _ = window.close();
     }
@@ -559,6 +564,17 @@ fn save_current_positions(app: &tauri::AppHandle, state: &tauri::State<WidgetSta
             let logical_y = physical_to_logical(pos.y, scale);
             let logical_w = physical_to_logical(size.width as i32, scale);
             let logical_h = physical_to_logical(size.height as i32, scale);
+            let (logical_x, logical_y) = clamp_to_monitors(
+                logical_x, logical_y, logical_w, logical_h, &monitors,
+            );
+            if !pointer_button_down()
+                && ((physical_to_logical(pos.x, scale) - logical_x).abs() > 1.0
+                    || (physical_to_logical(pos.y, scale) - logical_y).abs() > 1.0)
+            {
+                if let Err(error) = window.set_position(tauri::LogicalPosition { x: logical_x, y: logical_y }) {
+                    log(&format!("Could not keep {label} within the work area: {error}"));
+                }
+            }
             
             let id = label.strip_prefix("widget-").unwrap_or(&label).to_string();
             positions.insert(id, WindowPos {
@@ -573,6 +589,37 @@ fn save_current_positions(app: &tauri::AppHandle, state: &tauri::State<WidgetSta
         }
     }
     save_positions(&positions);
+}
+
+// Coalesce the stream of move/resize events before reading and saving positions.
+fn pointer_button_down() -> bool {
+    #[cfg(windows)]
+    {
+        use windows_sys::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, VK_LBUTTON};
+        // Querying the current button state does not change any Windows setting.
+        unsafe { GetAsyncKeyState(i32::from(VK_LBUTTON)) < 0 }
+    }
+    #[cfg(not(windows))]
+    { false }
+}
+
+fn save_after_position_events(
+    receiver: mpsc::Receiver<()>,
+    quiet: Duration,
+    mut dragging: impl FnMut() -> bool,
+    mut save: impl FnMut(),
+) {
+    while receiver.recv().is_ok() {
+        loop {
+            match receiver.recv_timeout(quiet) {
+                Ok(()) => continue,
+                // Never reposition a widget while the mouse is still down.
+                Err(mpsc::RecvTimeoutError::Timeout) if dragging() => continue,
+                Err(mpsc::RecvTimeoutError::Timeout) => { save(); break; }
+                Err(mpsc::RecvTimeoutError::Disconnected) => { save(); return; }
+            }
+        }
+    }
 }
 
 // ─── Widget window spawner ────────────────────────────────────────────────────
@@ -669,7 +716,7 @@ fn spawn_or_update_widgets(app: &tauri::AppHandle, state: &tauri::State<WidgetSt
                         || (live_w - pos.width).abs() > 2.0
                         || (live_h - pos.height).abs() > 2.0;
 
-                    if drifted {
+                    if drifted && !pointer_button_down() {
                         let _ = window.set_position(tauri::Position::Logical(
                             tauri::LogicalPosition { x: clamped_x, y: clamped_y }
                         ));
@@ -723,6 +770,8 @@ fn spawn_or_update_widgets(app: &tauri::AppHandle, state: &tauri::State<WidgetSt
             .skip_taskbar(true)
             .visible(true)
             .resizable(true)
+            // Windows Snap requires a maximize box; keep the resize frame.
+            .maximizable(false)
             .always_on_bottom(true)
             .build()
         {
@@ -771,8 +820,10 @@ pub fn run() {
     let t0 = std::time::Instant::now();
     log("Starting Facta Widgets companion app");
     
+    let (position_tx, position_rx) = mpsc::sync_channel(1);
     let result = tauri::Builder::default()
         .manage(WidgetState::new())
+        .manage(PositionSaveRequests(position_tx))
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             read_shared_data,
@@ -782,6 +833,14 @@ pub fn run() {
             write_action
         ])
         .on_window_event(|window, event| {
+            if window.label().starts_with("widget-")
+                && matches!(event, tauri::WindowEvent::Moved(_) | tauri::WindowEvent::Resized(_))
+            {
+                if let Some(requests) = window.try_state::<PositionSaveRequests>() {
+                    // A pending request already covers this move; never block the event loop.
+                    let _ = requests.0.try_send(());
+                }
+            }
             if window.label() == "keeper" {
                 if let tauri::WindowEvent::ThemeChanged(theme) = event {
                     if let Some(tray) = window.app_handle().tray_by_id("facta-widgets-tray") {
@@ -791,6 +850,13 @@ pub fn run() {
             }
         })
         .setup(move |app| {
+            let position_app = app.handle().clone();
+            std::thread::spawn(move || {
+                save_after_position_events(position_rx, Duration::from_millis(500), pointer_button_down, || {
+                    let state: tauri::State<WidgetState> = position_app.state::<WidgetState>();
+                    save_current_positions(&position_app, &state);
+                });
+            });
             log(&format!("Setup phase (T+{}ms)", t0.elapsed().as_millis()));
             
             // Create tray icon to keep app alive
