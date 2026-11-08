@@ -68,3 +68,11 @@ publishable key (`sb_publishable_...`) is not a JWT and survives the revocation.
 - Step 6: the current JWT signing key is ECC P-256, and the legacy HS256 secret
   is revoked.
 - Facta kept syncing after each of steps 4–6.
+
+## Fallback removed (8 November 2026)
+
+With every build on the publishable key and the legacy keys disabled, the app no
+longer reads `VITE_SUPABASE_ANON_KEY`. Removed from `apps/desktop/src/lib/supabase.ts`,
+`.env.example`, `.github/workflows/release.yml` and `docs/supabase.md`; the isolated
+native test build now injects the local stack's publishable key. Steps 1–2 and 4
+above describe the transition and are kept as history.

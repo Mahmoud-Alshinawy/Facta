@@ -9,9 +9,8 @@ connection.
 1. Copy `.env.example` to `.env` in the repo root and fill in
    `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` (Project Settings →
    API Keys, the `sb_publishable_...` key). Without them the app runs in
-   "This device only" mode and nothing syncs. `VITE_SUPABASE_ANON_KEY` (the
-   legacy anon JWT) is still read as a fallback when no publishable key is
-   set; see `docs/supabase-publishable-key.md` for retiring it.
+   "This device only" mode and nothing syncs. The legacy anon key is no longer
+   read; see `docs/supabase-publishable-key.md`.
 2. In **Authentication → URL Configuration**, add `facta://auth/callback` to
    **Redirect URLs**. Email confirmation and magic links come back to the
    desktop app through this deep link.

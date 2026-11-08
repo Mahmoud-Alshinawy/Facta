@@ -48,8 +48,8 @@ await build({
     ? {
         define: {
           "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(fixture),
-          "import.meta.env.VITE_SUPABASE_ANON_KEY": JSON.stringify(
-            local.ANON_KEY,
+          "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(
+            local.PUBLISHABLE_KEY,
           ),
           "import.meta.env.VITE_AUTH_REDIRECT_URL": JSON.stringify(
             `${scheme}://auth/callback`,
