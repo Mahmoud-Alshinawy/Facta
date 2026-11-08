@@ -99,8 +99,7 @@
 .notes-page .npi .n {
   margin-left: auto;
   font:
-    11px "Geist",
-    sans-serif;
+    11px var(--font-ui);
   color: var(--subtle);
 }
 .note-trash-filter {
@@ -213,8 +212,7 @@
 }
 .notes-page .nit .dt {
   font:
-    10.5px "Geist",
-    sans-serif;
+    10.5px var(--font-ui);
   color: var(--subtle);
   display: flex;
   align-items: center;
@@ -281,8 +279,7 @@
   gap: 10px;
   flex-wrap: wrap;
   font:
-    12px "Geist",
-    sans-serif;
+    12px var(--font-ui);
   color: var(--subtle);
 }
 .notes-page .tagc {
@@ -294,8 +291,7 @@
   border-radius: 7px;
   background: var(--raised-2);
   font:
-    12px "Geist",
-    sans-serif;
+    12px var(--font-ui);
   color: var(--text-2);
 }
 .note-tags {
@@ -321,8 +317,7 @@
   border-radius: 6px;
   padding: 4px 7px;
   font:
-    13px "Geist",
-    sans-serif;
+    13px var(--font-ui);
 }
 .note-colours {
   display: flex;
@@ -352,8 +347,7 @@
   background: var(--accent-soft);
   border-radius: 12px;
   font:
-    13px "Geist",
-    sans-serif;
+    13px var(--font-ui);
   text-align: left;
 }
 .note-widget-banner > span {
@@ -420,8 +414,7 @@
   gap: 8px;
   flex-wrap: wrap;
   font:
-    10.5px "Geist",
-    sans-serif;
+    10.5px var(--font-ui);
   color: var(--subtle);
   margin-top: 2px;
 }
@@ -475,7 +468,7 @@
   margin-top: 22px;
   padding-top: 16px;
   border-top: 1px solid var(--border);
-  font-family: "Geist", sans-serif;
+  font-family: var(--font-ui);
   text-align: left;
 }
 .notes-page .backl button {
@@ -569,8 +562,7 @@
   background: transparent;
   color: var(--accent-text);
   font:
-    13px "Geist",
-    sans-serif;
+    13px var(--font-ui);
 }
 .note-editor-input [data-checked="true"] > button {
   background: var(--accent);
@@ -657,7 +649,7 @@
   background: var(--text);
   border-radius: 10px;
   box-shadow: 0 10px 26px color-mix(in srgb, var(--shadow-ink) 40%, transparent);
-  font-family: "Geist", sans-serif;
+  font-family: var(--font-ui);
   text-align: left;
 }
 .note-selection button {
@@ -759,8 +751,7 @@
   border-radius: 12px;
   box-shadow: 0 18px 40px color-mix(in srgb, var(--shadow-ink) 45%, transparent);
   font:
-    13.5px "Geist",
-    sans-serif;
+    13.5px var(--font-ui);
   text-align: left;
 }
 .note-insert-menu > .sec {
@@ -892,8 +883,7 @@
   background: transparent;
   color: var(--text);
   font:
-    17px/1.55 "Geist",
-    sans-serif;
+    17px/1.55 var(--font-ui);
 }
 .notes-dialog-foot {
   display: flex;
@@ -925,8 +915,7 @@
   background: var(--surface);
   color: var(--text);
   font:
-    15px "Geist",
-    sans-serif;
+    15px var(--font-ui);
 }
 .note-switch-results {
   max-height: 420px;
@@ -1045,8 +1034,7 @@
   background: var(--danger-soft);
   color: var(--danger);
   font:
-    13px/1.5 "Geist",
-    sans-serif;
+    13px/1.5 var(--font-ui);
 }
 .note-page-error {
   margin: 0;

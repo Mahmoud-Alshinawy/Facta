@@ -162,7 +162,7 @@
   .fx .settings-card p { margin:4px 0 0;font-size:13px;color:var(--text-2); }
   .fx .settings-stack { display:flex;flex-direction:column;gap:18px; }
   .fx .settings-field { display:flex;flex-direction:column;gap:10px; }
-  .fx .settings-page .sec-h { font-family:'Geist',ui-sans-serif,system-ui,sans-serif;font-size:11px;font-weight:500;letter-spacing:normal;color:var(--subtle); }
+  .fx .settings-page .sec-h { font-family:var(--font-ui);font-size:11px;font-weight:500;letter-spacing:normal;color:var(--subtle); }
   .fx .settings-page .b-sec { height:36px;padding:0 12px;border:1px solid var(--control-border);border-radius:9px;background:transparent;font-size:13px;font-weight:500; }
   .fx .settings-page .b-sec:hover { background:var(--raised-2);border-color:var(--text-2); }
   .fx .settings-page .b-commit > span { display:inline-flex;align-items:center;gap:8px;padding:0 18px; }
@@ -234,7 +234,7 @@
   .fx .widget-preview-stage { position:relative;display:flex;align-items:center;justify-content:center;height:440px;border-radius:14px;overflow:hidden;background:var(--wallpaper-base); }
   .fx .widget-preview { position:relative;width:300px;max-width:100%;min-height:220px;border:1px solid var(--border-strong);border-radius:16px;background:var(--surface);color:var(--text);overflow:hidden;box-shadow:0 14px 40px color-mix(in srgb,var(--shadow-ink) 25%,transparent); }
   .fx .widget-preview.is-trans { background:color-mix(in srgb,var(--surface) 35%,transparent); }
-  .fx .widget-preview-head { display:flex;justify-content:space-between;gap:8px;padding:16px;font:500 11px 'Geist',sans-serif;color:var(--subtle);border-bottom:1px solid var(--border); }
+  .fx .widget-preview-head { display:flex;justify-content:space-between;gap:8px;padding:16px;font:500 11px var(--font-ui);color:var(--subtle);border-bottom:1px solid var(--border); }
   .fx .widget-preview-list { display:flex;flex-direction:column;gap:4px;padding:14px; }
   .fx .widget-preview-row { display:flex;align-items:center;gap:8px;min-height:32px;font-size:12px; }
   .fx .widget-preview-list > strong { font-size:20px; }
@@ -250,7 +250,7 @@
   .fx .preview-month-grid .out { color:var(--subtle); }
   .fx .preview-day { position:relative;height:280px;margin:16px 12px; }
   .fx .preview-hour { position:absolute;left:0;right:0;height:1px;border-top:1px solid var(--border); }
-  .fx .preview-hour > span { position:absolute;top:-7px;left:0;width:38px;font:9px 'Geist Mono',monospace;color:var(--text-2);background:var(--surface); }
+  .fx .preview-hour > span { position:absolute;top:-7px;left:0;width:38px;font:9px var(--font-mono);color:var(--text-2);background:var(--surface); }
   .fx .preview-day-item { position:absolute;overflow:hidden;padding:3px 4px;border-radius:4px;background:var(--raised-2);border-left:2px solid var(--accent);font-size:10px; }
   .fx .preview-now { position:absolute;left:-4px;transform:translateY(-50%);padding:3px 4px;border-radius:4px;background:var(--accent);color:var(--accent-text);font-size:9px; }
   @media (max-width:650px) { .fx .settings-header { padding-left:20px;padding-right:20px; } .fx .settings-content { padding:20px; } .fx .widget-state { display:none; } }

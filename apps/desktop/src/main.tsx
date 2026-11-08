@@ -8,7 +8,13 @@ import { GoalsProvider } from "@/hooks/useGoals";
 import { EventsProvider } from "@/hooks/useEvents";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { installNativeQuit } from "@/lib/nativeQuit";
-// Latin only: Geist has no Arabic, so other scripts fall back to system fonts anyway.
+// Latin font files are self-hosted; other scripts fall back to system fonts.
+import "@fontsource/ibm-plex-sans/latin-400.css";
+import "@fontsource/ibm-plex-sans/latin-500.css";
+import "@fontsource/ibm-plex-sans/latin-600.css";
+import "@fontsource/ibm-plex-mono/latin-400.css";
+import "@fontsource/ibm-plex-mono/latin-500.css";
+// Existing notes can explicitly select Geist or Geist Mono.
 import "@fontsource/geist/latin-400.css";
 import "@fontsource/geist/latin-500.css";
 import "@fontsource/geist/latin-600.css";

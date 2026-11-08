@@ -26,6 +26,8 @@ import { NOTE_COLORS, noteTitle } from "@/lib/notes";
 import type { Note, NoteBlock, NoteAlign } from "@/types/planner";
 
 export const NOTE_FONTS = [
+  { name: "IBM Plex Sans", family: "var(--font-ui)" },
+  { name: "IBM Plex Mono", family: "var(--font-mono)" },
   { name: "Geist", family: "'Geist', sans-serif" },
   { name: "Geist Mono", family: "'Geist Mono', monospace" },
   { name: "Source Serif 4", family: "'Source Serif 4', serif" },
@@ -374,12 +376,12 @@ export default function NoteEditor({
               ref={fontButton}
               type="button"
               className="note-font-button"
-              aria-label={`Font: ${note.font ?? "Geist"}`}
+              aria-label={`Font: ${note.font ?? NOTE_FONTS[0].name}`}
               aria-haspopup="listbox"
               aria-expanded={fontOpen}
               onClick={() => setFontOpen((v) => !v)}
             >
-              {note.font ?? "Geist"}
+              {note.font ?? NOTE_FONTS[0].name}
               <ChevronDown size={14} />
             </button>
             {fontOpen && (
@@ -416,7 +418,7 @@ export default function NoteEditor({
                   <button
                     type="button"
                     role="option"
-                    aria-selected={(note.font ?? "Geist") === font.name}
+                    aria-selected={(note.font ?? NOTE_FONTS[0].name) === font.name}
                     key={font.name}
                     style={{ fontFamily: font.family }}
                     onClick={() => {

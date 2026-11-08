@@ -10,7 +10,7 @@
   background: var(--surface);
   border: 1px solid var(--border-strong);
   color: var(--text);
-  font-family: Geist, system-ui, sans-serif;
+  font-family: var(--font-ui);
   font-weight: 400;
   -webkit-font-smoothing: antialiased;
   box-shadow: 0 18px 40px color-mix(in srgb, var(--shadow-ink) 35%, transparent);
@@ -56,8 +56,7 @@
   align-items: center;
   gap: 8px;
   font:
-    500 11px "Geist",
-    sans-serif;
+    500 11px var(--font-ui);
   letter-spacing: normal;
   color: var(--subtle);
 }
@@ -177,8 +176,7 @@
 .jw-count {
   margin-left: auto;
   font:
-    11px "Geist",
-    sans-serif;
+    11px var(--font-ui);
   color: var(--subtle);
 }
 .jw-save {
@@ -229,8 +227,7 @@
   padding: 2px 4px;
   background: var(--raised);
   font:
-    10px "Geist Mono",
-    monospace !important;
+    10px var(--font-mono) !important;
   color: var(--subtle) !important;
 }
 .jw-stack,
@@ -286,8 +283,7 @@
   max-width: 65px;
   flex-shrink: 0;
   font:
-    10px "Geist",
-    sans-serif;
+    10px var(--font-ui);
   color: var(--subtle);
   padding-top: 2px;
 }
@@ -307,8 +303,7 @@
   align-items: center;
   gap: 8px;
   font:
-    10px "Geist",
-    sans-serif;
+    10px var(--font-ui);
   color: var(--subtle);
 }
 .jw-line-footer button {
@@ -319,8 +314,7 @@
 }
 .jw-section {
   font:
-    500 11px "Geist",
-    sans-serif;
+    500 11px var(--font-ui);
   letter-spacing: normal;
   color: var(--subtle);
 }
@@ -337,8 +331,7 @@
 .jw-past li > time,
 .jw-past li > span:first-child {
   font:
-    11px "Geist",
-    sans-serif;
+    11px var(--font-ui);
   color: var(--subtle);
   padding-top: 1px;
 }
@@ -370,8 +363,7 @@
 .jw-status {
   margin: 0;
   font:
-    10px/1.5 "Geist",
-    sans-serif;
+    10px/1.5 var(--font-ui);
   color: var(--subtle);
   overflow-wrap: anywhere;
 }
