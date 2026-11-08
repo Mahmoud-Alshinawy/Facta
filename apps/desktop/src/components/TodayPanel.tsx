@@ -9,6 +9,7 @@ import { isCompletedToday, localDay, overdueGoals, planDay } from "@/lib/goalDat
 import { buildTimeline, formatDuration } from "@/lib/eventTimeline";
 import type { GoalCategory } from "@/types/planner";
 import TodaySharedPanel from "./goals/TodaySharedPanel";
+import GoalRowView from "./GoalRowView";
 import { LetGoStore } from "@/lib/letGo";
 
 interface TodayPanelProps {
@@ -245,71 +246,53 @@ function GoalRow({ goal, done, isNext, popping, onToggle, onToggleBell }: {
   const toggleLabel = `${done ? "Mark not done" : "Mark done"}: ${goal.title}`;
 
   return (
-    <li
-      className={`flex min-h-[50px] items-center gap-3.5 rounded-[10px] py-1.5 pl-3 pr-2 transition-colors hover:bg-raised ${
-        isNext ? "bg-raised shadow-[inset_0_0_0_1px_var(--border-strong)]" : ""
-      } ${popping ? "goal-pop" : ""}`}
-    >
-      <span className="relative flex shrink-0">
-        <span aria-hidden="true" className="goal-ring pointer-events-none absolute inset-0 rounded-lg border-2 border-primary opacity-0" />
-        <button
-          type="button"
-          role="checkbox"
-          aria-checked={done}
-          aria-label={toggleLabel}
-          onClick={onToggle}
-          className={`goal-cb flex h-6 w-6 items-center justify-center rounded-lg border-[1.5px] p-0 transition-colors hover:border-primary ${
-            done ? "border-primary bg-primary" : "border-input bg-transparent"
-          }`}
-        >
-          {done && <Check aria-hidden="true" size={15} strokeWidth={3.2} className="text-primary-foreground" />}
-        </button>
-      </span>
-
-      <span className="flex min-w-0 flex-1 items-center gap-2">
-        {isNext && (
-          <span className="shrink-0 rounded-[5px] bg-raised-2 px-1.5 py-[3px] text-[10px] font-medium text-subtle">Next</span>
-        )}
-        <span className={`truncate text-[15px] font-medium ${done ? "text-subtle line-through decoration-subtle" : "text-foreground"}`}>
-          {goal.title}
-        </span>
-      </span>
-
-      <span className="flex shrink-0 items-center gap-2 text-subtle">
-        {isNext && (
+    <GoalRowView
+      title={goal.title}
+      done={done}
+      toggleLabel={toggleLabel}
+      onToggle={onToggle}
+      isNext={isNext}
+      popping={popping}
+      lead={isNext && (
+        <span className="shrink-0 rounded-[5px] bg-raised-2 px-1.5 py-[3px] font-mono text-[10px] font-medium tracking-[0.08em] text-foreground">NEXT</span>
+      )}
+      trailing={
+        <>
+          {isNext && (
+            <button
+              type="button"
+              onClick={onToggle}
+              aria-label={toggleLabel}
+              className="flex h-[30px] items-center gap-1.5 rounded-lg border border-accent-border pl-2 pr-2.5 text-[13px] font-semibold text-primary hover:bg-accent-soft"
+            >
+              <Check aria-hidden="true" size={14} strokeWidth={2.8} />
+              Mark done
+            </button>
+          )}
+          {repeat !== "none" && (
+            <span className="flex h-6 items-center gap-1.5 rounded-md bg-raised-2 px-2 text-xs text-text-2">
+              <Repeat aria-hidden="true" size={12} strokeWidth={2.2} />
+              {REPEAT_META[repeat].short}
+            </span>
+          )}
+          {goal.time && (
+            <span className={`font-mono text-[13px] tabular ${done ? "text-subtle" : "text-text-2"}`}>{goal.time}</span>
+          )}
           <button
             type="button"
-            onClick={onToggle}
-            aria-label={toggleLabel}
-            className="flex h-[30px] items-center gap-1.5 rounded-lg border border-accent-border pl-2 pr-2.5 text-[13px] font-semibold text-primary hover:bg-accent-soft"
+            aria-pressed={bellOn}
+            aria-label={`${bellOn ? "Turn off reminder" : "Turn on reminder"} for ${goal.title}`}
+            title={bellOn ? "Reminder on" : "Reminder off"}
+            onClick={onToggleBell}
+            className={`flex h-8 w-8 items-center justify-center rounded-lg p-0 hover:bg-raised-2 hover:text-foreground ${
+              bellOn && !done ? "text-text-2" : "text-subtle"
+            }`}
           >
-            <Check aria-hidden="true" size={14} strokeWidth={2.8} />
-            Mark done
+            <Bell aria-hidden="true" size={16} fill={bellOn && !done ? "currentColor" : "none"} />
           </button>
-        )}
-        {repeat !== "none" && (
-          <span className="flex h-6 items-center gap-1.5 rounded-md bg-raised-2 px-2 text-xs text-text-2">
-            <Repeat aria-hidden="true" size={12} strokeWidth={2.2} />
-            {REPEAT_META[repeat].short}
-          </span>
-        )}
-        {goal.time && (
-          <span className={`font-mono text-[13px] tabular ${done ? "text-subtle" : "text-text-2"}`}>{goal.time}</span>
-        )}
-        <button
-          type="button"
-          aria-pressed={bellOn}
-          aria-label={`${bellOn ? "Turn off reminder" : "Turn on reminder"} for ${goal.title}`}
-          title={bellOn ? "Reminder on" : "Reminder off"}
-          onClick={onToggleBell}
-          className={`flex h-8 w-8 items-center justify-center rounded-lg p-0 hover:bg-raised-2 hover:text-foreground ${
-            bellOn && !done ? "text-text-2" : "text-subtle"
-          }`}
-        >
-          <Bell aria-hidden="true" size={16} fill={bellOn && !done ? "currentColor" : "none"} />
-        </button>
-      </span>
-    </li>
+        </>
+      }
+    />
   );
 }
 

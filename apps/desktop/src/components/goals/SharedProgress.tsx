@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import type { SharedSync } from "@/lib/sync/shared/engine";
 import type { SharedState } from "@/lib/sync/shared/state";
 import {
@@ -12,6 +12,7 @@ import {
   scheduleText,
 } from "@/lib/sharedGoals/creation";
 import { SharedIcon } from "./SharedParts";
+import { useSharedCheckin } from "@/hooks/useSharedCheckin";
 import { addDays } from "@/lib/sharedGoals/dates";
 import { groupDeadlineText, lastUpdatedText } from "@facta/calendar";
 import { usePrefs } from "@/hooks/usePrefs";
@@ -133,40 +134,10 @@ export function CheckinAction({
   now: () => number;
   detail?: boolean;
 }) {
-  const busy = useRef(false),
-    [saving, setSaving] = useState(false),
-    [error, setError] = useState("");
-  const toggle = async () => {
-    if (busy.current || locked || !view.canCheck) return;
-    busy.current = true;
-    setSaving(true);
-    setError("");
-    try {
-      // The display can be a minute old. Capture once, then derive both the
-      // action's local day and checked state at that instant. The durable
-      // outbox retains this capture unchanged through receipt retries.
-      const captured = now();
-      const action = sharedGroupView(
-        engine.getSnapshot(),
-        engine.userId,
-        view.group.id,
-        captured,
-      );
-      if (!action?.canCheck)
-        throw new Error(action?.reason ?? "Reconnect to confirm this group.");
-      await engine.enqueueCheckin({
-        groupId: action.group.id,
-        date: action.today,
-        completed: !action.checked,
-        capturedAt: new Date(captured).toISOString(),
-      });
-      if (navigator.onLine) void engine.syncNow();
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      busy.current = false;
-      setSaving(false);
-    }
+  const checkin = useSharedCheckin(engine, view.group.id, now),
+    { saving, error } = checkin;
+  const toggle = () => {
+    if (!locked && view.canCheck) void checkin.toggle();
   };
   return (
     <div className="shared-check-action">
@@ -177,7 +148,7 @@ export function CheckinAction({
         disabled={!view.canCheck || locked || saving}
         aria-label={`${view.checked ? "Undo check-in" : "Check in"}: ${view.group.name}`}
         aria-pressed={view.checked}
-        onClick={() => void toggle()}
+        onClick={toggle}
       >
         <span className="lab">
           {view.todayIntent?.phase === "failed"
