@@ -1,4 +1,6 @@
 import { useId } from "react";
+import { groupDeadlineText } from "@facta/calendar";
+import { usePrefs } from "@/hooks/usePrefs";
 import GoalRowView from "../GoalRowView";
 import { PendingReview } from "./SharedProgress";
 import { useSharedCheckin } from "@/hooks/useSharedCheckin";
@@ -24,6 +26,15 @@ export default function SharedGoalRow({
   onOpenGroup: (id: string) => void;
 }) {
   const checkin = useSharedCheckin(engine, item.groupId, now);
+  const { timeFormat } = usePrefs();
+  // The group's midnights in the viewer's clock; none when they read as midnight.
+  const deadlines = groupDeadlineText({
+    today: item.day,
+    timeZone: item.view.group.timeZone,
+    roundEnd: item.view.current?.roundEnd ?? null,
+    now: now(),
+    timeFormat,
+  });
   const stateId = useId();
   const todayFailed = item.view.todayIntent?.phase === "failed";
   const state = item.pending
@@ -43,6 +54,11 @@ export default function SharedGoalRow({
         onOpen={() => onOpenGroup(item.groupId)}
         openLabel={`Open group ${item.title}`}
         subline={sharedSubline(item, localDay)}
+        details={deadlines.map((line) => (
+          <span key={line} className="text-xs text-subtle" data-deadline>
+            {line}
+          </span>
+        ))}
         trailing={
           <>
             {state && (

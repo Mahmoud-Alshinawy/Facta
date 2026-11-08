@@ -25,7 +25,9 @@ export async function runCheckinSkewTests({ page, url, fixture }) {
   const snapshot = () => page.evaluate(() => window.acceptance.snapshot());
   const today = page.locator('[data-progress-surface="today"]');
   const button = (name) => today.getByRole("button", { name, exact: true });
-  const checkButton = today.locator(".shared-check-action button");
+  // The shared goal is a row on Today: its checkbox, then its state text.
+  const checkButton = today.getByRole("checkbox").first();
+  const shareRow = today.locator("li").first();
   // The click queues asynchronously, so wait on the confirmed row itself.
   const confirmed = async (completed) => {
     try {
@@ -54,7 +56,20 @@ export async function runCheckinSkewTests({ page, url, fixture }) {
       );
     }
   };
-  const label = () => checkButton.innerText();
+  // The state the row shows, in the words the old button used.
+  const label = async () => {
+    const checked = (await checkButton.getAttribute("aria-checked")) === "true",
+      text = await shareRow.innerText();
+    return text.includes("Not saved")
+      ? "Not saved"
+      : text.includes("Not synced yet")
+        ? checked
+          ? "Pending check-in"
+          : "Pending undo"
+        : checked
+          ? "Checked in"
+          : "Check in";
+  };
   // Hold every snapshot read that follows a check-in reply, so the button's
   // state between the reply and the next read can be seen.
   let armed = false;
@@ -72,22 +87,31 @@ export async function runCheckinSkewTests({ page, url, fixture }) {
     }
     return route.fallback();
   });
-  // Every label and button size the check-in shows, from the click onwards.
+  // Every state and row size the check-in shows, from the click onwards.
   const watchButton = () =>
     page.evaluate(() => {
-      const button = document.querySelector(
-        '[data-progress-surface="today"] .shared-check-action button',
-      );
+      const row = document.querySelector('[data-progress-surface="today"] li');
+      const box = row.querySelector('[role="checkbox"]');
       const seen = (window.__checkinSeen = []);
       const record = () => {
-        const { width, height } = button.getBoundingClientRect();
-        const text = button.innerText.trim();
+        const { width, height } = row.getBoundingClientRect();
+        const checked = box.getAttribute("aria-checked") === "true",
+          t = row.innerText;
+        const text = t.includes("Not saved")
+          ? "Not saved"
+          : t.includes("Not synced yet")
+            ? checked
+              ? "Pending check-in"
+              : "Pending undo"
+            : checked
+              ? "Checked in"
+              : "Check in";
         if (seen.at(-1)?.text !== text) seen.push({ text, width, height });
       };
       record();
       window.__checkinObserver?.disconnect();
       window.__checkinObserver = new MutationObserver(record);
-      window.__checkinObserver.observe(button, {
+      window.__checkinObserver.observe(row, {
         subtree: true,
         childList: true,
         characterData: true,
@@ -142,7 +166,7 @@ export async function runCheckinSkewTests({ page, url, fixture }) {
   await page.waitForFunction(() => !!window.acceptance);
   await page.evaluate((id) => window.acceptance.actor(id), config.owner);
   await sync();
-  await button("Open group").waitFor();
+  await checkButton.waitFor();
 
   // The owner's real failure: a normal check-in, undo, check-in with the device
   // clock 2 seconds ahead of the database, which never moves past the stamps.
@@ -187,7 +211,7 @@ export async function runCheckinSkewTests({ page, url, fixture }) {
     "the button says it was not saved",
   );
   {
-    const { width, height } = await checkButton.boundingBox();
+    const { width, height } = await shareRow.boundingBox();
     sizes.add(`${width}x${height}`);
   }
   check(
@@ -298,7 +322,7 @@ export async function runCheckinSkewTests({ page, url, fixture }) {
         await confirmed(true);
       }
       await sync();
-      const { width, height } = await checkButton.boundingBox();
+      const { width, height } = await shareRow.boundingBox();
       sizes.add(`${width}x${height}`);
       await today.screenshot({
         path: `tmp/shared-goals-runtime/checkin-${state}-${theme}.png`,
@@ -308,7 +332,7 @@ export async function runCheckinSkewTests({ page, url, fixture }) {
   }
   check(
     sizes.size === 1,
-    `the check-in button keeps one size in every state: ${[...sizes].join(", ")}`,
+    `the shared row keeps one size in every state: ${[...sizes].join(", ")}`,
   );
 
   // Network gone: one calm message over repeated failed retries, then recovery.
@@ -345,7 +369,7 @@ export async function runCheckinSkewTests({ page, url, fixture }) {
       "Discard and Try again both work from Today",
       "the label goes straight from Pending to Checked in (and back for undo) while the next read is held",
       "Try again after the clock is set right re-stamps and saves",
-      "the check-in button keeps one size in every state, screenshots in both themes",
+      "the shared row keeps one size in every state, screenshots in both themes",
       "offline: one calm toast over repeated retries, no return after fading, clears on recovery",
     ],
   };

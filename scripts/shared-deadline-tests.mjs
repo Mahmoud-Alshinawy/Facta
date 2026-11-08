@@ -74,7 +74,7 @@ export async function runSharedDeadlineTests({
     today: async (p) => {
       await nav(p, "Today");
       await p
-        .locator('[data-progress-surface="today"] [data-score]')
+        .locator('[data-progress-surface="today"] [role="checkbox"]')
         .first()
         .waitFor();
       return p.locator('[data-progress-surface="today"]');

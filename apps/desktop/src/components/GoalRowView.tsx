@@ -14,6 +14,7 @@ export default function GoalRowView({
   isNext = false,
   popping = false,
   subline,
+  details,
   describedBy,
   onOpen,
   openLabel,
@@ -29,6 +30,8 @@ export default function GoalRowView({
   popping?: boolean;
   /** A second, quieter line under the title. */
   subline?: ReactNode;
+  /** Further lines under the subline that wrap instead of being cut short. */
+  details?: ReactNode;
   /** Id of visible text that explains the checkbox's state. */
   describedBy?: string;
   /** Makes the title a button, e.g. to open a shared group. */
@@ -99,6 +102,7 @@ export default function GoalRowView({
         {subline && (
           <span className="truncate text-xs text-subtle">{subline}</span>
         )}
+        {details}
       </span>
 
       {trailing && (
