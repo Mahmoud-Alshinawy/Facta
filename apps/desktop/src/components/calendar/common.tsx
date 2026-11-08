@@ -8,8 +8,10 @@ import { LetGoStore } from "@/lib/letGo";
 import type { CalendarEvent, EventColor } from "@/types/planner";
 import { IconCheck } from "@/components/shell/Icons";
 
-export function Check({ done, label, onToggle, tabIndex = -1, className = "cb" }: {
+export function Check({ done, label, onToggle, tabIndex = -1, className = "cb", ariaLabel }: {
   done: boolean; label: string; onToggle: () => void; tabIndex?: number; className?: string;
+  /** Replaces "Mark done: <label>", e.g. "Check in: <group>" for a shared goal. */
+  ariaLabel?: string;
 }) {
   return (
     <button
@@ -18,7 +20,7 @@ export function Check({ done, label, onToggle, tabIndex = -1, className = "cb" }
       role="checkbox"
       tabIndex={tabIndex}
       aria-checked={done}
-      aria-label={`${done ? "Mark not done" : "Mark done"}: ${label}`}
+      aria-label={ariaLabel ?? `${done ? "Mark not done" : "Mark done"}: ${label}`}
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => { e.stopPropagation(); onToggle(); }}
     >
