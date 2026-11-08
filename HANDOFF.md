@@ -1,5 +1,14 @@
 # Handoff: publishable key switch complete; legacy keys revoked
 
+## Next: shared goals as goals (plan, 8 November 2026)
+
+- Plan for review in docs/shared-goals-as-goals.md: plain status text (A) and
+  shared goals shown and ticked like normal goals in Today, Goals → Mine and the
+  calendar (B). No code yet; starts after Builder B's `feat/ui-polish` merges.
+- 67289fc check: the native test app build injects the local publishable key
+  (direct build check passed). `--verify-boundaries` not run: Docker was not
+  running; it doesn't load that script anyway, but runs next time as asked.
+
 ## Current state (8 November 2026): legacy keys disabled and HS256 revoked
 
 - All six steps of docs/supabase-publishable-key.md are done. Owner results:
