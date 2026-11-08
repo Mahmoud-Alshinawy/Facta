@@ -39,6 +39,9 @@
   letter-spacing: normal;
   color: var(--text-2);
 }
+/* Tauri starts a drag only when the hit target itself is the drag region. */
+.progress-card .progress-head { cursor: grab; }
+.progress-card .progress-head > * { pointer-events: none; }
 .progress-personal {
   display: flex;
   align-items: center;

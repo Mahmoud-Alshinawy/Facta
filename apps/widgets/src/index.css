@@ -147,6 +147,8 @@ body {
   display: flex; align-items: center; gap: 8px; flex: 0 0 auto;
   font-family: var(--font-ui); font-size: 11px; font-weight: 500; letter-spacing: normal; color: var(--subtle);
 }
+/* The header contains no controls; its children must hit the drag region. */
+.wg-head > * { pointer-events: none; }
 .wg-date { flex: 1; color: var(--text); }
 .wg.is-trans .wg-head { color: var(--text-2); }
 
