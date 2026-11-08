@@ -1,4 +1,4 @@
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import { SharedSync } from "@/lib/sync/shared/engine";
 import {
   emptySharedState,
@@ -9,6 +9,7 @@ import { memoryStore } from "@/lib/sync/storage";
 import { mapSnapshot } from "./contracts";
 import { reconcileSnapshot } from "./cache";
 import { toggleSharedCheckin } from "./checkin";
+import { sharedRequests } from "./requests";
 import {
   sharedRpcFixture,
   SHARED_USER,
@@ -67,5 +68,49 @@ it("refuses in plain words when the group can't take a check-in", async () => {
     toggleSharedCheckin(e, SHARED_GROUP, SHARED_NOW),
   ).rejects.toThrow("Archived");
   expect(e.getSnapshot().outbox).toEqual([]);
+  e.dispose();
+});
+
+it("ignores a second toggle while the first is still in flight", async () => {
+  const e = engine();
+  // The check-in is queued, but the call hasn't returned yet (a slow save).
+  let release!: () => void;
+  const held = new Promise<void>((r) => (release = r));
+  const real = e.enqueueCheckin.bind(e);
+  const enqueue = vi
+    .spyOn(e, "enqueueCheckin")
+    .mockImplementation(async (input) => {
+      await real(input);
+      await held;
+    });
+  const first = toggleSharedCheckin(e, SHARED_GROUP, SHARED_NOW);
+  await vi.waitFor(() => expect(e.getSnapshot().outbox).toHaveLength(1));
+  // A fast double-click: the second click must not queue an undo.
+  await toggleSharedCheckin(e, SHARED_GROUP, SHARED_NOW);
+  release();
+  await first;
+  expect(enqueue).toHaveBeenCalledTimes(1);
+  expect(e.getSnapshot().outbox).toEqual([
+    expect.objectContaining({ completed: true }),
+  ]);
+  // Once the first has finished, the next toggle is an undo as usual.
+  enqueue.mockRestore();
+  await toggleSharedCheckin(e, SHARED_GROUP, SHARED_NOW);
+  expect(e.getSnapshot().outbox).toEqual([
+    expect.objectContaining({ completed: false }),
+  ]);
+  e.dispose();
+});
+
+it("waits while a group request is still being sent", async () => {
+  const e = engine();
+  const pending = vi
+    .spyOn(sharedRequests(e), "getSnapshot")
+    .mockReturnValue([{ busy: true } as never]);
+  await expect(
+    toggleSharedCheckin(e, SHARED_GROUP, SHARED_NOW),
+  ).rejects.toThrow("Wait until the group update has finished.");
+  expect(e.getSnapshot().outbox).toEqual([]);
+  pending.mockRestore();
   e.dispose();
 });

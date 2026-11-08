@@ -32,8 +32,8 @@ export function useDayGoals() {
       if (!item.shared.canCheck || !engine)
         return appLinks.receive({ kind: "group", id: item.shared.groupId });
       toggleSharedCheckin(engine, item.shared.groupId, Date.now())
-        .then(() => {
-          if (navigator.onLine) void engine.syncNow();
+        .then((queued) => {
+          if (queued && navigator.onLine) void engine.syncNow();
         })
         .catch((e: Error) => toast.error(e.message));
     },

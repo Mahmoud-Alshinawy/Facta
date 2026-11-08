@@ -1,6 +1,18 @@
 # Handoff: publishable key switch complete; legacy keys revoked
 
-## Current state (8 November 2026): shared goals as goals, batch 2 for review
+## Current state (8 November 2026): shared goals as goals, done
+
+- Batch 2 was approved with one should-fix, done in the commit after a4576c2's
+  record: `toggleSharedCheckin` now holds both check-in guards for every caller
+  (Today, Goals > Mine, the calendar): one check-in at a time per group (a
+  second toggle while the first is in flight does nothing and returns false),
+  and "Wait until the group update has finished." while a group request is
+  being sent. Today's row keeps its own busy guard and lock as before. Results:
+  tsc ×3, **505 desktop** / **222 calendar** tests, both builds, both cargo
+  checks, **17** widget Rust tests, `--checkin-skew` **39**.
+- Shared goals as goals is done unless the owner asks for step 7.
+
+## 8 November 2026: shared goals as goals, batch 2 (historical)
 
 - Batch 1 was approved with one should-fix, done in **7ef69b2**: an optional row
   says "optional today", a met one "target met this week". Batch 1 plus that fix
@@ -8,7 +20,7 @@
   install: the Shared group shows "working out · with bobross · 1 of 4 this week
   · optional today"; unticking and re-ticking from Today checked in and out, the
   group page agreed both times, and the owner's check-in ended as it began.
-- Batch 2 (steps 5–6) is on `main`. **STOP for review; install after review.**
+- Batch 2 (steps 5–6) is on `main`; approved after review with one should-fix (see above).
   - dda0d0f Goals > Mine: `sharedMineRows` gives a Today row (checkbox checks
     in), one recurring row per group with its plain status, and Done rows for
     this week's earlier check-ins (read-only). Under the All filter only, after

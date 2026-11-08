@@ -276,3 +276,6 @@ Steps 5–6 as planned, with these details:
 - **Tests:** unit tests for `sharedMineRows`, `sharedDayGoals` and
   `dayGoalLabel`; `--checkin-skew` checks Mine (two rows, Shared tag, opens the
   group), the week view and the agenda on the real app.
+- **After review:** both check-in guards live in `toggleSharedCheckin`, so Mine
+  and the calendar get them too: one check-in at a time per group, and none
+  while a group request is being sent.

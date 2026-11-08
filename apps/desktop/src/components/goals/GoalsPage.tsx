@@ -153,7 +153,8 @@ export default function GoalsPage({
       if (!row.today?.canCheck) return openGroup(row.groupId);
       if (!sharedEngine) return;
       toggleSharedCheckin(sharedEngine, row.groupId, Date.now())
-        .then(() => {
+        .then((queued) => {
+          if (!queued) return;
           if (navigator.onLine) void sharedEngine.syncNow();
           setLive(
             `${row.done ? "Check-in undone" : "Checked in"}: ${row.title}`,
