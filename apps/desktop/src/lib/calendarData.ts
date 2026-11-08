@@ -4,6 +4,7 @@
 import { eventDayRanges, eventInAllDayBand, parseClock, shiftDate } from "@facta/calendar";
 import type { CalendarEvent, Goal } from "@/types/planner";
 import { goalsForDay, isCompletedToday, toggleGoalCompletion } from "@/lib/goalDates";
+import type { SharedDayGoal } from "@/lib/sharedGoals/asGoals";
 
 /** Noon of a "yyyy-MM-dd" day: safe for date-fns "today" checks across DST. */
 export function noonOf(key: string): Date {
@@ -16,16 +17,30 @@ export function keyOf(d: Date): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
-export interface DayGoal {
+export interface PersonalDayGoal {
+  id: string;
+  title: string;
   goal: Goal;
+  shared?: undefined;
   done: boolean;
   /** Minutes since midnight, or null for an untimed goal. */
   at: number | null;
 }
+/** A goal on one calendar day: your own, or a shared one derived from the shared cache. */
+export type DayGoal = PersonalDayGoal | SharedDayGoal;
 
-export function goalsOn(goals: readonly Goal[], key: string): DayGoal[] {
+/**
+ * The checkbox label for a shared goal: it checks in only today; on other
+ * days it opens the group. Undefined for your own goals, which keep "Mark done".
+ */
+export function dayGoalLabel(g: DayGoal): string | undefined {
+  if (!g.shared) return undefined;
+  return g.shared.canCheck ? `${g.done ? "Undo check-in" : "Check in"}: ${g.title}` : `Open group ${g.title}`;
+}
+
+export function goalsOn(goals: readonly Goal[], key: string): PersonalDayGoal[] {
   const noon = noonOf(key);
-  return goalsForDay(goals, noon).map((goal) => ({ goal, done: isCompletedToday(goal, noon), at: parseClock(goal.time ?? "") }));
+  return goalsForDay(goals, noon).map((goal) => ({ id: goal.id, title: goal.title, goal, done: isCompletedToday(goal, noon), at: parseClock(goal.time ?? "") }));
 }
 
 /** The goal after ticking it on a given day (repeating goals keep per-day ticks). */

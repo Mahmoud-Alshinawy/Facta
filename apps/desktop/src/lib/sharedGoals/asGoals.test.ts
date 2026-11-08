@@ -5,6 +5,7 @@ import { mapSnapshot } from "./contracts";
 import { reconcileSnapshot } from "./cache";
 import {
   combineDay,
+  sharedDayGoals,
   sharedMineRows,
   sharedSubline,
   sharedTodayItems,
@@ -267,5 +268,52 @@ describe("shared goals in Goals > Mine", () => {
       (m) => m.userId === SHARED_USER,
     )!.leftAt = "2026-10-20T08:00:00Z";
     expect(rows(left)).toEqual([]);
+  });
+});
+
+describe("shared goals on the calendar", () => {
+  const on = (s: SharedState, key: string) =>
+    sharedDayGoals(s, SHARED_USER, key, SHARED_NOW);
+  const fixedDays = (rows: Rows) =>
+    Object.assign(rows.groups[0], {
+      template: "custom",
+      schedule_kind: "days",
+      weekdays: [1, 2, 4],
+    });
+
+  it("shows today open and checkable, untimed", () => {
+    expect(on(state(), "2026-10-20")).toEqual([
+      {
+        id: `shared:${SHARED_GROUP}:2026-10-20`,
+        title: "Exercise",
+        done: false,
+        at: null,
+        shared: { groupId: SHARED_GROUP, canCheck: true },
+      },
+    ]);
+  });
+
+  it("shows past days you checked in on, from this or earlier weeks, and nothing else", () => {
+    const s = state((r) => {
+      checkedToday(r, "2026-10-19");
+      checkedToday(r, "2026-10-18");
+    });
+    expect(on(s, "2026-10-19")).toMatchObject([
+      { done: true, shared: { canCheck: false } },
+    ]);
+    expect(on(s, "2026-10-18")).toMatchObject([{ done: true }]);
+    expect(on(state(), "2026-10-19")).toEqual([]);
+  });
+
+  it("shows upcoming scheduled days of this week for a fixed-days goal only", () => {
+    // Thu 22 Oct is scheduled; Wed 21 is a rest day; Mon 26 is next week.
+    const fixed = state(fixedDays);
+    expect(on(fixed, "2026-10-22")).toMatchObject([
+      { done: false, shared: { canCheck: false } },
+    ]);
+    expect(on(fixed, "2026-10-21")).toEqual([]);
+    expect(on(fixed, "2026-10-26")).toEqual([]);
+    // A weekly-count goal has no fixed days, so nothing ahead of today.
+    expect(on(state(), "2026-10-22")).toEqual([]);
   });
 });

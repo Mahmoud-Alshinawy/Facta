@@ -233,3 +233,71 @@ export function sharedMineRows(
   }
   return [...today, ...rules, ...done];
 }
+
+/** A shared goal on one calendar day. Untimed: shared goals have no time. */
+export interface SharedDayGoal {
+  id: string;
+  title: string;
+  done: boolean;
+  at: null;
+  goal?: undefined;
+  shared: { groupId: string; canCheck: boolean };
+}
+
+const weekday = (date: string) => new Date(`${date}T00:00:00Z`).getUTCDay();
+
+/**
+ * Today open or ticked; earlier days you checked in on, from any week still
+ * in the cache; and, for fixed-days goals only, this week's scheduled days
+ * ahead. A weekly count has no fixed days, so nothing is shown ahead of today.
+ */
+export function sharedDayGoals(
+  state: SharedState,
+  userId: string,
+  key: string,
+  now: number,
+): SharedDayGoal[] {
+  if (state.userId !== userId || !state.cache) return [];
+  const s = state.cache.snapshot;
+  const todayItems = sharedTodayItems(state, userId, now);
+  return s.groups
+    .filter((g) => g.publishedAt && !g.deletedAt)
+    .flatMap((g): SharedDayGoal[] => {
+      const view = sharedGroupView(state, userId, g.id, now);
+      if (!view) return [];
+      const goal = (done: boolean, canCheck: boolean): SharedDayGoal[] => [
+        {
+          id: `shared:${g.id}:${key}`,
+          title: g.name,
+          done,
+          at: null,
+          shared: { groupId: g.id, canCheck },
+        },
+      ];
+      if (key === view.today) {
+        const item = todayItems.find((i) => i.groupId === g.id);
+        return item ? goal(item.done, item.canCheck) : [];
+      }
+      if (key < view.today)
+        return s.checkins.some(
+          (c) =>
+            c.membershipId === view.member.id &&
+            c.checkinDate === key &&
+            c.completed,
+        )
+          ? goal(true, false)
+          : [];
+      const fixedDays =
+        g.template !== "gym" &&
+        (g.scheduleKind === "every" || g.scheduleKind === "days");
+      const scheduled =
+        g.scheduleKind !== "days" || g.weekdays.includes(weekday(key));
+      return fixedDays &&
+        scheduled &&
+        view.phase === "active" &&
+        !!view.current &&
+        key < view.current.roundEnd
+        ? goal(false, false)
+        : [];
+    });
+}

@@ -335,6 +335,54 @@ export async function runCheckinSkewTests({ page, url, fixture }) {
     `the shared row keeps one size in every state: ${[...sizes].join(", ")}`,
   );
 
+  // The same shared goal elsewhere: Goals > Mine, the calendar, the agenda.
+  const nav = (name) =>
+    page
+      .getByRole("navigation", { name: "Main" })
+      .getByRole("button", { name, exact: true })
+      .click();
+  const shared = /^(Check in|Undo check-in): Client integration$/;
+  await nav("Goals");
+  const mine = page
+    .getByRole("option")
+    .filter({ hasText: "Client integration" });
+  await mine.first().waitFor();
+  check(
+    (await mine.count()) === 2 &&
+      (await mine.nth(0).innerText()).includes("Shared") &&
+      (await mine.nth(1).innerText()).includes("Shared") &&
+      (await page.getByRole("checkbox", { name: shared }).count()) === 1,
+    "Goals > Mine lists the shared goal for today and as a recurring row, tagged Shared",
+  );
+  // Like the personal edit button, it shows on hover.
+  await mine.nth(1).hover();
+  await mine
+    .nth(1)
+    .getByRole("button", { name: "Open group Client integration" })
+    .click();
+  await page
+    .getByRole("heading", { name: "Client integration", exact: true })
+    .waitFor();
+  check(true, "the Mine row opens the group, not the personal edit dialog");
+  await nav("Calendar");
+  await page.getByRole("checkbox", { name: shared }).first().waitFor();
+  check(
+    (await page.getByRole("checkbox", { name: shared }).count()) >= 1,
+    "the week view shows today's shared goal, checkable",
+  );
+  await page.getByRole("radio", { name: /^Agenda/ }).click();
+  const agendaRow = page
+    .getByRole("listitem")
+    .filter({ has: page.getByRole("checkbox", { name: shared }) });
+  await agendaRow.first().waitFor();
+  check(
+    (await agendaRow.first().innerText()).includes("Shared goal"),
+    "the agenda lists today's shared goal as a shared goal",
+  );
+  await page.getByRole("radio", { name: /^Week/ }).click();
+  await nav("Today");
+  await checkButton.waitFor();
+
   // Network gone: one calm message over repeated failed retries, then recovery.
   const paused = () =>
     page.getByText("Shared goals paused", { exact: true }).count();
@@ -370,6 +418,7 @@ export async function runCheckinSkewTests({ page, url, fixture }) {
       "the label goes straight from Pending to Checked in (and back for undo) while the next read is held",
       "Try again after the clock is set right re-stamps and saves",
       "the shared row keeps one size in every state, screenshots in both themes",
+      "Goals > Mine, week view and agenda show the shared goal; the Mine row opens the group",
       "offline: one calm toast over repeated retries, no return after fading, clears on recovery",
     ],
   };

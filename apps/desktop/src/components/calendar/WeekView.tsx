@@ -10,9 +10,9 @@ import {
   eventSpanDays, conflicts, isWeekend, layoutColumns, minutesAt, moveBlock, resizeBlock, spanLanes, weekDates, type CalendarPrefs,
 } from "@facta/calendar";
 import { useEvents } from "@/hooks/useEvents";
-import { useGoals } from "@/hooks/useGoals";
+import { useDayGoals } from "@/hooks/useDayGoals";
 import type { CalendarEvent, Goal } from "@/types/planner";
-import { allDaySpans, clockValue, durationText, goalsOn, keyOf, splitDay, toggledOn } from "@/lib/calendarData";
+import { allDaySpans, clockValue, dayGoalLabel, durationText, keyOf, splitDay, type DayGoal, type PersonalDayGoal } from "@/lib/calendarData";
 import { IconWarn } from "@/components/shell/Icons";
 import { Check, Commit, Kbd, addDays, bandTooltip, clocks, colorVar, dayLabel, dayLabelLong, deleteEventWithUndo, dowShort, sameDay, useDeletingEvents } from "./common";
 import { DetailPopover, QuickAddPopover } from "./Popovers";
@@ -40,7 +40,7 @@ interface Props {
 
 export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpenDay, say }: Props) {
   const { getEventsForDate, updateEvent, addEvent, deleteEvent } = useEvents();
-  const { goals, updateGoal } = useGoals();
+  const { dayGoals, toggleDay } = useDayGoals();
   const deleting = useDeletingEvents();
   const C = clocks(prefs);
   const days = useMemo(() => weekDates(anchor, prefs.weekStart), [anchor, prefs.weekStart]);
@@ -65,7 +65,7 @@ export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpen
   // ---- data per day ----
   const perDay = keys.map((key) => {
     const { timed } = splitDay(eventsOn(key), key, true);
-    const gs = goalsOn(goals, key);
+    const gs = dayGoals(key);
     return { key, timed, goals: gs };
   });
   const empty = perDay.every((d) => d.timed.length === 0 && d.goals.length === 0) && keys.every((k) => eventsOn(k).length === 0);
@@ -75,10 +75,7 @@ export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpen
   const bandH = 12 + lanes * 25;
   const stickyH = 56 + bandH + 54;
 
-  const toggleGoal = (g: Goal, key: string) => {
-    const patch = toggledOn(g, key);
-    updateGoal(g.id, patch);
-  };
+  const toggleGoal = (g: DayGoal, key: string) => toggleDay(g, key);
 
   // ---- initial scroll: 08:00, or two hours before now when now is lower ----
   const scrolled = useRef(false);
@@ -233,8 +230,8 @@ export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpen
       }
       const gg = perDay[curIdx].goals.find((g) => g.at !== null && g.at >= t0 && g.at < t0 + 30);
       if (gg) {
-        toggleGoal(gg.goal, key);
-        say(`${gg.done ? "Not done" : "Done"} · ${gg.goal.title}`);
+        toggleGoal(gg, key);
+        say(`${gg.done ? "Not done" : "Done"} · ${gg.title}`);
         return;
       }
       const hit = perDay[curIdx].timed.find((t) => t.start <= t0 && t.end > t0);
@@ -252,7 +249,7 @@ export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpen
     const isPastDay = todayIdx >= 0 ? i < todayIdx : dt < now;
     type Item =
       | { kind: "ev"; id: string; event: CalendarEvent; start: number; end: number; origin?: boolean; lift?: boolean }
-      | { kind: "goal"; id: string; goal: Goal; done: boolean; start: number; end: number };
+      | { kind: "goal"; id: string; goal: Goal; day: PersonalDayGoal; done: boolean; start: number; end: number };
     const items: Item[] = [];
     for (const t of perDay[i].timed) {
       const origin = !!pending && pending.event.id === t.event.id && pending.fromKey === key;
@@ -263,7 +260,7 @@ export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpen
     }
     for (const g of perDay[i].goals) {
       if (g.at === null) continue;
-      items.push({ kind: "goal", id: g.goal.id, goal: g.goal, done: g.done, start: g.at, end: g.at + GOAL_MIN });
+      items.push({ kind: "goal", id: g.goal.id, goal: g.goal, day: g, done: g.done, start: g.at, end: g.at + GOAL_MIN });
     }
     const laid = layoutColumns(items);
     const realTimed = perDay[i].timed.filter((t) => !(pending && pending.event.id === t.event.id && pending.fromKey === key))
@@ -362,9 +359,9 @@ export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpen
               return (
                 <div key={c.key} className={`gcell${c.weekend ? " is-wk" : ""}`}>
                   {shown.map((g) => (
-                    <div className="gl" key={g.goal.id}>
-                      <Check done={g.done} label={`${g.goal.title}, ${dayLabel(c.dt)}`} onToggle={() => toggleGoal(g.goal, c.key)} tabIndex={0} />
-                      <span className="gt" style={{ textDecoration: g.done ? "line-through" : "none" }}>{g.goal.title}</span>
+                    <div className="gl" key={g.id}>
+                      <Check done={g.done} label={`${g.title}, ${dayLabel(c.dt)}`} ariaLabel={dayGoalLabel(g)} onToggle={() => toggleGoal(g, c.key)} tabIndex={0} />
+                      <span className="gt" style={{ textDecoration: g.done ? "line-through" : "none" }}>{g.title}</span>
                     </div>
                   ))}
                   {gs.length > 2 && (
@@ -410,7 +407,7 @@ export default function WeekView({ anchor, now, prefs, actions, onAnchor, onOpen
                       return (
                         <div key={`g:${it.id}`} className={`gc${it.done ? " is-done" : ""}${past && !it.done ? " is-past" : ""}`}
                           style={evStyle(top, 22, it.col, it.cols, "var(--text)")} onMouseDown={(e) => e.stopPropagation()}>
-                          <Check done={it.done} label={it.goal.title} onToggle={() => toggleGoal(it.goal, c.key)} tabIndex={0} />
+                          <Check done={it.done} label={it.goal.title} onToggle={() => toggleGoal(it.day, c.key)} tabIndex={0} />
                           <span className="gt">{it.goal.title}</span><span className="em">{C.chip(it.start)}</span>
                         </div>
                       );
