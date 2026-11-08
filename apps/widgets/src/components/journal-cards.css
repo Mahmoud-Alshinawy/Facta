@@ -177,8 +177,8 @@
 .jw-count {
   margin-left: auto;
   font:
-    11px "Geist Mono",
-    monospace;
+    11px "Geist",
+    sans-serif;
   color: var(--subtle);
 }
 .jw-save {
@@ -286,8 +286,8 @@
   max-width: 65px;
   flex-shrink: 0;
   font:
-    10px "Geist Mono",
-    monospace;
+    10px "Geist",
+    sans-serif;
   color: var(--subtle);
   padding-top: 2px;
 }
@@ -307,8 +307,8 @@
   align-items: center;
   gap: 8px;
   font:
-    10px "Geist Mono",
-    monospace;
+    10px "Geist",
+    sans-serif;
   color: var(--subtle);
 }
 .jw-line-footer button {
@@ -337,8 +337,8 @@
 .jw-past li > time,
 .jw-past li > span:first-child {
   font:
-    11px "Geist Mono",
-    monospace;
+    11px "Geist",
+    sans-serif;
   color: var(--subtle);
   padding-top: 1px;
 }
@@ -370,8 +370,8 @@
 .jw-status {
   margin: 0;
   font:
-    10px/1.5 "Geist Mono",
-    monospace;
+    10px/1.5 "Geist",
+    sans-serif;
   color: var(--subtle);
   overflow-wrap: anywhere;
 }

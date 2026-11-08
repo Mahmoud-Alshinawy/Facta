@@ -47,13 +47,22 @@ try {
   const grid = page.locator(".notes-page .ngrid");
   const back = page.getByRole("button", { name: "Back to all notes" });
   const listButton = page.getByRole("group", { name: "Notes layout" }).getByRole("button", { name: "List" });
+  const gridButton = page.getByRole("group", { name: "Notes layout" }).getByRole("button", { name: "Grid" });
+  const layoutState = async (listPressed, gridPressed) => {
+    assert.equal(await listButton.getAttribute("aria-pressed"), String(listPressed), "List pressed state reflects visibility");
+    assert.equal(await gridButton.getAttribute("aria-pressed"), String(gridPressed), "Grid pressed state reflects visibility");
+  };
   const noList = async (label) => { await editor.waitFor(); assert.equal(await list.count(), 0, label); };
+  await layoutState(false, true);
   await page.getByRole("button", { name: "New note" }).first().click();
   await noList("Creating a note must not reveal the list");
+  await layoutState(false, false);
   await page.getByLabel("Note title").fill("Browser fixture note");
   await back.click(); await grid.waitFor();
+  await layoutState(false, true);
   assert.equal(await grid.getByRole("option", { selected: true }).count(), 1, "Back keeps the selected note");
   await listButton.click(); await list.waitFor();
+  await layoutState(true, false);
   await page.getByRole("button", { name: "New note" }).first().click();
   await noList("Creating from list must close it");
   await back.click(); await grid.waitFor();

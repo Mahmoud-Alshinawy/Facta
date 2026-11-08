@@ -28,7 +28,7 @@
 }
 .progress-card .mono,
 .today-shared-card .mono {
-  font-family: "Geist Mono", monospace;
+  font-family: "Geist", sans-serif;
 }
 .progress-card .progress-head {
   display: flex;

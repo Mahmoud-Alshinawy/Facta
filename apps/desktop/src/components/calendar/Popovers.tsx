@@ -174,7 +174,7 @@ export function DetailPopover({ event, day, at, style, clocks: C, onClose, onEdi
         <div className="chrow">
           <IconClock size={14} />
           <span>{dateLabel} · {event.allDay ? "All day" : C.range(start, end)}</span>
-          {!event.allDay && <span className="mono" style={{ color: "var(--subtle)", fontSize: 12 }}>{durationText(multi ? eventDurationMinutes(event) : t.end - t.start)}</span>}
+          {!event.allDay && <span className="mono time-mono" style={{ color: "var(--subtle)", fontSize: 12 }}>{durationText(multi ? eventDurationMinutes(event) : t.end - t.start)}</span>}
           {multi && !event.allDay && <span className="dialog-note">Edit dates and times in the dialog.</span>}
         </div>
         <div className="chrow"><IconRepeat size={14} /><span>{REPEAT_TEXT[event.repeat ?? "none"]}</span></div>
