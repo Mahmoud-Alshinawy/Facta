@@ -61,8 +61,7 @@
   --color-logo-tile: var(--logo-tile);
   --color-logo-mark: var(--logo-mark);
 
-  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "Geist Mono", ui-monospace, monospace;
+  --font-sans: var(--font-ui);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -70,6 +69,8 @@
 }
 
 :root {
+  --font-ui: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
   --radius: 0.5rem;
 }
 
@@ -80,7 +81,7 @@
      and injects its own styles at runtime, so these selectors start with
      "html" to outrank its [data-sonner-toaster][data-sonner-theme=…] rules. */
   html [data-sonner-toaster][data-sonner-theme] {
-    font-family: "Geist", ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-ui);
     --normal-bg: var(--surface);
     --normal-bg-hover: var(--raised);
     --normal-border: var(--border-strong);
