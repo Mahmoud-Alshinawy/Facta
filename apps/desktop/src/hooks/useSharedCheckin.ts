@@ -17,8 +17,11 @@ export function useSharedCheckin(
     setSaving(true);
     setError("");
     try {
-      await toggleSharedCheckin(engine, groupId, now());
-      if (navigator.onLine) void engine.syncNow();
+      if (
+        (await toggleSharedCheckin(engine, groupId, now())) &&
+        navigator.onLine
+      )
+        void engine.syncNow();
     } catch (e) {
       setError((e as Error).message);
     } finally {
