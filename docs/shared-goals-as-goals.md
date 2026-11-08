@@ -242,6 +242,10 @@ Steps 1–4 as planned, with these differences:
 - **Deadlines on Today:** a row for a group in another zone shows the check-in
   close and week end in the viewer's clock (the earlier decision), under the
   week count. A viewer in the group's zone sees none.
+- **Subline wording:** an optional row adds "optional today" and a met one
+  "target met this week" (fixed after the batch 1 review).
+- **Next up:** when no personal goal is next, "Next up" names the first unticked
+  shared goal that counts today (accepted in review).
 - **Header count:** the Shared group header says how many shared goals are
   ticked of those listed; the big "N of M" uses `combineDay`.
 - **Test page:** the `--ui` page mounts the same `TodaySharedSection`, capturing

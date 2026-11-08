@@ -159,7 +159,7 @@ describe("shared goals on Today", () => {
 });
 
 describe("the shared row's subline", () => {
-  const item = items(state())[0];
+  const item = { ...items(state())[0], due: "due" as const };
   it("names who it's with and the week so far", () => {
     expect(sharedSubline(item, "2026-10-20")).toBe(
       "with Person 1 · 0 of 2 this week",
@@ -181,7 +181,10 @@ describe("the shared row's subline", () => {
   });
   it("says when the target is already met or today is optional", () => {
     expect(sharedSubline({ ...item, due: "met" }, "2026-10-20")).toBe(
-      "with Person 1 · 0 of 2 this week · target met",
+      "with Person 1 · 0 of 2 this week · target met this week",
+    );
+    expect(sharedSubline({ ...item, due: "optional" }, "2026-10-20")).toBe(
+      "with Person 1 · 0 of 2 this week · optional today",
     );
   });
 });
