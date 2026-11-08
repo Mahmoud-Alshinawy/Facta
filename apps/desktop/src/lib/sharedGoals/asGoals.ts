@@ -119,7 +119,11 @@ export function sharedSubline(item: SharedTodayItem, localDay: string): string {
   return [
     item.others.length ? `with ${shown}${more > 0 ? ` +${more}` : ""}` : null,
     `${item.weekDone} of ${item.weekTarget} this week`,
-    item.due === "met" ? "target met" : null,
+    item.due === "met"
+      ? "target met this week"
+      : item.due === "optional"
+        ? "optional today"
+        : null,
     item.day !== localDay ? `for ${shortDay(item.day)}` : null,
   ]
     .filter(Boolean)
