@@ -16,8 +16,13 @@
   and restart: neither starts. Switch on and restart: both start.
 - Closed: the live "Reset Password" email template now contains `{{ .Token }}`,
   so the in-app reset code arrives.
-- Next on `main`: remove the now-unused anon-key fallback from the code, the
-  release workflow and the docs.
+- Done on `main` (67289fc): the app reads only `VITE_SUPABASE_PUBLISHABLE_KEY`.
+  The anon-key fallback is gone from `supabase.ts`, `.env.example`, the release
+  workflow and the docs; the native test build injects the local stack's
+  publishable key. tsc ok, **479 desktop** tests, desktop build ok; the built JS
+  holds the publishable key and no JWT. The local `.env` anon line was removed
+  too (not committed). Not reinstalled: the installed build already uses only
+  the publishable key.
 
 ## 8 November 2026: publishable key installed (historical)
 
