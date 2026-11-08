@@ -59,6 +59,7 @@ it("keeps confirmed rank/score while an offline check-in is pending and respects
   expect(view.phase).toBe("waiting");
   expect(view.canCheck).toBe(false);
   expect(view.scores).toEqual([]);
+  expect(view.reason).toBe("Starts Mon 26 Oct 2026");
 });
 function populated() {
   const state = emptySharedState(SHARED_USER);
@@ -90,12 +91,17 @@ it("resolves long-waiting versus old-paused from authoritative activation outsid
   ];
   const read = () => sharedGroupView(state, SHARED_USER, SHARED_GROUP, now)!;
   expect(read().phase).toBe("waiting");
+  expect(read().reason).toBe("Starts once two people have joined.");
   expect(read().scores).toEqual([]);
   state.cache!.snapshot.lifecycle[0].firstScoredRound = "2026-10-19";
   expect(read().phase).toBe("paused");
+  expect(read().reason).toBe(
+    "Paused. It restarts at the start of a week with two people in.",
+  );
   expect(read().canCheck).toBe(false);
   state.cache!.windows[0].confirmedAt = Date.parse("2027-01-17T09:00:00Z");
   expect(read().phase).toBe("unconfirmed");
+  expect(read().reason).toBe("Connect to the internet to update this group.");
   state.cache!.windows[0].confirmedAt = now;
   delete state.cache!.snapshot.lifecycle;
   expect(read().phase).toBe("unconfirmed");
@@ -239,6 +245,7 @@ it("makes archival read-only even with an older active round retained in cache",
   const v = sharedGroupView(state, SHARED_USER, SHARED_GROUP, SHARED_NOW)!;
   expect(v.phase).toBe("archived");
   expect(v.canCheck).toBe(false);
+  expect(v.reason).toBe("Archived");
 });
 it("treats a rejected check-in as not saved, not as pending or checked", () => {
   const state = emptySharedState(SHARED_USER);

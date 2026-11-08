@@ -462,11 +462,11 @@ export default function SharedGoalsPage({
                 <p>
                   You are a member.{" "}
                   {!panel.eligible
-                    ? "Rounds wait for at least two eligible members."
+                    ? "Scoring starts at the start of a week with two people in."
                     : panel.eligible ===
                         groups.find((g) => g.id === panel.id)?.firstRoundDate
                       ? `You start with the first round on ${dateLabel(panel.eligible)}.`
-                      : `Your eligibility starts ${dateLabel(panel.eligible)}.`}
+                      : `You start the week of ${dateLabel(panel.eligible)}.`}
                 </p>
                 {groups.find((g) => g.id === panel.id)?.ownerId ===
                   engine.userId && (

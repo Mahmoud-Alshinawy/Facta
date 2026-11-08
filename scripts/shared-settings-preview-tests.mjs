@@ -98,9 +98,7 @@ export async function runSettingsProgressSelectionTests({
     "Settings preview displays the selected group beyond the 16-group export cap",
   );
   check(
-    (await preview
-      .getByRole("list", { name: "Server-confirmed leaderboard" })
-      .count()) === 1,
+    (await preview.getByRole("list", { name: "Leaderboard" }).count()) === 1,
     "selected group has its confirmed leaderboard",
   );
   const owner = preview.locator(`[data-score="${config.owner}"]`),
@@ -118,7 +116,7 @@ export async function runSettingsProgressSelectionTests({
     "selected group shows confirmed peer 0%, rank 2",
   );
   check(
-    (await preview.innerText()).includes("Confirmed 2026-10-27 12:00 UTC") &&
+    !(await preview.innerText()).includes("Last updated") &&
       !(await preview.innerText()).includes("Group unavailable"),
     "selected group is confirmed and available",
   );

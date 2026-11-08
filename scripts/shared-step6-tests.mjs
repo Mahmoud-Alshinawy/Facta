@@ -88,7 +88,7 @@ export async function runSharedAcceptance({
   check(
     !(
       await page.locator('[data-progress-surface="today"]').innerText()
-    ).includes("Last confirmed"),
+    ).includes("Last updated"),
     "a fresh read between display ticks remains confirmed",
   );
   const nav = (name) =>
@@ -278,7 +278,7 @@ export async function runSharedAcceptance({
         check(
           !(
             await page.locator('[data-progress-surface="widget"]').innerText()
-          ).includes("Last confirmed"),
+          ).includes("Last updated"),
           "Settings preview stays confirmed when a read arrives between display ticks",
         );
       }
@@ -414,7 +414,7 @@ export async function runSharedAcceptance({
         () => window.acceptance.snapshot().outbox.length === 1,
       );
       check(
-        (await primaryToday.innerText()).includes("Pending changes"),
+        (await primaryToday.innerText()).includes("Not synced yet"),
         "first device persists an offline pending undo without optimistic scores",
       );
       await peerToday

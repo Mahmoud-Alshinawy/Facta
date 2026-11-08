@@ -264,7 +264,7 @@ export async function runSharedStep5ReviewTests({
       .click();
     await today
       .getByRole("status")
-      .filter({ hasText: "Reconnect to confirm the current round" })
+      .filter({ hasText: "Connect to the internet to update this group." })
       .waitFor();
     check(
       !(await snapshot()).outbox.some((i) => i.groupId === daily.id),

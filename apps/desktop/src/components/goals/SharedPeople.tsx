@@ -261,8 +261,8 @@ export default function SharedPeople({
       </div>
       <Callout>
         {group?.publishedAt
-          ? "People joining later become eligible at the next round boundary. Accepted invitations alone do not activate a round."
-          : "Invitations are pending publication. A one-person goal can publish in waiting state; scoring starts only at a boundary with at least two eligible members."}
+          ? "People who join later start the next week. A week only starts once two people are in."
+          : "Invitations go out when the goal is published. You can publish on your own; scoring starts at the start of a week with two people in."}
       </Callout>
     </>
   );

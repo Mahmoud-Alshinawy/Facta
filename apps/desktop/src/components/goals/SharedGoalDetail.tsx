@@ -13,6 +13,7 @@ import {
   SharedRanking,
   CheckinAction,
   RoundStatus,
+  UpdatedNote,
   PendingReview,
 } from "./SharedProgress";
 import SharedManage from "./SharedManage";
@@ -144,8 +145,9 @@ export default function SharedGoalDetail({
         </button>
         <div className="shared-detail-title">
           <span className="mono sec">
-            {view.group.template[0].toUpperCase() + view.group.template.slice(1)} · Rounds start{" "}
-            {WEEKDAYS[view.group.roundWeekday]}
+            {view.group.template[0].toUpperCase() +
+              view.group.template.slice(1)}{" "}
+            · Rounds start {WEEKDAYS[view.group.roundWeekday]}
           </span>
           <h1 ref={title} tabIndex={-1}>
             {view.group.name}
@@ -195,11 +197,7 @@ export default function SharedGoalDetail({
             <span>
               {view.group.timeZone} · Today {dateLabel(view.today)}
             </span>
-            <span>
-              {view.confirmedAt
-                ? `${view.stale || !navigator.onLine ? "Last confirmed" : "Confirmed"} ${new Date(view.confirmedAt).toLocaleString()}`
-                : "No matching round coverage"}
-            </span>
+            <UpdatedNote view={view} now={now()} />
           </div>
           {view.reason && (
             <p className="shared-callout">
@@ -208,7 +206,7 @@ export default function SharedGoalDetail({
               view.member.eligibleRound > (view.slot ?? "")
                 ? view.member.eligibleRound === view.group.firstRoundDate
                   ? ". That is the group's first round, so you start with it."
-                  : ". Your eligibility starts at that boundary; earlier days are not missed."
+                  : ". You start that week; earlier days don't count against you."
                 : ""}
             </p>
           )}
@@ -247,9 +245,7 @@ export default function SharedGoalDetail({
               value={view.round?.roundStart ?? ""}
               onChange={(e) => setSelected(e.target.value)}
             >
-              {!view.round && (
-                <option value="">No confirmed scored rounds</option>
-              )}
+              {!view.round && <option value="">No past weeks yet</option>}
               {view.rounds.map((r) => (
                 <option key={r.roundStart} value={r.roundStart}>
                   {r.roundStart} – {addDays(r.roundEnd, -1)}
@@ -533,18 +529,17 @@ export default function SharedGoalDetail({
                           : ""}{" "}
                         ·{" "}
                         {view.group.archivedAt
-                          ? "Archived · frozen"
+                          ? "Archived"
                           : r.roundEnd > addDays(view.today, -7)
-                            ? "Awaiting late sync"
-                            : "Confirmed history"}
+                            ? "Late check-ins may still arrive"
+                            : "Past week"}
                       </small>
                     </div>
                   );
                 })}
                 {!historical.length && (
                   <p className="shared-note">
-                    No earlier confirmed scored rounds. Inactive gaps are not
-                    zero-score weeks.
+                    No earlier weeks. Weeks without a round don't count as zero.
                   </p>
                 )}
                 <button

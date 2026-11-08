@@ -130,7 +130,7 @@ export async function runSharedUiTests({ page, context, url, fixture, root }) {
     await button("Join Client integration").focus();
     await page.keyboard.press("Enter");
     await heading("Client integration").waitFor();
-    await page.getByText("Your eligibility starts", { exact: false }).waitFor();
+    await page.getByText("You start the week of", { exact: false }).waitFor();
     check(
       (await metrics()).commands.filter((c) => c.operation === "join")
         .length === 1,
