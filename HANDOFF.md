@@ -1,6 +1,21 @@
-# Handoff: publishable key in use; legacy keys next (owner)
+# Handoff: publishable key switch complete; legacy keys revoked
 
-## Current state (8 November 2026): publishable key installed
+## Current state (8 November 2026): legacy keys disabled and HS256 revoked
+
+- All six steps of docs/supabase-publishable-key.md are done. Owner results:
+  - Installed publishable-key build: signed out, signed back in, "Synced", the
+    Today shared card and Goals → Shared group all load.
+  - GitHub `Mahmoud-Alshinawy/facta` secrets: `VITE_SUPABASE_PUBLISHABLE_KEY`
+    and `VITE_SUPABASE_URL`; `VITE_SUPABASE_ANON_KEY` deleted. The same anon
+    secret was also deleted from the old archive repo `m-coder7/task-battles`.
+  - Supabase: legacy JWT-based API keys (anon, service_role) disabled; current
+    JWT signing key confirmed ECC P-256; legacy HS256 secret revoked. Facta kept
+    syncing after each step.
+- Next on `main`: remove the now-unused anon-key fallback from the code, the
+  release workflow and the docs.
+- Still open: confirm the live "Reset Password" template contains `{{ .Token }}`.
+
+## 8 November 2026: publishable key installed (historical)
 
 - Step 3 of docs/supabase-publishable-key.md is done. The local `.env` (git-ignored,
   not committed) has `VITE_SUPABASE_PUBLISHABLE_KEY`. Its existing
@@ -14,12 +29,7 @@
 - Owner check on the installed build: sign out, sign in, a small personal change
   showed Synced, the shared card loaded and Goals → Shared opened the group:
   **PASS**.
-- Next (owner, see the doc's steps 4–6): remove `VITE_SUPABASE_ANON_KEY` from
-  `.env` and the GitHub secrets, add the GitHub secret
-  `VITE_SUPABASE_PUBLISHABLE_KEY`, disable the legacy API keys, then revoke the
-  legacy HS256 secret. Any install built before `.env` switched to the
-  publishable key may still carry the legacy key and stops syncing at step 5.
-- Still open: confirm the live "Reset Password" template contains `{{ .Token }}`.
+- The owner's steps 4–6 followed; see the current state above.
 
 ## 7 November 2026: hardening merged (historical)
 

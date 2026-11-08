@@ -1,7 +1,7 @@
 # Moving to a publishable key
 
-28 October 2026; updated 8 November 2026. The code change is merged. Owner
-steps 1–3 are done (see "Result of the switch" at the end); steps 4–6 remain.
+28 October 2026; completed 8 November 2026. The code change is merged and all
+six owner steps are done (see "Result of the switch" at the end).
 
 The desktop app used to read only `VITE_SUPABASE_URL` and
 `VITE_SUPABASE_ANON_KEY` (`apps/desktop/src/lib/supabase.ts`). The anon key is a legacy JWT signed with
@@ -60,6 +60,11 @@ publishable key (`sb_publishable_...`) is not a JWT and survives the revocation.
   The built desktop JS contains the publishable key and no legacy anon JWT.
 - On the installed build the owner signed out and back in; a personal change
   showed Synced, the shared card loaded and the shared group opened. Pass.
-- For step 4, `.env` already has no legacy key; only the GitHub secrets need
-  changing. Before step 5, make sure no install you use was built from an older
-  `.env` that still held the legacy anon key.
+- Step 4: GitHub `Mahmoud-Alshinawy/facta` now has the secrets
+  `VITE_SUPABASE_PUBLISHABLE_KEY` and `VITE_SUPABASE_URL`;
+  `VITE_SUPABASE_ANON_KEY` was deleted there and from the old archive repo
+  `m-coder7/task-battles`.
+- Step 5: the legacy JWT-based API keys (anon, service_role) are disabled.
+- Step 6: the current JWT signing key is ECC P-256, and the legacy HS256 secret
+  is revoked.
+- Facta kept syncing after each of steps 4–6.
