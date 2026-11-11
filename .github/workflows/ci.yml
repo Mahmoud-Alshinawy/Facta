@@ -2,8 +2,6 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
   pull_request:
   workflow_dispatch:
 
@@ -20,6 +18,8 @@ env:
 
 jobs:
   checks:
+    # Same-repository branches already run on push; fork PRs still need checks.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository }}
     name: ${{ matrix.name }} checks
     strategy:
       fail-fast: false
