@@ -1,20 +1,27 @@
 # Auto-updater plan (Facta and Facta Widgets)
 
-Status: **plan only, for review.** No code yet. Branch `feat/updater`, from
-`main` at 65fb735.
+Status: **plan only, revised after review.** No code yet. Branch
+`feat/updater`, rebased onto `main` at 9b00cf2 (cross-platform CI merged).
+
+Reviewer answers already taken in: first check at 60 s and every 6 h,
+approved; silent background download before asking, approved; macOS and Linux
+end to end, deferred.
 
 ## In plain words
 
-- Facta checks GitHub for a newer version a little after it starts and then
+- Facta checks GitHub for a newer version a minute after it starts and then
   every 6 hours. It never slows startup, and if you are offline nothing happens.
 - When a newer version exists, Facta downloads it quietly in the background. It
   does **not** install it. It shows a small bar: "Update ready, restart to
   install", with **Restart** and **Later**.
 - Nothing is installed until you press Restart. Facta then saves your data (the
-  same save it does on Quit), updates the widgets and itself, and opens again.
+  same save it does on Quit), lets the widgets update first and waits until
+  they have finished, then updates itself and opens again.
 - If Facta started hidden at login, you see nothing until you open its window.
 - Facta and Facta Widgets always come from the same release with the same
   version number. You agree once, in Facta, and both update.
+- Your settings, widget positions and data are not touched by an update
+  (checked against the installer's own script; see section 5).
 - Updates are signed with a private key that only you hold (in GitHub's secret
   store and in your backup). The apps refuse any update not signed with it.
   **If that key is lost, installed copies can never update again**: every user
@@ -30,8 +37,9 @@ Status: **plan only, for review.** No code yet. Branch `feat/updater`, from
 | Tags | None, locally or on GitHub. |
 | GitHub Releases | None (`/releases` API returns an empty list). |
 | Release workflow runs | Never run (`total_count: 0`). |
-| `TAURI_SIGNING_PRIVATE_KEY` / `_PASSWORD` secrets | Can't be listed from here (no `gh` CLI, and listing needs the owner's login). The last recorded list (HANDOFF, 8 Nov) has only `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`, so they very likely **don't exist**. The owner confirms in Settings → Secrets and variables → Actions. I did not create or change any secret. |
+| `TAURI_SIGNING_PRIVATE_KEY` / `_PASSWORD` secrets | Can't be listed from here (no `gh` CLI, and listing needs the owner's login). The last recorded list (HANDOFF, 8 Nov) has only `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`, so they very likely **don't exist**. The owner confirms in Settings → Secrets and variables → Actions. No secret was created or changed. |
 | release.yml | On `v*.*.*` tags: builds both apps for Windows x64, macOS arm64, Linux x64 with `tauri-action` (build only, no release upload), zips each OS, and `softprops/action-gh-release` publishes the zips. No `latest.json`, no per-file assets, no updater signatures. |
+| ci.yml | Since 9b00cf2: one `checks` job, matrix of Windows, Ubuntu 22.04, macOS arm64. |
 | Updater plugin | Not in either app. |
 | Real install | NSIS, per-user: `%LOCALAPPDATA%\Facta\facta.exe` and `%LOCALAPPDATA%\Facta Widgets\facta-widgets.exe`. No admin rights needed to update. |
 | Versions | `1.0.0` in both `tauri.conf.json`, both `Cargo.toml`, `apps/widgets/package.json`; `apps/desktop/package.json` and the root say `0.0.0`. |
@@ -63,7 +71,11 @@ Status: **plan only, for review.** No code yet. Branch `feat/updater`, from
   offered to users.
 - `passive` install mode: the NSIS installer shows only a small progress bar,
   no questions. On Windows the running app exits when the install starts
-  (Tauri's documented behaviour); the installer then starts the new version.
+  (Tauri's documented behaviour). The installer is started in update mode
+  (`/UPDATE`) and, with the restart flag (`/R`), starts the new version when it
+  succeeds (`.onInstSuccess` in the template). The exact flags the plugin
+  passes are confirmed in its source when it's added, and exercised in test
+  7(d).
 
 ### How release.yml produces the update files
 
@@ -82,25 +94,25 @@ outcome, since an unsigned release could never be installed by the updater.
 
 Changes to release.yml (I own it for this work):
 
-1. Keep `tauri-action` as build-only (as now). Upload the three updater files
+1. A `versions` job first (no matrix, see section 7); the build matrix
+   `needs` it, so a mismatched tag builds nothing.
+2. Keep `tauri-action` as build-only (as now). Upload the three updater files
    and their `.sig` per app as job artifacts, renamed to fixed names with no
    spaces, e.g. `Facta-1.0.1-windows-x64-setup.exe`,
    `FactaWidgets-1.0.1-windows-x64-setup.exe` (GitHub turns spaces into dots,
    which would break URLs; a signature covers the content, not the name).
-2. **Linux catch:** the "Repair Linux AppImages" step changes the AppImage
+3. **Linux catch:** the "Repair Linux AppImages" step changes the AppImage
    after Tauri signed it, so the old `.sig` would be wrong. Re-sign the
    repaired file with `pnpm tauri signer sign` (same secret, from env, never
    echoed) right after the repair.
-3. A new step in the `release` job runs a small checked-in script
+4. A new step in the `release` job runs a small checked-in script
    (`scripts/make-update-manifests.mjs`) that writes `latest-facta.json` and
    `latest-widgets.json`: `version` (from the tag), `pub_date`, release notes
    link, and for each platform the `signature` (the `.sig` text) and `url`
    (`https://github.com/Mahmoud-Alshinawy/Facta/releases/download/<tag>/<file>`).
    It fails if any platform or signature is missing.
-4. The release step attaches the zips (as now) **plus** the six updater files,
+5. The release step attaches the zips (as now) **plus** the six updater files,
    six `.sig`s and two manifests.
-5. A first step fails the run if the tag doesn't equal the version in all
-   version files (see section 6).
 
 No secret value is printed; the key only lives in the job's environment.
 
@@ -111,27 +123,35 @@ password never pass through any Claude session, the repo, logs or chat.
 
 **Steps for Mahmoud (about 10 minutes):**
 
-1. Open PowerShell in the Facta folder and run:
+1. Open PowerShell in the Facta folder. First make the folder the key will go
+   in (it's outside OneDrive and outside the repo, on purpose):
+
+   ```powershell
+   New-Item -ItemType Directory -Force "$env:USERPROFILE\.tauri"
+   ```
+
+2. Then create the key:
 
    ```powershell
    pnpm --filter facta-desktop exec tauri signer generate -w "$env:USERPROFILE\.tauri\facta-updater.key"
    ```
 
-2. When asked, type a strong password twice. Save that password in your
-   password manager now, named "Facta updater key password".
-3. Two files appear in `C:\Users\<you>\.tauri\` (outside OneDrive and outside
-   the repo, on purpose):
+3. When asked, type a strong password, then type it again. **Nothing shows on
+   screen while you type it, not even dots.** That's normal; just type and
+   press Enter. Save that password in your password manager now, named "Facta
+   updater key password".
+4. Two files appear in `C:\Users\<you>\.tauri\`:
    - `facta-updater.key`: the **private** key. Secret.
    - `facta-updater.key.pub`: the **public** key. Safe to share.
-4. Back up the private key: attach `facta-updater.key` to the same password
+5. Back up the private key: attach `facta-updater.key` to the same password
    manager entry, **and** copy it to a USB stick you keep somewhere safe. Not
    in the repo, not in OneDrive's synced folders, not in email or chat.
-5. On GitHub: repo `Mahmoud-Alshinawy/Facta` → Settings → Secrets and
+6. On GitHub: repo `Mahmoud-Alshinawy/Facta` → Settings → Secrets and
    variables → Actions → **New repository secret**:
    - Name `TAURI_SIGNING_PRIVATE_KEY`, value: open `facta-updater.key` in
      Notepad, select all, copy, paste. Save.
    - Name `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, value: the password. Save.
-6. Tell the builder "key done". The builder reads only the `.pub` file and puts
+7. Tell the builder "key done". The builder reads only the `.pub` file and puts
    that text into both `tauri.conf.json` files.
 
 **Losing the private key (or its password) means every installed copy can
@@ -149,7 +169,8 @@ Rust side (Facta), a small `updater.rs` module:
   interval. Offline is silent.
 - If a newer version is found: download it in the background (verified against
   the public key) and keep the bytes in memory, then mark state `Ready(version)`.
-  If the download fails, state stays `Idle` and the next check retries.
+  If the download fails, state stays `Idle` and the next check retries. A later
+  check that finds an even newer version replaces the download.
 - Commands: `update_status()` → `{ state, version }`; `install_update()`.
   Event: `update-ready`.
 - Tray menu gets one extra item, shown only when ready: "Restart to update".
@@ -164,55 +185,123 @@ Web side (Facta):
 - `Later` hides the bar until the next app start (or a newer version). The
   tray item stays.
 - `Restart`: runs the same save as Quit (`plannerQuit.flush()` in
-  `lib/nativeQuit.ts`), then calls `install_update`. Never installs without
-  this click.
+  `lib/nativeQuit.ts`), then calls `install_update`, which runs the widgets
+  handshake (section 4) and then installs Facta. The bar shows "Updating the
+  widgets…" while it waits. Never installs without this click.
 - Settings → About gets the version number and a "Check for updates" button.
 
-## 4. Widgets: recommendation
+## 4. Widgets: each installs itself, Facta asks once
 
-**Each app installs its own update; Facta is the only one that asks.**
+**Recommendation: each app installs its own update; Facta is the only one that
+asks, and it waits for the widgets' install to finish before its own.**
 
 Why: on Windows an install makes the *running* app exit, so Facta can't use
 the updater to install the widgets' installer without killing itself, and the
-widgets app has no main window to show a prompt in. Letting each app replace
-itself keeps the installs simple; one prompt in Facta keeps it one decision.
+widgets app has no main window to show a prompt in.
 
-How:
+### Files (all in `%LOCALAPPDATA%\Facta\`, written to a `.tmp` file then renamed, so a reader never sees half a file)
 
-- Widgets gets the same plugin, its own `latest-widgets.json`, the same public
-  key, and the same check schedule, but **never shows a prompt**.
-- When the user presses Restart in Facta, Facta writes a small approval file
-  in the folder the two apps already share (`%LOCALAPPDATA%\Facta\`):
-  `update-approved.json` = `{ "version": "1.0.1" }`. (The widgets'
-  single-instance guard is a mutex, so there's no argv channel; this file is.)
-- Widgets looks for that file every few seconds (it already polls this folder
-  for Facta's exports). If its downloaded update matches the approved version,
-  it installs (exits, installs, reopens). On its next start, if an approval
-  file names a version newer than itself, it checks and installs at once,
-  before showing any widget.
-- Facta waits up to ~10 s for the widgets to exit (or proceeds at once if
-  they're not running), then installs itself.
-- If the widgets' update failed or wasn't downloaded yet, the widgets keep
-  running the old version and install on their next check. The shared files
-  carry a `version` field already (`version: 1`); a release must not change
-  that format without supporting the old one for one version.
+| File | Written by | Meaning |
+|---|---|---|
+| `update-approved.json` `{ "version": "1.0.1", "at": <ms> }` | Facta, on Restart | The user agreed to this version (or anything newer). |
+| `widgets-updating.json` `{ "from": "1.0.0", "to": "1.0.1", "at": <ms> }` | Widgets, just before starting their installer | A widgets install is in progress. |
 
-Matching versions: one tag builds and publishes both apps with the same version
-(release.yml checks this). The approval file names that version, so the
-widgets never install anything the user didn't agree to in Facta.
+### Handshake, step by step
 
-## 5. CSP
+1. **Facta, on Restart:** flush (as on Quit), write `update-approved.json`
+   with the version it downloaded.
+2. **Widgets** watch `update-approved.json` (checked every 2 s, and once at
+   start). When it appears they compare versions with semver:
+   - If the widgets' own downloaded update is **>= the approved version**,
+     install it. (Not only an exact match: a release published between the two
+     checks would otherwise strand the widgets.)
+   - If they have nothing downloaded yet, or only something older than
+     approved, they run a check now, download, and then install if it is >=
+     approved. If that fails, they stay as they are and retry at the next
+     6-hour check; the approval file stays until satisfied.
+   - If their own version is already >= approved, they do nothing (see 6).
+3. **Widgets, before installing:** save widget positions at once, bypassing
+   the 500 ms debounce (call `save_current_positions` directly, as tray Quit
+   and `quit_app` already do), then write `widgets-updating.json`, then call
+   the plugin's install. The widgets process exits; the NSIS installer
+   (passive, update mode) replaces `facta-widgets.exe` and starts the new one.
+4. **Facta waits** after writing the approval, polling every 500 ms:
+   - Widgets not running and no `widgets-updating.json` after 5 s → nothing to
+     wait for; continue.
+   - `widgets-updating.json` present → wait until it is **removed** (step 6)
+     or a **3-minute** timeout. The installer itself takes a few seconds; the
+     long timeout covers a slow disk or an antivirus scan.
+   - Widgets running and neither file reacted within 30 s (for example the
+     widgets' download failed) → continue; the widgets update on their own
+     later.
+   - On timeout Facta continues anyway: its installer only touches
+     `%LOCALAPPDATA%\Facta\facta.exe` and `uninstall.exe`, never the widgets'
+     folder, so it can't collide with a still-running widgets install.
+5. **Facta installs itself.** Its installer (passive, update mode) exits Facta
+   and starts the new Facta without `--hidden`.
+6. **New widgets, on start:** if their version >= the version in
+   `widgets-updating.json`, delete it. If their version >= the version in
+   `update-approved.json`, delete that too (Facta also deletes a satisfied
+   approval file on its own next start, whichever comes first). A stale
+   approval file (version <= own) is ignored by everyone.
+
+### Facta never starts the widgets during a widgets install
+
+Facta starts the widgets in two places, both through `launch_widget_app`: at a
+login start (`--hidden` with start-with-Windows on) and when the user opens
+widgets from the app. `launch_widget_app` gets one guard at the top:
+
+- If `widgets-updating.json` exists and is younger than 5 minutes, don't
+  launch now; retry every 5 s until it is gone, then launch only if the widgets
+  aren't already running (the installer's `/R` normally starts them, so this
+  usually ends with nothing to do).
+- If it is older than 5 minutes, treat the install as failed: delete the
+  marker, log it, and launch normally.
+
+This closes both failure cases: Facta can't start a half-replaced
+`facta-widgets.exe`, and can't lock the file the installer is writing (which
+NSIS reports as "Error opening file for writing").
+
+### Matching versions
+
+One tag builds and publishes both apps with the same version (release.yml
+checks this). The approval file names the version the user agreed to, and the
+widgets only install that or a newer signed release. The shared files carry a
+`version` field already (`version: 1`); a release must not change that format
+without reading the old one for at least one version.
+
+## 5. Shared files in Facta's install folder
+
+`%LOCALAPPDATA%\Facta\` is both Facta's per-user NSIS install folder
+(`$INSTDIR`) and the folder the two apps share: `widget-state.json`,
+`widget-positions.json`, the widget exports, `widget-app-path.txt`, the
+startup log, and the two new update files.
+
+What Tauri's NSIS installer does there, read from the template inside the
+installed `@tauri-apps/cli` 2.11.4:
+
+| Situation | What happens to files the installer didn't put there |
+|---|---|
+| **Update** (`/UPDATE`, passive) | `PageLeaveReinstall` jumps straight to "done" in update mode: the old version is **not uninstalled first**. The Install section kills a still-running `facta.exe` (passive mode does this without asking), then writes `facta.exe` and `uninstall.exe` over the old ones (Facta has no extra resources or sidecars) and updates registry entries. **Nothing else in the folder is deleted, moved or rewritten.** |
+| Manual reinstall with "uninstall first" | The uninstaller deletes only the files it installed, then `RMDir "$INSTDIR"` without `/r`, which only removes an empty folder. Shared files stay, and so does the folder. |
+| Manual uninstall with "delete app data" ticked | Additionally removes `%APPDATA%\app.facta.desktop` and `%LOCALAPPDATA%\app.facta.desktop` (the identifier folders), **not** `%LOCALAPPDATA%\Facta`. Update mode never does this. |
+
+The widgets' own install folder is `%LOCALAPPDATA%\Facta Widgets\`; their
+installer never writes to `%LOCALAPPDATA%\Facta\`.
+
+So the layout is safe as it is. Moving the shared files elsewhere is not part
+of this work; test 7(g) proves it on the real install.
+
+## 6. CSP
 
 **No change.** The updater's requests (to `github.com` and the asset host
 `objects.githubusercontent.com`) are made by Rust (`reqwest`), not by the
 webview, so the page's `connect-src` doesn't apply to them. Both CSPs stay
-exactly as they are. If review prefers the JS updater API instead, the
-download is still made in Rust, so the answer is the same.
+exactly as they are.
 
-## 6. Version numbers
+## 7. Version numbers
 
-The updater compares the `version` in `tauri.conf.json`. Today it's repeated
-in five places. Plan:
+The updater compares the `version` in `tauri.conf.json`. Plan:
 
 - Each `tauri.conf.json` points at its app's `package.json`
   (`"version": "../package.json"`, supported by Tauri 2), so the
@@ -223,14 +312,22 @@ in five places. Plan:
 - `scripts/bump-version.mjs 1.0.1` sets both `package.json`, both
   `Cargo.toml` and refreshes `Cargo.lock`. A release is: run the script, commit
   "Release 1.0.1", tag `v1.0.1`, push the tag (owner approves, as with merges).
-- release.yml and CI fail if the tag or any of these files disagree.
+- `scripts/check-versions.mjs [tag]` checks all of these agree (and equal the
+  tag, when given). Plain Node, no install needed.
+- **CI:** a separate `versions` job in `ci.yml`, `runs-on: ubuntu-latest`, no
+  matrix and no `needs`, that only checks out and runs
+  `node scripts/check-versions.mjs`. It sits next to Builder B's 3-OS
+  `checks` job without changing it. (B's change is already on `main` at
+  9b00cf2 and this branch is rebased onto it; if ci.yml moves again before
+  this merges, I rebase again.)
+- **Release:** the same script with the tag, as the first job (section 1).
 
-## 7. Testing without a public release
+## 8. Testing without a public release
 
 On the real install, with a **throwaway test key**, never the real one:
 
-1. Generate a test key pair into `tmp/updater-test/` (git-ignored, no
-   password needed beyond a dummy one). The real key is not needed for testing.
+1. Generate a test key pair into `tmp/updater-test/` (git-ignored; a dummy
+   password). The real key is not needed for testing.
 2. A test-only config overlay `tmp/updater-test/test.conf.json` (merged with
    `tauri build --config …`) sets the test public key and the endpoint
    `http://127.0.0.1:8787/latest-facta.json` (and `-widgets`), plus
@@ -240,12 +337,35 @@ On the real install, with a **throwaway test key**, never the real one:
 4. Bump to **1.0.1** locally (not committed), build both with the overlay,
    write the two manifests with the same script release.yml uses, and serve
    `tmp/updater-test/serve/` with `python -m http.server 8787 --bind 127.0.0.1`.
-5. Checks: (a) server stopped → no prompt, no errors shown (offline case);
-   (b) start Facta hidden (`--hidden`) → no bar until the window opens;
-   (c) bar appears → `Later` hides it, tray item remains; (d) `Restart` → data
-   saved, widgets exit and come back at 1.0.1, Facta comes back at 1.0.1;
-   (e) a tampered `.sig` → refused, nothing installed; (f) at the end exactly
-   one `facta.exe` and one `facta-widgets.exe`, both from the install path.
+5. Checks:
+   - (a) Server stopped: no bar, no error shown (offline case).
+   - (b) Start Facta hidden (`--hidden`): no bar until the window opens.
+   - (c) Bar appears; `Later` hides it, tray item remains.
+   - (d) `Restart`: data saved; widgets exit, `widgets-updating.json` appears
+     then disappears, widgets come back at 1.0.1; only then does Facta exit
+     and come back at 1.0.1. Approval file gone afterwards.
+   - (e) A tampered `.sig`: refused, nothing installed.
+   - (f) **Install-ordering race:** with a 1.0.1 widgets installer made slow on
+     purpose (a test-only NSIS pre-install hook that sleeps 20 s, overlay
+     only), press Restart, then immediately run `facta.exe` and trigger
+     "open widgets" while the widgets install runs. Expect: Facta doesn't start
+     `facta-widgets.exe` until the marker is gone, no "Error opening file for
+     writing", one widgets process at the end at 1.0.1. Then a second run with
+     the marker left behind (installer killed): after 5 minutes Facta clears it
+     and starts the widgets normally.
+   - (g) **Shared files survive:** right after the apps have exited for the
+     update (positions flushed), record `Get-FileHash` of `widget-state.json`,
+     `widget-positions.json`, the export files and `widget-app-path.txt`; after
+     both apps are back at 1.0.1, before touching anything, hash again. Expect
+     byte-identical files (the startup export may be rewritten by the new
+     Facta; if so, check it is valid JSON and parses with the widgets' parser).
+     Also: signed in, Today data present, widgets back where they were, and
+     the folder listing shows only `facta.exe` and `uninstall.exe` with new
+     timestamps.
+   - (h) Widgets newer than approved: approve 1.0.1 while the server already
+     offers 1.0.2 to the widgets only; the widgets install 1.0.2.
+   - (i) At the end exactly one `facta.exe` and one `facta-widgets.exe`, both
+     from the install path.
 6. Finish by installing the normal build (real public key, GitHub endpoint) of
    the branch, so the real install isn't left pointing at localhost.
 
@@ -258,20 +378,13 @@ owner's key is in place: v1.0.1 installed by hand, then v1.0.2 updating it.
 
 1. Owner creates the key and secrets (section 2); builder adds the public key.
 2. Rust updater module + commands in Facta; bar, tray item, Settings → About.
-3. Widgets updater + approval-file handshake.
-4. Version single-source + `bump-version.mjs`.
-5. release.yml: renamed updater files, Linux re-sign, manifests, version check.
-6. Local test (section 7) on the real install; then stop for review.
+3. Widgets updater, approval watch, position flush, `widgets-updating.json`.
+4. The `launch_widget_app` guard and Facta's wait.
+5. Version single-source, `bump-version.mjs`, `check-versions.mjs`, the CI
+   `versions` job.
+6. release.yml: versions job, renamed updater files, Linux re-sign, manifests.
+7. Local test (section 8) on the real install; then stop for review.
 
-Step 2 touches `apps/desktop/src-tauri/src/lib.rs` (plugin registration and
-two commands, most code in a new `updater.rs`). Builder B may edit `lib.rs`
-too; whichever merges second rebases.
-
-## Open questions for review
-
-- Check interval 6 h and first check at 60 s: fine?
-- Silent background download before asking (~10 MB per app): fine, or ask
-  before downloading?
-- macOS and Linux get the updater files too; whether they work end to end
-  (unsigned macOS app, AppImage only) is tested later with Builder B, not in
-  this branch.
+Steps 2 and 4 touch `apps/desktop/src-tauri/src/lib.rs` (plugin registration,
+two commands, the guard; most code in a new `updater.rs`). Builder B may edit
+`lib.rs` too; whichever merges second rebases.
