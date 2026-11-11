@@ -1,4 +1,3 @@
-#[cfg(windows)]
 mod single_instance;
 #[cfg(test)]
 mod runtime_safety_tests;
@@ -599,6 +598,7 @@ fn pointer_button_down() -> bool {
         // Querying the current button state does not change any Windows setting.
         unsafe { GetAsyncKeyState(i32::from(VK_LBUTTON)) < 0 }
     }
+    // Linux/macOS save after the 500 ms quiet period without querying global input.
     #[cfg(not(windows))]
     { false }
 }
@@ -613,7 +613,7 @@ fn save_after_position_events(
         loop {
             match receiver.recv_timeout(quiet) {
                 Ok(()) => continue,
-                // Never reposition a widget while the mouse is still down.
+                // On Windows, also wait for the mouse button to be released.
                 Err(mpsc::RecvTimeoutError::Timeout) if dragging() => continue,
                 Err(mpsc::RecvTimeoutError::Timeout) => { save(); break; }
                 Err(mpsc::RecvTimeoutError::Disconnected) => { save(); return; }
@@ -808,10 +808,13 @@ fn report_widget_run<E: std::fmt::Display>(result: Result<(), E>, report: impl F
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // Hold the named handle for the entire process, including initial setup.
+    // Keep the mutex handle (Windows) or file lock (Linux/macOS) until exit.
     #[cfg(windows)]
+    let instance = single_instance::acquire("Local\\app.facta.widgets.single-instance");
+    #[cfg(not(windows))]
+    let instance = single_instance::acquire(&state_path().join("widget-instance.lock"));
     let _instance_guard = match single_instance::decide_guard(
-        single_instance::acquire("Local\\app.facta.widgets.single-instance"),
+        instance,
         |error| log(&format!("Could not create single-instance guard; continuing without it: {error}")),
     ) {
         single_instance::GuardDecision::Start(guard) => guard,
