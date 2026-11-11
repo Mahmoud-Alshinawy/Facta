@@ -190,4 +190,66 @@ mod tests {
             .expect("later launch should not fail")
             .is_some());
     }
+
+    #[cfg(unix)]
+    #[test]
+    #[ignore = "temporary causal probe; run explicitly in diagnostic CI"]
+    fn temporary_child_spawn_keeps_an_unrelated_lock_until_exec() {
+        use std::io::{Read, Write};
+        use std::os::fd::AsRawFd;
+        use std::os::unix::{net::UnixStream, process::CommandExt};
+
+        extern "C" {
+            fn read(fd: i32, buf: *mut std::ffi::c_void, count: usize) -> isize;
+            fn write(fd: i32, buf: *const std::ffi::c_void, count: usize) -> isize;
+        }
+
+        let name = format!(
+            "Local\\FactaWidgets-inheritance-probe-{}",
+            std::process::id()
+        );
+        let first = acquire(&name).unwrap().unwrap();
+        let (mut ready_parent, ready_child) = UnixStream::pair().unwrap();
+        let (mut resume_parent, resume_child) = UnixStream::pair().unwrap();
+        let ready_fd = ready_child.as_raw_fd();
+        let resume_fd = resume_child.as_raw_fd();
+        let executable = std::env::current_exe().unwrap();
+        let worker = std::thread::spawn(move || {
+            let mut command = std::process::Command::new(executable);
+            command.args([
+                "--exact",
+                "single_instance::tests::child_process_reports_existing_instance",
+            ]);
+            command.env_remove("FACTA_TEST_MUTEX_NAME");
+            // This deliberately pauses the child between fork and exec.
+            // Only async-signal-safe raw socket I/O runs in pre_exec.
+            unsafe {
+                command.pre_exec(move || {
+                    let mut byte = 1u8;
+                    if write(ready_fd, (&byte as *const u8).cast(), 1) != 1 {
+                        return Err(std::io::Error::last_os_error());
+                    }
+                    if read(resume_fd, (&mut byte as *mut u8).cast(), 1) != 1 {
+                        return Err(std::io::Error::last_os_error());
+                    }
+                    Ok(())
+                });
+            }
+            command.output().unwrap()
+        });
+        let mut ready = [0u8; 1];
+        ready_parent.read_exact(&mut ready).unwrap();
+        drop(first);
+        let inherited_lock_is_still_held = acquire(&name).unwrap().is_none();
+        // Always release and reap the child before asserting the observation.
+        resume_parent.write_all(&[1]).unwrap();
+        let result = worker.join().unwrap();
+        assert!(result.status.success());
+        assert!(
+            inherited_lock_is_still_held,
+            "the paused child should retain the parent's otherwise closed lock"
+        );
+        assert!(acquire(&name).unwrap().is_some());
+        eprintln!("Causal probe: parent closed its guard; child retained the lock until exec; acquisition succeeded after child exit");
+    }
 }

@@ -135,5 +135,27 @@ jobs:
           echo "Widget stress summary: $failures failed of 50 runs"
           test "$failures" -eq 0
 
+      - name: TEMPORARY Prove child lock inheritance
+        if: always() && runner.os != 'Windows'
+        run: cargo test --locked --manifest-path apps/widgets/src-tauri/Cargo.toml --lib single_instance::tests::temporary_child_spawn_keeps_an_unrelated_lock_until_exec -- --ignored --exact --nocapture
+
+      - name: TEMPORARY Compare without child-spawning test (50 runs)
+        if: always() && runner.os != 'Windows'
+        shell: bash
+        run: |
+          failures=0
+          for iteration in $(seq 1 50); do
+            log="$RUNNER_TEMP/widget-without-child-$iteration.log"
+            if cargo test --locked --manifest-path apps/widgets/src-tauri/Cargo.toml --lib -- --skip single_instance::tests::second_process_is_blocked_while_first_is_alive > "$log" 2>&1; then
+              echo "Without-child run $iteration/50 passed"
+            else
+              echo "Without-child run $iteration/50 FAILED"
+              cat "$log"
+              failures=$((failures + 1))
+            fi
+          done
+          echo "Without-child summary: $failures failed of 50 runs"
+          test "$failures" -eq 0
+
       - name: Test widget Rust
         run: cargo test --locked --manifest-path apps/widgets/src-tauri/Cargo.toml
