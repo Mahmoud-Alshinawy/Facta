@@ -8,8 +8,9 @@ import WidgetManager from "../WidgetManager";
 import ThemeCards from "./ThemeCards";
 import InlineConfirm from "./InlineConfirm";
 import StartupSettings from "./StartupSettings";
+import AboutSettings from "./AboutSettings";
 
-const TABS = ["Widgets", "Appearance", "Account"] as const;
+const TABS = ["Widgets", "Appearance", "Account", "About"] as const;
 export default function SettingsPage() {
   const [tab, setTab] = useState<(typeof TABS)[number]>("Widgets");
   const [confirmOut, setConfirmOut] = useState(false),
@@ -92,6 +93,7 @@ export default function SettingsPage() {
       >
         <div className="settings-content-inner">
           {tab === "Widgets" && <><StartupSettings /><WidgetManager /></>}
+          {tab === "About" && <AboutSettings />}
           {tab === "Appearance" && (
             <>
               <section
