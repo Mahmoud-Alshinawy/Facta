@@ -1,4 +1,8 @@
 mod single_instance;
+#[path = "../../../desktop/src-tauri/src/update_handshake.rs"]
+#[allow(dead_code)] // Shared with Facta, which uses other parts.
+mod update_handshake;
+mod updater;
 #[cfg(test)]
 mod runtime_safety_tests;
 
@@ -828,6 +832,7 @@ pub fn run() {
         .manage(WidgetState::new())
         .manage(PositionSaveRequests(position_tx))
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             read_shared_data,
             close_widget,
@@ -882,6 +887,7 @@ pub fn run() {
                 .build(app)?;
             
             log(&format!("Tray icon created (T+{}ms)", t0.elapsed().as_millis()));
+            updater::start(app.handle());
             
             
             // Keeper window to keep app alive in background
