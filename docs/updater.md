@@ -401,3 +401,27 @@ owner's key is in place: v1.0.1 installed by hand, then v1.0.2 updating it.
 Steps 2 and 4 touch `apps/desktop/src-tauri/src/lib.rs` (plugin registration,
 two commands, the guard; most code in a new `updater.rs`). Builder B may edit
 `lib.rs` too; whichever merges second rebases.
+
+## Section 8 results (11 Nov 2026, real install, throwaway test key)
+
+Test builds: both apps 1.0.0, 1.0.1, a widgets 1.0.1 whose installer sleeps
+20 s (test-only NSIS hook), and widgets 1.0.2, all signed with a key in
+`tmp/updater-test/` (git-ignored). Served from `127.0.0.1:8787`. Times are
+from a watcher that recorded the two files and running versions every 250 ms.
+
+| Check | Result |
+|---|---|
+| (a) Offline | **Pass.** Server off: each app logged one "error sending request", nothing on screen. |
+| (b) Hidden start | **Pass.** Started `--hidden`: "1.0.1 downloaded and ready" at 14:25:28, nothing shown. Opening the window showed the bar: "Update ready, restart to install · 1.0.1 · Restart · Later". |
+| (c) Later | **Pass** for the bar: hidden by Later, back after the next start. The tray item could not be seen (the taskbar is outside what the builder may screenshot): **owner hand-check**. |
+| (d) Restart | **Pass.** 14:27:44 approval → 14:27:45 widgets marker → 14:27:47 old widgets gone, installer running → 14:27:50 widgets 1.0.1 up, both files removed → 14:27:52 Facta exits → 14:27:54 Facta 1.0.1, visible, signed in, Synced. |
+| (e) Tampered signature | **Pass.** Signatures swapped: Facta downloaded the file, refused it, stayed 1.0.0, no bar; About said "Could not check for updates…". |
+| (f) Race | **Pass.** Slow widgets install 14:30:41–14:31:05 (23 s); "Launch widget app" pressed 4 times during it; no widgets process until the installer's own start; no NSIS error; one widgets 1.0.1; Facta updated after (14:31:14). Stale marker: written to go stale ~30 s later; Launch pressed; Facta logged "marker is stale; treating that install as failed", removed it and started the widgets at 14:32:25. |
+| (g) Shared files | **Pass.** `widget-state.json`, `widget-positions.json`, `widget-app-path.txt` byte-identical (SHA-256) across the update; `widgets.json` changed only because Facta re-exports it at start (same size, read by the widgets). Folder: only `facta.exe` and `uninstall.exe` replaced. Widgets in the same places. |
+| (h) Widgets newer than approved | **Pass.** Facta offered 1.0.1, widgets 1.0.2: approval 1.0.1, widgets installed 1.0.2, files cleared, Facta 1.0.1. |
+| (i) One of each | **Pass.** After installing the normal branch build (GitHub endpoint, empty key): one `facta.exe` and one `facta-widgets.exe`, both 1.0.0 from the install path; first check logged "Could not fetch a valid release JSON" (no release yet), nothing on screen. |
+
+Known small points: the About message says "Check your connection" for any
+failed check, including a bad signature; if the page failed between
+`prepare_update` and `install_update`, Restart stays disabled until Facta
+restarts.

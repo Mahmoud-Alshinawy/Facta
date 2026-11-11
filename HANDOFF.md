@@ -1,4 +1,27 @@
-# Handoff: publishable key switch complete; legacy keys revoked
+# Handoff: auto-updater built on feat/updater; waiting for review
+
+## Current state (11 November 2026): auto-updater, section 8 tests done
+
+- main = 9b00cf2 (cross-platform CI fast-forwarded; PR #2 merged). CI run
+  42998846499 on main: macOS "Test widget Rust" failed on attempt 1 and passed
+  on re-run (attempt 2); the failing test name and lines were not read (the
+  job log needs a signed-in GitHub session).
+- `feat/updater` (docs/updater.md approved at 48c2d09) adds: tauri-plugin-updater
+  in both apps; Facta checks 60 s after start and every 6 h, downloads quietly,
+  shows "Update ready, restart to install" (Restart / Later), tray item, and
+  Settings → About; widgets install only what Facta's Restart approved
+  (`update-approved.json`, `widgets-updating.json`, shared module
+  `update_handshake.rs`); `launch_widget_app` waits during a widgets install;
+  one version per app in package.json with `scripts/check-versions.mjs`,
+  `bump-version.mjs`, CI `versions` job; release.yml publishes signed updater
+  files and `latest-facta.json` / `latest-widgets.json`.
+- Section 8 tests (a)–(i) passed on the real install with a throwaway test key
+  (details in docs/updater.md). The real install now runs the normal branch
+  build, 1.0.0, one of each; its updates stay off until the owner's key.
+- Waiting on: review; owner creates the real key ("key done", section 2), then
+  the builder adds the public key and reinstalls (step 8.6).
+- Results: frozen install; tsc ×3; **509 desktop** (505 + 4) / **222 calendar**;
+  both builds; both cargo checks; **24** widget Rust tests (17 + 7).
 
 ## Current state (8 November 2026): shared goals as goals, done
 
