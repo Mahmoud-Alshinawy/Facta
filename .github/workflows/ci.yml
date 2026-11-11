@@ -20,6 +20,8 @@ jobs:
   # One version for both apps everywhere (docs/updater.md, section 7). Plain
   # Node, no install; separate from the OS matrix below.
   versions:
+    # Same rule as the checks job: same-repo PRs already ran on push.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository }}
     name: Version numbers
     runs-on: ubuntu-latest
     timeout-minutes: 5

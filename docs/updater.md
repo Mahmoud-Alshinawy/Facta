@@ -254,9 +254,13 @@ widgets app has no main window to show a prompt in.
    and starts the new Facta without `--hidden`.
 6. **New widgets, on start:** if their version >= the version in
    `widgets-updating.json`, delete it. If their version >= the version in
-   `update-approved.json`, delete that too (Facta also deletes a satisfied
-   approval file on its own next start, whichever comes first). A stale
-   approval file (version <= own) is ignored by everyone.
+   `update-approved.json`, delete that too. **Only the widgets remove the
+   approval;** Facta never does, because the widgets may not have acted on it
+   yet (closed when Restart was pressed, or a download slower than Facta's
+   30 s wait). A satisfied approval (version <= own) is ignored by both apps,
+   so one left behind is harmless. If the widgets were closed at Restart,
+   they find the approval on their next start, check at once and install
+   (unit test `widgets_closed_at_restart_install_the_approval_on_next_start`).
 
 ### Facta never starts the widgets during a widgets install
 
