@@ -90,6 +90,11 @@ pub(super) fn acquire(path: &std::path::Path) -> io::Result<Option<InstanceGuard
 
 #[cfg(test)]
 mod tests {
+    // A concurrent Unix child spawn can retain another test's flock descriptor
+    // until exec. Isolate guard lifetimes from other tests' process launches.
+    // The contention test still races its own 12 worker threads.
+    static INSTANCE_TESTS: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
     #[cfg(windows)]
     use super::acquire;
 
@@ -129,6 +134,9 @@ mod tests {
 
     #[test]
     fn second_process_is_blocked_while_first_is_alive() {
+        let _isolation = INSTANCE_TESTS
+            .lock()
+            .expect("single-instance test isolation lock poisoned");
         let name = format!("Local\\FactaWidgets-process-test-{}", std::process::id());
         let _guard = acquire(&name)
             .expect("first process should not fail")
@@ -150,6 +158,9 @@ mod tests {
 
     #[test]
     fn simultaneous_launches_admit_only_one_instance() {
+        let _isolation = INSTANCE_TESTS
+            .lock()
+            .expect("single-instance test isolation lock poisoned");
         use std::sync::{Arc, Barrier};
         let name = format!("Local\\FactaWidgets-race-test-{}", std::process::id());
         let start = Arc::new(Barrier::new(12));
@@ -178,6 +189,9 @@ mod tests {
 
     #[test]
     fn second_launch_is_blocked_until_first_instance_exits() {
+        let _isolation = INSTANCE_TESTS
+            .lock()
+            .expect("single-instance test isolation lock poisoned");
         let name = format!("Local\\FactaWidgets-test-{}", std::process::id());
         let first = acquire(&name)
             .expect("first launch should not fail")
