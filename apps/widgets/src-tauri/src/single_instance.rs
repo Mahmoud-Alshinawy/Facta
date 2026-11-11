@@ -1,4 +1,5 @@
 use std::io;
+#[cfg(windows)]
 use windows_sys::Win32::{
     Foundation::{CloseHandle, GetLastError, SetLastError, ERROR_ALREADY_EXISTS, HANDLE},
     System::Threading::CreateMutexW,
@@ -23,8 +24,17 @@ pub(super) fn decide_guard<T, E>(
     }
 }
 
+#[cfg(windows)]
 pub(super) struct InstanceGuard(HANDLE);
 
+#[cfg(not(windows))]
+pub(super) struct InstanceGuard {
+    // Closing the file releases the OS lock, including after a crash. Never
+    // unlink a live lock file: that would let another process lock a new inode.
+    _file: std::fs::File,
+}
+
+#[cfg(windows)]
 impl Drop for InstanceGuard {
     fn drop(&mut self) {
         // SAFETY: The guard exclusively owns this valid mutex handle.
@@ -34,6 +44,7 @@ impl Drop for InstanceGuard {
     }
 }
 
+#[cfg(windows)]
 pub(super) fn acquire(name: &str) -> io::Result<Option<InstanceGuard>> {
     let wide: Vec<u16> = name.encode_utf16().chain(std::iter::once(0)).collect();
     // SAFETY: The name is a null-terminated UTF-16 string and the default
@@ -58,9 +69,36 @@ pub(super) fn acquire(name: &str) -> io::Result<Option<InstanceGuard>> {
     }
 }
 
+#[cfg(not(windows))]
+pub(super) fn acquire(path: &std::path::Path) -> io::Result<Option<InstanceGuard>> {
+    use fs2::FileExt;
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    let file = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(false)
+        .open(path)?;
+    match file.try_lock_exclusive() {
+        Ok(()) => Ok(Some(InstanceGuard { _file: file })),
+        Err(error) if error.kind() == io::ErrorKind::WouldBlock => Ok(None),
+        Err(error) => Err(error),
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    #[cfg(windows)]
     use super::acquire;
+
+    #[cfg(not(windows))]
+    fn acquire(name: &str) -> std::io::Result<Option<super::InstanceGuard>> {
+        // Use only the test temp directory, never the owner's widget data.
+        let path = std::env::temp_dir().join(name.replace('\\', "_"));
+        super::acquire(&path)
+    }
 
     #[test]
     fn guard_creation_failure_logs_and_allows_widget_start() {
