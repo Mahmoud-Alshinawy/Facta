@@ -16,6 +16,7 @@ use tauri_plugin_updater::{Update, UpdaterExt};
 const FIRST_CHECK: Duration = Duration::from_secs(60);
 const CHECK_EVERY: Duration = Duration::from_secs(6 * 60 * 60);
 const WAIT_POLL: Duration = Duration::from_millis(500);
+const RUNNING_POLL: Duration = Duration::from_secs(1);
 
 #[derive(Default)]
 pub struct UpdaterState {
@@ -62,13 +63,9 @@ fn log(message: &str) {
 
 /// Start-up housekeeping and the background check loop.
 pub fn start(app: &AppHandle) {
-    let own = app.package_info().version.clone();
-    if let Some(dir) = handshake::shared_dir() {
-        // An approval this version already satisfies is finished with.
-        if handshake::read_approval(&dir).is_some_and(|a| handshake::approval_satisfied(&own, &a)) {
-            let _ = handshake::remove_approval(&dir);
-        }
-    }
+    // Facta never removes update-approved.json: the widgets may not have acted
+    // on it yet (closed at Restart, or a slow download), and only they know
+    // when it is satisfied. A satisfied approval is ignored by both apps.
     let handle = app.clone();
     tauri::async_runtime::spawn(async move {
         tokio::time::sleep(FIRST_CHECK).await;
@@ -212,10 +209,17 @@ async fn wait_for_widgets(version: &str) -> Result<(), String> {
         .map_err(|e| format!("Could not write the update approval: {e}"))?;
     let started = std::time::Instant::now();
     let mut marker_seen = false;
+    // Each running check spawns tasklist: do it about once a second, while
+    // the marker file is read every 500 ms.
+    let mut running = false;
+    let mut running_checked: Option<std::time::Instant> = None;
     loop {
         let marker_now = handshake::updating_exists(&dir);
         marker_seen |= marker_now;
-        let running = crate::widget_app_running().await.unwrap_or(false);
+        if running_checked.map_or(true, |at| at.elapsed() >= RUNNING_POLL) {
+            running = crate::widget_app_running().await.unwrap_or(false);
+            running_checked = Some(std::time::Instant::now());
+        }
         let elapsed = started.elapsed().as_millis() as i64;
         match handshake::facta_wait_step(elapsed, running, marker_now, marker_seen) {
             handshake::WaitStep::Wait => tokio::time::sleep(WAIT_POLL).await,

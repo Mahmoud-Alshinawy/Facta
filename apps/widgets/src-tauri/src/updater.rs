@@ -44,19 +44,20 @@ fn run(app: AppHandle) {
     let mut next_check = Instant::now() + FIRST_CHECK;
     let mut checked_for: Option<Version> = None;
     loop {
-        let approval = handshake::read_approval(&dir).filter(|a| !handshake::approval_satisfied(&own, a));
-        if let Some(approval) = approval {
-            let downloaded = ready.as_ref().and_then(|(u, _)| Version::parse(&u.version).ok());
-            if handshake::widgets_should_install(&own, downloaded.as_ref(), &approval.version) {
+        let approval = handshake::read_approval(&dir);
+        let downloaded = ready.as_ref().and_then(|(u, _)| Version::parse(&u.version).ok());
+        match handshake::widgets_step(&own, approval.as_ref(), downloaded.as_ref(), checked_for.as_ref()) {
+            handshake::WidgetsStep::Install => {
                 if let Some((update, bytes)) = ready.take() {
                     install(&app, &own, &dir, update, bytes);
                 }
-            } else if checked_for.as_ref() != Some(&approval.version) {
-                // Approved something newer than we have: check right away, once
-                // per approved version; otherwise wait for the 6-hour check.
-                checked_for = Some(approval.version.clone());
+            }
+            handshake::WidgetsStep::CheckNow => {
+                // Once per approved version; otherwise wait for the 6-hour check.
+                checked_for = approval.map(|a| a.version);
                 next_check = Instant::now();
             }
+            handshake::WidgetsStep::Nothing => {}
         }
         if Instant::now() >= next_check {
             next_check = Instant::now() + CHECK_EVERY;

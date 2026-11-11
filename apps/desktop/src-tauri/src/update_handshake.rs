@@ -124,6 +124,37 @@ pub fn widgets_should_install(own: &Version, downloaded: Option<&Version>, appro
     downloaded.is_some_and(|d| d > own && d >= approved)
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum WidgetsStep {
+    /// No unsatisfied approval, or already checked for this one: wait.
+    Nothing,
+    /// Approved something newer than what is downloaded: check right away.
+    CheckNow,
+    /// The download satisfies the approval: install it.
+    Install,
+}
+
+/// What the widgets do about `update-approved.json` on each poll, including
+/// right after start. `checked_for` is the approved version they already
+/// checked for, so a failed check waits for the regular 6-hour one.
+pub fn widgets_step(
+    own: &Version,
+    approval: Option<&Approval>,
+    downloaded: Option<&Version>,
+    checked_for: Option<&Version>,
+) -> WidgetsStep {
+    let Some(approval) = approval.filter(|a| !approval_satisfied(own, a)) else {
+        return WidgetsStep::Nothing;
+    };
+    if widgets_should_install(own, downloaded, &approval.version) {
+        WidgetsStep::Install
+    } else if checked_for != Some(&approval.version) {
+        WidgetsStep::CheckNow
+    } else {
+        WidgetsStep::Nothing
+    }
+}
+
 /// An approval is done with once the running app is at least that version.
 pub fn approval_satisfied(own: &Version, approval: &Approval) -> bool {
     own >= &approval.version
@@ -203,6 +234,24 @@ mod tests {
         assert!(!widgets_should_install(&own, None, &v("1.0.1")));
         // Never "update" to the version already running.
         assert!(!widgets_should_install(&v("1.0.2"), Some(&v("1.0.2")), &v("1.0.1")));
+    }
+
+    #[test]
+    fn widgets_closed_at_restart_install_the_approval_on_next_start() {
+        // Facta 1.0.1 approved and updated itself while the widgets were
+        // closed; the approval file is still there (Facta never removes it).
+        let own = v("1.0.0");
+        let approval = Approval { version: v("1.0.1"), at_ms: 0 };
+        // Fresh start: nothing downloaded yet, so check at once.
+        assert_eq!(widgets_step(&own, Some(&approval), None, None), WidgetsStep::CheckNow);
+        // Download still running or failed: don't hammer, wait for 6 h check.
+        assert_eq!(widgets_step(&own, Some(&approval), None, Some(&v("1.0.1"))), WidgetsStep::Nothing);
+        // Downloaded the approved (or a newer) version: install.
+        assert_eq!(widgets_step(&own, Some(&approval), Some(&v("1.0.1")), Some(&v("1.0.1"))), WidgetsStep::Install);
+        assert_eq!(widgets_step(&own, Some(&approval), Some(&v("1.0.2")), Some(&v("1.0.1"))), WidgetsStep::Install);
+        // After the update the same file is satisfied and ignored.
+        assert_eq!(widgets_step(&v("1.0.1"), Some(&approval), None, None), WidgetsStep::Nothing);
+        assert_eq!(widgets_step(&own, None, Some(&v("1.0.1")), None), WidgetsStep::Nothing);
     }
 
     #[test]
