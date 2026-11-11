@@ -1,11 +1,24 @@
 # Auto-updater plan (Facta and Facta Widgets)
 
-Status: **plan only, revised after review.** No code yet. Branch
-`feat/updater`, rebased onto `main` at 9b00cf2 (cross-platform CI merged).
+Status: **approved at 48c2d09; being built** on `feat/updater`. The real
+public key is added when the owner says "key done"; until then `pubkey` is
+empty, updates are never installed, and a release tag fails at the versions
+job.
 
 Reviewer answers already taken in: first check at 60 s and every 6 h,
 approved; silent background download before asking, approved; macOS and Linux
 end to end, deferred.
+
+## Changes made while building
+
+| Plan said | Built | Why |
+|---|---|---|
+| Restart flushes, then `install_update` waits for the widgets and installs. | Two commands: `prepare_update` (approval + widgets wait), then the page flushes, then `install_update`. | The wait can last minutes; flushing right before Facta exits keeps anything typed meanwhile. |
+| `createUpdaterArtifacts: true` in both `tauri.conf.json`. | Off in the app configs; release.yml passes `--config .github/tauri-release.conf.json` that turns it on. | With it on, every local `tauri build` would need the private key. |
+| Manifest keys `windows-x86_64`, `darwin-aarch64`, `linux-x86_64`. | `windows-x86_64-nsis`, `darwin-aarch64-app`, `linux-x86_64-appimage` only. | The plugin tries `{os}-{arch}-{installer}` first, then `{os}-{arch}`. Without the plain keys, an MSI or .deb install finds no entry and stays quiet instead of being handed the NSIS installer or AppImage. |
+| Facta restarts after installing. | Facta passes `/R` itself and turns off the plugin's restart, which would also pass Facta's current arguments. | After a login start those include `--hidden`, so the new Facta would open hidden right after the user pressed Restart. |
+| Widgets with an approval newer than themselves check "before showing any widget". | They show as normal and check at once in the background. | Not delaying widgets behind a network call; the install follows within seconds. |
+| `tauri.conf.json` version points at `package.json`. | As planned; `apps/desktop/package.json` is now `1.0.0`. | |
 
 ## In plain words
 
