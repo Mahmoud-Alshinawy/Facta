@@ -117,22 +117,22 @@ jobs:
       - name: Check widget Rust
         run: cargo check --locked --manifest-path apps/widgets/src-tauri/Cargo.toml
 
-      - name: TEMPORARY Stress widget Rust (50 runs)
+      - name: TEMPORARY Stress widget Rust (200 runs)
         if: runner.os != 'Windows'
         shell: bash
         run: |
           failures=0
-          for iteration in $(seq 1 50); do
+          for iteration in $(seq 1 200); do
             log="$RUNNER_TEMP/widget-stress-$iteration.log"
             if cargo test --locked --manifest-path apps/widgets/src-tauri/Cargo.toml > "$log" 2>&1; then
-              echo "Widget stress run $iteration/50 passed"
+              echo "Widget stress run $iteration/200 passed"
             else
-              echo "Widget stress run $iteration/50 FAILED"
+              echo "Widget stress run $iteration/200 FAILED"
               cat "$log"
               failures=$((failures + 1))
             fi
           done
-          echo "Widget stress summary: $failures failed of 50 runs"
+          echo "Widget stress summary: $failures failed of 200 runs"
           test "$failures" -eq 0
 
       - name: Test widget Rust
