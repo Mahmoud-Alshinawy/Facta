@@ -3,6 +3,9 @@ mod startup;
 mod runtime_safety_tests;
 #[cfg(windows)]
 mod startup_windows;
+#[allow(dead_code)] // Shared with the widgets crate, which uses other parts.
+mod update_handshake;
+mod updater;
 
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::TrayIconBuilder;
@@ -256,8 +259,54 @@ async fn widget_app_running() -> Result<bool, String> {
     Ok(false)
 }
 
+static WIDGET_LAUNCH_PENDING: AtomicBool = AtomicBool::new(false);
+const WIDGET_LAUNCH_RETRY: std::time::Duration = std::time::Duration::from_secs(5);
+
+/// Whether a widgets update is being installed right now (docs/updater.md,
+/// section 4). A stale marker means that install failed; it is removed.
+fn widget_install_in_progress() -> bool {
+    let Some(dir) = update_handshake::shared_dir() else { return false };
+    let exists = update_handshake::updating_exists(&dir);
+    let file_age_ms = std::fs::metadata(dir.join(update_handshake::UPDATING_FILE))
+        .and_then(|m| m.modified())
+        .ok()
+        .and_then(|t| t.elapsed().ok())
+        .map(|d| d.as_millis() as i64);
+    let marker = update_handshake::read_updating(&dir);
+    match update_handshake::marker_state(exists, marker.as_ref(), file_age_ms, update_handshake::now_ms()) {
+        update_handshake::MarkerState::Absent => false,
+        update_handshake::MarkerState::Fresh => true,
+        update_handshake::MarkerState::Stale => {
+            eprintln!("[Facta] Widgets update marker is stale; treating that install as failed");
+            let _ = update_handshake::remove_updating(&dir);
+            false
+        }
+    }
+}
+
+/// Never start the widgets while their installer may be writing
+/// facta-widgets.exe: retry every 5 s until the install is done or stale.
 #[tauri::command]
 async fn launch_widget_app() -> Result<(), String> {
+    if !widget_install_in_progress() {
+        return launch_widget_app_now().await;
+    }
+    if !WIDGET_LAUNCH_PENDING.swap(true, Ordering::SeqCst) {
+        tauri::async_runtime::spawn(async {
+            while widget_install_in_progress() {
+                tokio::time::sleep(WIDGET_LAUNCH_RETRY).await;
+            }
+            let result = launch_widget_app_now().await;
+            WIDGET_LAUNCH_PENDING.store(false, Ordering::SeqCst);
+            if let Err(error) = result {
+                eprintln!("[Facta] Could not start widgets after their update: {error}");
+            }
+        });
+    }
+    Ok(())
+}
+
+async fn launch_widget_app_now() -> Result<(), String> {
     if widget_app_running().await? { return Ok(()); }
 
     // Platform-specific installation paths
@@ -429,6 +478,26 @@ fn append_startup_log(dir: &std::path::Path, message: &str) -> std::io::Result<(
     writeln!(file, "{message}")
 }
 
+fn tray_menu(app: &tauri::AppHandle, update_ready: bool) -> tauri::Result<Menu<tauri::Wry>> {
+    let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+    let show = MenuItem::with_id(app, "show", "Show Facta", true, None::<&str>)?;
+    let separator = PredefinedMenuItem::separator(app)?;
+    if update_ready {
+        let update = MenuItem::with_id(app, "update", "Restart to update", true, None::<&str>)?;
+        Menu::with_items(app, &[&show, &update, &separator, &quit])
+    } else {
+        Menu::with_items(app, &[&show, &separator, &quit])
+    }
+}
+
+/// Show "Restart to update" in the tray only while an update is ready.
+pub(crate) fn refresh_tray_menu(app: &tauri::AppHandle) {
+    let ready = updater::is_ready(app);
+    if let (Some(tray), Ok(menu)) = (app.tray_by_id("facta-tray"), tray_menu(app, ready)) {
+        let _ = tray.set_menu(Some(menu));
+    }
+}
+
 fn log_startup_failure(message: &str) {
     eprintln!("[Facta] {message}");
     let Some(base) = dirs::data_local_dir() else { return };
@@ -462,7 +531,13 @@ pub fn run() {
             Some(vec!["--hidden"]),
         ))
         .plugin(tauri_plugin_window_state::Builder::default().build())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .manage(updater::UpdaterState::default())
         .invoke_handler(tauri::generate_handler![
+            updater::update_status,
+            updater::check_for_updates,
+            updater::prepare_update,
+            updater::install_update,
             finish_quit,
             quit_listener_ready,
             open_note_link,
@@ -488,9 +563,7 @@ pub fn run() {
             }
         }
 
-        let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-        let show = MenuItem::with_id(app, "show", "Show Facta", true, None::<&str>)?;
-        let menu = Menu::with_items(app, &[&show, &PredefinedMenuItem::separator(app)?, &quit])?;
+        let menu = tray_menu(app.handle(), false)?;
 
         let _app_handle = app.handle().clone();
         let system_theme = tray_theme(|| app.get_webview_window("main")
@@ -508,6 +581,15 @@ pub fn run() {
                         let _ = window.show();
                         let _ = window.set_focus();
                     }
+                }
+                "update" => {
+                    // The page saves local data first, then installs.
+                    if let Some(window) = app.get_webview_window("main") {
+                        let _ = window.unminimize();
+                        let _ = window.show();
+                        let _ = window.set_focus();
+                    }
+                    let _ = app.emit("update-restart-requested", ());
                 }
                 _ => {}
             })
@@ -549,6 +631,8 @@ pub fn run() {
         if let Err(error) = startup::initialize(&mut startup_windows::WindowsStartup(app.handle())) {
             eprintln!("[Facta] Could not migrate widget startup: {error}");
         }
+
+        updater::start(app.handle());
 
         // Check if --hidden flag was passed (autostart)
         let args: Vec<String> = env::args().collect();
