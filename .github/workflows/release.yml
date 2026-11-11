@@ -13,7 +13,25 @@ env:
   TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
 jobs:
+  # A tag that doesn't match every version file, or a missing updater key,
+  # builds nothing (docs/updater.md, section 7).
+  versions:
+    name: Check versions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check versions match the tag
+        run: node scripts/check-versions.mjs "${{ github.ref_name }}" --release
+
   build:
+    needs: versions
     strategy:
       fail-fast: false
       matrix:
@@ -107,7 +125,9 @@ jobs:
         with:
           projectPath: ${{ matrix.app_dir }}
           tauriScript: pnpm tauri
-          args: --target ${{ matrix.rust_target }}
+          # Signs the updater files with TAURI_SIGNING_PRIVATE_KEY; local
+          # builds leave this off and need no key.
+          args: --target ${{ matrix.rust_target }} --config ${{ github.workspace }}/.github/tauri-release.conf.json
 
       - name: Repair Linux AppImages
         if: matrix.os == 'ubuntu-latest'
@@ -125,6 +145,63 @@ jobs:
               -name '*.AppImage' \
               -print0
           )
+
+      # The repair changed the AppImage after Tauri signed it, so sign the
+      # repaired file again. The key comes from the job's environment only.
+      - name: Re-sign repaired Linux AppImages
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' appimage; do
+            rm -f "$appimage.sig"
+            pnpm --dir "${{ matrix.app_dir }}" exec tauri signer sign "$PWD/$appimage" > /dev/null
+            test -s "$appimage.sig"
+          done < <(
+            find "${{ matrix.app_dir }}/src-tauri/target/${{ matrix.rust_target }}/release/bundle/appimage" \
+              -type f \
+              -name '*.AppImage' \
+              -print0
+          )
+
+      # Copy the file the updater installs and its signature under fixed
+      # names, without spaces (scripts/make-update-manifests.mjs).
+      - name: Stage updater files
+        shell: bash
+        run: |
+          # macOS runners have bash 3.2: no mapfile, and -u breaks empty arrays.
+          set -eo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          bundle="${{ matrix.app_dir }}/src-tauri/target/${{ matrix.rust_target }}/release/bundle"
+          case "${{ matrix.app }}" in
+            planner) prefix=Facta ;;
+            widgets) prefix=FactaWidgets ;;
+          esac
+          case "${{ matrix.artifact_suffix }}" in
+            windows) dir="$bundle/nsis"; suffix="-setup.exe"; name="$prefix-$version-windows-x64-setup.exe" ;;
+            macos-arm64) dir="$bundle/macos"; suffix=".app.tar.gz"; name="$prefix-$version-macos-arm64.app.tar.gz" ;;
+            linux) dir="$bundle/appimage"; suffix=".AppImage"; name="$prefix-$version-linux-x64.AppImage" ;;
+          esac
+          files=()
+          while IFS= read -r -d '' file; do
+            files+=("$file")
+          done < <(find "$dir" -maxdepth 1 -type f -name "*$suffix" -print0)
+          if [ "${#files[@]}" -ne 1 ]; then
+            echo "::error::Expected one updater file ending in $suffix in $dir, found ${#files[@]}"
+            exit 1
+          fi
+          test -s "${files[0]}.sig"
+          mkdir -p updater
+          cp "${files[0]}" "updater/$name"
+          cp "${files[0]}.sig" "updater/$name.sig"
+          ls -l updater
+
+      - name: Upload updater files
+        uses: actions/upload-artifact@v4
+        with:
+          name: updater-${{ matrix.app }}-${{ matrix.artifact_suffix }}
+          path: updater/*
+          if-no-files-found: error
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -184,15 +261,40 @@ jobs:
     name: Create GitHub Release
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - name: Download combined zips
         uses: actions/download-artifact@v4
         with:
           path: zips
           pattern: release-*
 
+      - name: Download updater files
+        uses: actions/download-artifact@v4
+        with:
+          path: updater
+          pattern: updater-*
+          merge-multiple: true
+
+      - name: Write update manifests
+        run: |
+          node scripts/make-update-manifests.mjs \
+            --tag "${{ github.ref_name }}" \
+            --dir updater \
+            --base-url "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}"
+          ls -l updater
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          files: zips/**/*.zip
+          files: |
+            zips/**/*.zip
+            updater/*
           make_latest: true
