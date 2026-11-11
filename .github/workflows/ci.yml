@@ -17,6 +17,24 @@ env:
   BASE_PATH: '/'
 
 jobs:
+  # One version for both apps everywhere (docs/updater.md, section 7). Plain
+  # Node, no install; separate from the OS matrix below.
+  versions:
+    name: Version numbers
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check versions
+        run: node scripts/check-versions.mjs
+
   checks:
     # Same-repository branches already run on push; fork PRs still need checks.
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository }}
