@@ -626,6 +626,27 @@ fn save_after_position_events(
     }
 }
 
+// Put a widget below every other window without activating it. tao already
+// keeps always-on-bottom windows at the bottom when they move; this covers
+// the moment right after the window is first shown.
+fn send_to_bottom(window: &tauri::WebviewWindow) {
+    #[cfg(windows)]
+    {
+        use windows_sys::Win32::UI::WindowsAndMessaging::{
+            SetWindowPos, HWND_BOTTOM, SWP_ASYNCWINDOWPOS, SWP_NOACTIVATE, SWP_NOMOVE,
+            SWP_NOOWNERZORDER, SWP_NOSIZE,
+        };
+        if let Ok(hwnd) = window.hwnd() {
+            // Async: the window belongs to the event-loop thread, and this may
+            // run on the file-watcher thread.
+            let flags = SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_ASYNCWINDOWPOS;
+            unsafe { SetWindowPos(hwnd.0 as _, HWND_BOTTOM, 0, 0, 0, 0, flags) };
+        }
+    }
+    #[cfg(not(windows))]
+    let _ = window;
+}
+
 // ─── Widget window spawner ────────────────────────────────────────────────────
 
 fn spawn_or_update_widgets(app: &tauri::AppHandle, state: &tauri::State<WidgetState>) -> Result<(), String> {
@@ -773,13 +794,18 @@ fn spawn_or_update_widgets(app: &tauri::AppHandle, state: &tauri::State<WidgetSt
             .transparent(true)
             .skip_taskbar(true)
             .visible(true)
+            // Never activate a widget when it opens: an activated window is
+            // raised above the app the user is in (for example at sign-in).
+            // Clicking a widget still focuses it.
+            .focused(false)
             .resizable(true)
             // Windows Snap requires a maximize box; keep the resize frame.
             .maximizable(false)
             .always_on_bottom(true)
             .build()
         {
-            Ok(_) => {
+            Ok(window) => {
+                send_to_bottom(&window);
                 log(&format!("Successfully created {}", label));
                 spawned_count += 1;
             }
