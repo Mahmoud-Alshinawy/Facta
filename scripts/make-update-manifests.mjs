@@ -3,10 +3,13 @@
 // (docs/updater.md, section 1) from the renamed updater files and their .sig:
 //   node scripts/make-update-manifests.mjs --tag v1.0.1 --dir updater \
 //     --base-url https://github.com/Mahmoud-Alshinawy/Facta/releases/download/v1.0.1
-// Fails if any expected file or signature is missing. --platforms windows
+// Fails if any expected file or signature is missing, or if a signature was
+// made with a different key than the pubkey both apps trust (updater-keys.mjs).
+// --platforms windows
 // limits the check to some platforms (local testing only).
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { configuredKeyId, signatureKeyErrors } from "./updater-keys.mjs";
 
 /** Fixed asset names, so URLs never depend on GitHub's space handling. */
 export const PLATFORMS = {
@@ -33,6 +36,7 @@ if (!version || !/^\d+\.\d+\.\d+$/.test(version) || !baseUrl) {
 }
 
 const missing = [];
+const signatures = [];
 for (const [product, prefix] of Object.entries(PRODUCTS)) {
   const manifest = {
     version,
@@ -53,8 +57,10 @@ for (const [product, prefix] of Object.entries(PRODUCTS)) {
       missing.push(`${file}.sig`);
       continue;
     }
+    const signature = readFileSync(sig, "utf8").trim();
+    signatures.push([`${file}.sig`, signature]);
     manifest.platforms[spec.key] = {
-      signature: readFileSync(sig, "utf8").trim(),
+      signature,
       url: `${baseUrl}/${file}`,
     };
   }
@@ -62,6 +68,18 @@ for (const [product, prefix] of Object.entries(PRODUCTS)) {
 }
 if (missing.length) {
   for (const file of missing) console.error(`::error::Missing updater file: ${file}`);
+  process.exit(1);
+}
+let keyErrors;
+try {
+  const keyId = configuredKeyId();
+  keyErrors = signatureKeyErrors(keyId, signatures);
+  if (!keyErrors.length) console.log(`All ${signatures.length} signatures use the apps' key ${keyId}.`);
+} catch (error) {
+  keyErrors = [error.message];
+}
+if (keyErrors.length) {
+  for (const message of keyErrors) console.error(`::error::${message}`);
   process.exit(1);
 }
 console.log(`Wrote latest-facta.json and latest-widgets.json for ${version} (${platforms.join(", ")}).`);

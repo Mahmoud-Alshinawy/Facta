@@ -30,6 +30,11 @@ jobs:
       - name: Check versions match the tag
         run: node scripts/check-versions.mjs "${{ github.ref_name }}" --release
 
+      # Both apps must trust one well-formed key. Signatures are compared with
+      # it before publishing (make-update-manifests.mjs).
+      - name: Check both apps trust one updater key
+        run: node -e 'import("./scripts/updater-keys.mjs").then((m) => console.log("Updater key", m.configuredKeyId()))'
+
   build:
     needs: versions
     strategy:
