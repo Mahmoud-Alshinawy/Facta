@@ -19,6 +19,7 @@ end to end, deferred.
 | Facta restarts after installing. | Facta passes `/R` itself and turns off the plugin's restart, which would also pass Facta's current arguments. | After a login start those include `--hidden`, so the new Facta would open hidden right after the user pressed Restart. |
 | Widgets with an approval newer than themselves check "before showing any widget". | They show as normal and check at once in the background. | Not delaying widgets behind a network call; the install follows within seconds. |
 | `tauri.conf.json` version points at `package.json`. | As planned; `apps/desktop/package.json` is now `1.0.0`. | |
+| (Added after review.) | The release job compares every updater `.sig` key ID with the key ID of the pubkey in both `tauri.conf.json` files and fails before publishing on a mismatch or a malformed file (`scripts/updater-keys.mjs`, called from `make-update-manifests.mjs`; tests in `scripts/updater-keys.test.mjs`, run by the CI `versions` job). Signatures may use the `ED` (prehashed, what Tauri writes) or `Ed` tag; the pubkey must be `Ed`. | A `TAURI_SIGNING_PRIVATE_KEY` secret that does not match the public key would otherwise publish updates no installed app accepts. |
 
 ## In plain words
 
