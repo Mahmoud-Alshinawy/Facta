@@ -18,8 +18,9 @@
 - Section 8 tests (a)–(i) passed on the real install with a throwaway test key
   (details in docs/updater.md). The real install now runs the normal branch
   build, 1.0.0, one of each; its updates stay off until the owner's key.
-- Waiting on: review; owner creates the real key ("key done", section 2), then
-  the builder adds the public key and reinstalls (step 8.6).
+- Merged to main at dc7ba03. The real public key (ID BA50095A7EBB84F3) is
+  added on `feat/updater-pubkey`; waiting on review, then the reinstall
+  (step 8.6) with the owner's OK.
 - Results: frozen install; tsc ×3; **509 desktop** (505 + 4) / **222 calendar**;
   both builds; both cargo checks; **24** widget Rust tests (17 + 7).
 

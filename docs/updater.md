@@ -1,9 +1,9 @@
 # Auto-updater plan (Facta and Facta Widgets)
 
-Status: **approved at 48c2d09; being built** on `feat/updater`. The real
-public key is added when the owner says "key done"; until then `pubkey` is
-empty, updates are never installed, and a release tag fails at the versions
-job.
+Status: **built and merged** (main at dc7ba03). The real public key (minisign
+key ID BA50095A7EBB84F3) is in both `tauri.conf.json` files. Before it was
+added, `pubkey` was empty, nothing installed, and a release tag failed at the
+versions job.
 
 Reviewer answers already taken in: first check at 60 s and every 6 h,
 approved; silent background download before asking, approved; macOS and Linux
