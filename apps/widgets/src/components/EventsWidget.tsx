@@ -49,7 +49,7 @@ export default function EventsWidget() {
 
   return (
     <div className="h-full overflow-auto">
-      <div className="flex items-center gap-2 mb-2">
+      <div className="flex items-center gap-2 mb-2 cursor-grab" data-tauri-drag-region="deep">
         <Clock size={13} className="widget-accent" />
         <span className="widget-label">Upcoming</span>
       </div>

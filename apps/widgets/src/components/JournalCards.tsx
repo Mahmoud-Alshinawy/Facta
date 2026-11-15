@@ -90,8 +90,8 @@ export function NotesCard(props: Common & { style?: "sticky" | "stack" }) {
   const idx = current ? pinned.indexOf(current) : 0;
   return (
     <Plate theme={props.theme} translucent={props.translucent}>
-      <header className="jw-head">
-        <span className="jw-drag" data-tauri-drag-region>
+      <header className="jw-head" data-tauri-drag-region="deep">
+        <span className="jw-drag">
           {style === "sticky" ? <StickyNote size={14} /> : <List size={14} />}{" "}
           {style === "sticky" ? "Pinned" : "Notes"}
         </span>
@@ -504,8 +504,8 @@ export function DiaryCard({
   }, [journal.diary.date, saved, editing, busy]);
   return (
     <Plate theme={theme} translucent={translucent}>
-      <header className="jw-head">
-        <span className="jw-drag" data-tauri-drag-region>
+      <header className="jw-head" data-tauri-drag-region="deep">
+        <span className="jw-drag">
           <BookOpen size={14} /> One line a day
         </span>
         <time dateTime={journal.diary.date}>

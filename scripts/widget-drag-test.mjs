@@ -41,21 +41,42 @@ try {
   });
   const url = `http://127.0.0.1:${server.address().port}/`;
   const cases = [
-    ["tasks", "[data-tauri-drag-region]"], ["events", "[data-tauri-drag-region]"], ["calendar", "[data-tauri-drag-region]"],
+    ["tasks", "[data-tauri-drag-region]"], ["tasks", ".widget-label"],
+    ["events", "[data-tauri-drag-region]"], ["events", ".widget-label"],
+    ["calendar", "[data-tauri-drag-region]"], ["calendar", "[data-tauri-drag-region=deep] span"],
     ["progress", ".progress-head svg"], ["progress", ".progress-head span"],
     ["dayview", ".wg-head svg"], ["dayview", ".wg-date"], ["dayview", ".wg-head span:last-child"],
-    ["notes", ".jw-drag svg"], ["notes", ".jw-drag"], ["diary", ".jw-drag svg"], ["diary", ".jw-drag"],
+    ["notes", ".jw-drag svg"], ["notes", ".jw-drag"], ["notes", ".jw-head > span:not(.jw-drag)"], ["notes", ".jw-head button", false],
+    ["diary", ".jw-drag svg"], ["diary", ".jw-drag"], ["diary", ".jw-head time"], ["diary", ".jw-head button", false],
   ];
   let previous = "";
-  for (const [type, selector] of cases) {
+  for (const [type, selector, expected = true] of cases) {
     if (previous !== type) { await page.goto(`${url}?widget=${type}&theme=light&translucent=true`, { waitUntil: "networkidle" }); previous = type; }
     const target = page.locator(selector).first(); await target.waitFor();
     const box = await target.boundingBox(); assert.ok(box, `${type}: ${selector} must be visible`);
+    // Same rule as Tauri 2.11's drag.js: walk up from the hit element.
     const hit = await page.evaluate(({ x, y }) => {
-      const element = document.elementFromPoint(x, y);
-      return { tag: element?.tagName, draggable: element?.hasAttribute("data-tauri-drag-region") };
+      const clickable = el => ["A", "BUTTON", "INPUT", "SELECT", "TEXTAREA", "LABEL", "SUMMARY"].includes(el.tagName)
+        || (el.hasAttribute("contenteditable") && el.getAttribute("contenteditable") !== "false")
+        || (el.hasAttribute("tabindex") && el.getAttribute("tabindex") !== "-1")
+        || ["button", "link", "menuitem", "tab", "checkbox", "radio", "switch", "option"].includes(el.getAttribute("role"));
+      const first = document.elementFromPoint(x, y), path = [];
+      for (let el = first; el; el = el.parentElement) path.push(el);
+      const drags = (() => {
+        for (const el of path) {
+          if (!(el instanceof HTMLElement)) continue;
+          const attr = el.getAttribute("data-tauri-drag-region");
+          if (clickable(el) && attr === null) return false;
+          if (attr === null) continue;
+          if (attr === "false") return false;
+          if (attr === "deep") return true;
+          if (attr === "" || attr === "true") return el === path[0];
+        }
+        return false;
+      })();
+      return { tag: first?.tagName, drags };
     }, { x: box.x + box.width / 2, y: box.y + box.height / 2 });
-    assert.equal(hit.draggable, true, `${type}: ${selector} must hit a Tauri drag region (hit ${hit.tag})`);
+    assert.equal(hit.drags, expected, `${type}: ${selector} must ${expected ? "" : "not "}start a window drag (hit ${hit.tag})`);
   }
   await page.goto(`${url}?widget=progress&theme=light&translucent=true`, { waitUntil: "networkidle" });
   const picker = page.getByRole("combobox", { name: "Progress shared group" });

@@ -42,7 +42,7 @@ export default function CalendarWidget() {
 
   return (
     <div className="h-full overflow-auto">
-      <div className="text-center mb-2">
+      <div className="text-center mb-2 cursor-grab" data-tauri-drag-region="deep">
         <span className="text-xs font-bold widget-text">{monthNames[month]} {year}</span>
       </div>
 
