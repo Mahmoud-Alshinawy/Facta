@@ -29,7 +29,7 @@ export default defineConfig({
   server: {
     port: 5174,
     strictPort: true,
-    // See planner/vite.config.ts: don't watch cargo's target dir.
+    // Cargo's locked build files can crash Vite's Windows file watcher.
     watch: {
       ignored: ["**/src-tauri/**"],
     },

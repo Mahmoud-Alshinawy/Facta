@@ -1,4 +1,4 @@
-/* Creation/invitation surfaces from GC and GS. Shared overview/detail is Step 4. */
+/* Shared-goal creation and invitation controls. */
 .fx .shared-workspace {
   display: flex;
   flex: 1;

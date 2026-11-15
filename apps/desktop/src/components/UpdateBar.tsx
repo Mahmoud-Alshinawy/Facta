@@ -9,10 +9,7 @@ import {
 const isDesktop = () =>
   typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
-/**
- * "Update ready, restart to install" (docs/updater.md, section 3). Nothing is
- * installed until Restart is pressed here or in the tray.
- */
+/** Install only after Restart is pressed here or in the tray. */
 export default function UpdateBar() {
   const [status, setStatus] = useState<UpdateStatus | null>(null);
   const [dismissed, setDismissed] = useState<string | null>(null);

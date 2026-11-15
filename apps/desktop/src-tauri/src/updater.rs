@@ -1,9 +1,5 @@
-//! Facta's auto-updater (docs/updater.md, sections 3 and 4).
-//!
-//! Checks 60 s after start and every 6 h, downloads a newer signed release in
-//! the background, and only installs after the user presses Restart. Errors
-//! (offline, no release yet, no matching platform) are logged and otherwise
-//! silent.
+//! Download signed updates in the background; install only after Restart.
+//! Check failures are logged without interrupting startup.
 
 use crate::update_handshake as handshake;
 use semver::Version;
@@ -130,10 +126,8 @@ pub async fn check_for_updates(app: AppHandle) -> Result<UpdateStatus, String> {
     Ok(status(&app))
 }
 
-/// Step one of Restart: approve the version, let the widgets update first and
-/// wait for them (docs/updater.md, section 4). The page then saves local data
-/// (as on Quit) and calls `install_update`, so nothing typed during the wait
-/// is lost.
+/// Approve the version and wait for widgets before the page saves and installs.
+/// Saving after the wait preserves edits made while the widgets update.
 #[tauri::command]
 pub async fn prepare_update(app: AppHandle) -> Result<(), String> {
     let state = app.state::<UpdaterState>();

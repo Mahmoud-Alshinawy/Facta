@@ -1,6 +1,5 @@
-// Shared helpers for check-versions.mjs and bump-version.mjs (docs/updater.md,
-// section 7). Each app's version lives in its package.json; tauri.conf.json
-// points there. Cargo.toml and Cargo.lock are kept equal for tidiness.
+// Shared version checks and edits. Tauri reads package.json; Cargo versions
+// must match it in both apps.
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";

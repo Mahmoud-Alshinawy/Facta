@@ -5,14 +5,8 @@ import { sharedRequests } from "./requests";
 /** Groups with a check-in or undo still being queued, per engine. */
 const inFlight = new WeakMap<SharedSync, Set<string>>();
 
-/**
- * Check in, or undo, for the group's own day. The display can be a minute old,
- * so the caller captures the instant once and both the day and the checked
- * state are derived from it here. The outbox keeps that capture unchanged.
- *
- * Every caller goes through here, so one check-in at a time per group: a
- * second toggle while the first is in flight does nothing and returns false.
- * While a group request is being sent, check-ins wait.
+/** Use one captured instant for the group's day and check-in state.
+ * Ignore concurrent toggles and wait for outstanding group requests.
  */
 export async function toggleSharedCheckin(
   engine: SharedSync,

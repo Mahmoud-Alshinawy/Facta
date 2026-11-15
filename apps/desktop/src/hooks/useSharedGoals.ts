@@ -14,7 +14,7 @@ const waiting: SharedStatus = {
 };
 const noData = (): SharedState | null => null;
 
-/** Data/status only. Shared screens and deep-link routes start in Step 3. */
+/** Shared-goal data and sync status for the current account. */
 export function useSharedGoals() {
   const engine = useSharedSyncEngine();
   const data = useSyncExternalStore(

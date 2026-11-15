@@ -1,9 +1,5 @@
-//! Update handshake files shared by Facta and Facta Widgets (docs/updater.md,
-//! section 4). Facta includes this as a module; the widgets crate includes the
-//! same file with `#[path]`, so both apps read and write one format.
-//!
-//! Files live in `%LOCALAPPDATA%\Facta\` and are written to a temporary file
-//! and renamed, so a reader never sees half a file.
+//! Shared update handshake format, included by both apps through one module.
+//! Files in the user's local Facta data folder are replaced atomically.
 
 use semver::Version;
 use serde_json::json;
@@ -200,7 +196,7 @@ pub enum WaitStep {
     Proceed,
 }
 
-/// Facta's wait after writing the approval (docs/updater.md section 4, step 4).
+/// Decide whether Facta should keep waiting after approving a widgets update.
 pub fn facta_wait_step(elapsed_ms: i64, widgets_running: bool, marker_now: bool, marker_seen: bool) -> WaitStep {
     if marker_now {
         return if elapsed_ms >= INSTALL_TIMEOUT_MS { WaitStep::Proceed } else { WaitStep::Wait };

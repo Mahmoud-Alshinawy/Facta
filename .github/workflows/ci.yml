@@ -17,8 +17,7 @@ env:
   BASE_PATH: '/'
 
 jobs:
-  # One version for both apps everywhere (docs/updater.md, section 7). Plain
-  # Node, no install; separate from the OS matrix below.
+  # Check shared versions without installing project dependencies.
   versions:
     # Same rule as the checks job: same-repo PRs already ran on push.
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository }}
@@ -139,6 +138,9 @@ jobs:
 
       - name: Check widget Rust
         run: cargo check --locked --manifest-path apps/widgets/src-tauri/Cargo.toml
+
+      - name: Test desktop Rust
+        run: cargo test --locked --manifest-path apps/desktop/src-tauri/Cargo.toml
 
       - name: Test widget Rust
         run: cargo test --locked --manifest-path apps/widgets/src-tauri/Cargo.toml

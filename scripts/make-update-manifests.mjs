@@ -1,12 +1,8 @@
 #!/usr/bin/env node
-// Writes latest-facta.json and latest-widgets.json for the updater
-// (docs/updater.md, section 1) from the renamed updater files and their .sig:
-//   node scripts/make-update-manifests.mjs --tag v1.0.1 --dir updater \
-//     --base-url https://github.com/Mahmoud-Alshinawy/Facta/releases/download/v1.0.1
-// Fails if any expected file or signature is missing, or if a signature was
-// made with a different key than the pubkey both apps trust (updater-keys.mjs).
-// --platforms windows
-// limits the check to some platforms (local testing only).
+// Write both updater manifests from release files and matching signatures.
+// Usage: node scripts/make-update-manifests.mjs --tag v1.0.1 --dir updater \
+//   --base-url https://github.com/Mahmoud-Alshinawy/Facta/releases/download/v1.0.1
+// --platforms windows limits validation to that platform for local tests.
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { configuredKeyId, signatureKeyErrors } from "./updater-keys.mjs";

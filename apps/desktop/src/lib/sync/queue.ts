@@ -1,11 +1,6 @@
-// The offline write queue: one per user, shared by goals and events.
-//
-// Each entry is the latest full-row snapshot for a record, keyed by id, and is
-// sent as an idempotent upsert. A delete is the same upsert with deleted_at
-// set. There are no op types and nothing is collapsed: a newer snapshot simply
-// replaces the older one. After a send, an entry is removed only if it still
-// holds the snapshot that was sent (same updated_at), so edits made while a
-// request is in flight are never lost.
+// Keep the latest row snapshot per record, including deleted_at tombstones.
+// Clear a sent entry only if its timestamp still matches, preserving edits
+// made while the request was in flight.
 
 import type {
   EventWrite,

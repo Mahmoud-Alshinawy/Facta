@@ -262,8 +262,7 @@ async fn widget_app_running() -> Result<bool, String> {
 static WIDGET_LAUNCH_PENDING: AtomicBool = AtomicBool::new(false);
 const WIDGET_LAUNCH_RETRY: std::time::Duration = std::time::Duration::from_secs(5);
 
-/// Whether a widgets update is being installed right now (docs/updater.md,
-/// section 4). A stale marker means that install failed; it is removed.
+/// Check for an active widgets install, removing a stale failure marker.
 fn widget_install_in_progress() -> bool {
     let Some(dir) = update_handshake::shared_dir() else { return false };
     let exists = update_handshake::updating_exists(&dir);

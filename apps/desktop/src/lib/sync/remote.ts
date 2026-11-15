@@ -32,14 +32,8 @@ export interface PostgrestErrorLike {
 
 const NETWORK_RE = /failed to fetch|networkerror|fetch failed|load failed|network request failed/i;
 
-/**
- * Sorts a PostgREST error into row / offline / server. Defaults to "server",
- * so an unknown failure never parks (and so never risks discarding) data.
- *
- * Row-level means SQLSTATE class 22 (data exception) or 23 (integrity
- * constraint), or 42501 when it is a row-level security violation.
- * A plain "permission denied for table" is also 42501, but it means a grant
- * is missing, which is sync-wide.
+/** Default unknown failures to server errors so they remain queued.
+ * SQLSTATE 42501 is row-level only for RLS violations; missing grants pause sync.
  */
 export function classifyError(error: PostgrestErrorLike | null, status: number): SyncError {
   const raw = error?.message || `Request failed (HTTP ${status})`;

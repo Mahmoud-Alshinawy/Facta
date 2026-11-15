@@ -1,14 +1,6 @@
-// Pure merge of a full pull into the local cache.
-//
-// Rules, per record id:
-//   * Remote tombstone (deleted_at set): remove locally and forget any pending
-//     write. Deletes are sticky on the server, so a pending edit would be
-//     skipped anyway.
-//   * Local write pending (or rejected and parked): keep the local version
-//     (or keep it absent, for a pending delete). The server decides on flush.
-//   * Otherwise the newer updated_at wins; a tie goes to the server.
-// Local-only fields (e.g. lastNotifiedDate) are carried over onto remote
-// versions, so a pull never wipes them.
+// Remote tombstones override pending edits; otherwise retain pending local
+// writes and take the newer timestamp, preferring remote on ties.
+// Preserve local-only fields when accepting a remote version.
 
 import { compareTimestamps } from "@/lib/sync/time";
 

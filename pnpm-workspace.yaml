@@ -1,30 +1,5 @@
-# ============================================================================
-# SECURITY: Minimum release age for npm packages (supply-chain attack defense)
-# ============================================================================
-#
-# This setting requires that any npm package version must have been published
-# for at least 1 day (1440 minutes) before pnpm will allow installing it.
-# This is a critical defense against supply-chain attacks. In most cases,
-# malicious npm releases are discovered and pulled within hours, so a 1-day
-# delay provides a strong safety buffer.
-#
-# DO NOT DISABLE THIS SETTING. Removing or setting it to 0 is considered
-# extremely dangerous and leaves the entire workspace vulnerable to supply-
-# chain attacks, which have been the #1 vector for npm ecosystem compromises.
-#
-# If you absolutely need to install a package before the 1-day window has
-# passed (e.g. an urgent security bugfix), you can add it to the
-# `minimumReleaseAgeExclude` allowlist below. Only consider doing this for
-# packages released by trusted organizations with an impeccable security
-  # posture (e.g. packages from trusted vendors like react from Meta, typescript from Microsoft). Even then,
-# remove the exclusion once the 1-day window has passed.
-#
-# Example:
-#   minimumReleaseAgeExclude:
-#     - react
-#     - typescript
-#
-# ============================================================================
+# Wait one day before accepting new package versions to reduce supply-chain risk.
+# Use minimumReleaseAgeExclude only for a reviewed exception.
 minimumReleaseAge: 1440
 
 minimumReleaseAgeExclude: []
@@ -56,7 +31,7 @@ onlyBuiltDependencies:
 
 overrides:
   # Skip platform binaries we never build for, to keep installs small.
-  # Build targets (win32-x64, darwin-x64, darwin-arm64, linux-x64-gnu) are kept.
+  # Keep the binaries used by the supported desktop build targets.
   "esbuild>@esbuild/freebsd-arm64": "-"
   "esbuild>@esbuild/freebsd-x64": "-"
   "esbuild>@esbuild/linux-arm": "-"

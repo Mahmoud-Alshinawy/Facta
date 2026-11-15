@@ -1,13 +1,5 @@
-// PlannerSync: the per-user sync engine for goals and events.
-//
-// It owns the shared write queue and both collections, and schedules work:
-//   * local edits flush (debounced) right away;
-//   * a full pull, preceded by a flush, runs on start, on window focus, on
-//     reconnect and on an interval;
-//   * transient failures retry with backoff.
-// Flushes and pulls never overlap, so a pull can't resurrect a record whose
-// delete was just confirmed. Status changes are published to subscribers;
-// the engine itself never touches the UI.
+// Schedule per-user flushes, pulls and retries without overlapping requests.
+// Serializing flushes and pulls prevents confirmed deletes from reappearing.
 
 import type { CalendarEvent, Goal, Note, DiaryEntry } from "@/types/planner";
 import {

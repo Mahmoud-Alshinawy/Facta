@@ -18,8 +18,7 @@ end $$;
 -- BEGIN embedded base migration (outer transaction removed)
 -- Facta: goals and events, owned per user.
 --
--- Idempotent: safe to run more than once. Review before applying; see
--- docs/supabase.md.
+-- Idempotent: safe to run more than once. Review before applying.
 --
 -- Sync rules enforced here (the client relies on them):
 --   * updated_at is the client's edit time, clamped so it is never in the future.

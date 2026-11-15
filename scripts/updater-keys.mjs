@@ -1,9 +1,5 @@
-// Key IDs of the updater public key and signatures (docs/updater.md,
-// section 2). A minisign public key or .sig, as Tauri stores it, is base64 of
-// minisign text; its second line is base64 of a 2-byte algorithm tag, the
-// 8-byte key ID, then the key or signature. A release whose signatures carry
-// a different key ID than the apps' pubkey would publish updates no app can
-// install, so the release stops before publishing (make-update-manifests.mjs).
+// Decode the minisign algorithm tag and key ID from Tauri's base64 text.
+// Reject signatures from another key before publishing unusable updates.
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";

@@ -13,8 +13,7 @@ env:
   TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
 jobs:
-  # A tag that doesn't match every version file, or a missing updater key,
-  # builds nothing (docs/updater.md, section 7).
+  # Reject mismatched versions or a missing updater key before building.
   versions:
     name: Check versions
     runs-on: ubuntu-latest

@@ -1,6 +1,4 @@
-//! Facta Widgets' updater (docs/updater.md, section 4). The widgets never ask:
-//! they check and download like Facta, and install only after the user
-//! pressed Restart in Facta, which writes `update-approved.json`.
+//! Download signed updates and install only after Facta records user approval.
 
 use crate::update_handshake as handshake;
 use semver::Version;

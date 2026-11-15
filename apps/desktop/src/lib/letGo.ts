@@ -1,11 +1,5 @@
-// "Let it go" for an overdue goal: hide it behind an Undo toast and delete it
-// only after the toast has closed and Undo wasn't pressed.
-//
-// Deletes are final on the server, so the order of toast callbacks must not
-// matter. In WebView2 a real click on Undo was seen to close the toast (and
-// run its dismiss callback) before the Undo handler ran. So the outcome isn't
-// a flag inside the callbacks: Undo records "kept" in this store, and the
-// delete path waits a short grace period and then checks the store.
+// WebView2 can dismiss the toast before its Undo handler runs. Record Undo
+// in the store and wait a short grace period before committing a server delete.
 
 export type LetGoState = "pending" | "kept";
 

@@ -593,9 +593,8 @@ export async function runSupabaseAcceptance(settings: Settings) {
     checks.push(
       "natural access-token expiration on Auth and PostgREST, followed by real refresh recovery",
     );
-    // Wrong audience/issuer acceptance is an owner-accepted risk (it needs the
-    // project signing key); see docs/shared-goals-deployment-policy.md. The
-    // probes still run and are reported, but only time claims gate the result.
+    // Audience/issuer probes are informational: enforcing them needs the project
+    // signing key. Only time-claim failures gate this acceptance check.
     const accepted = ["wrong audience", "wrong issuer"];
     const unrejected = (r: Record<string, unknown>) =>
       !deniedToken(r.auth as number) || !deniedToken(r.postgrest as number);

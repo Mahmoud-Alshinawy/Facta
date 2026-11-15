@@ -50,3 +50,7 @@ Thumbs.db
 # Tauri
 **/src-tauri/target/
 **/src-tauri/gen/schemas/
+
+# Keep project notes local; README is the only tracked Markdown file.
+*.md
+!/README.md

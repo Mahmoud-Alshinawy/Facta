@@ -853,7 +853,7 @@ async function runSharedIntegration({
   shared = engine(store);
   await shared.syncNow();
 
-  // One committed-but-unacknowledged command and one genuinely unsent intent.
+  // One committed-but-unacknowledged command and one unsent intent.
   await shared.enqueueCheckin({
     groupId: config.groupId,
     date: "2026-10-21",

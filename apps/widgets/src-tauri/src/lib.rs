@@ -709,14 +709,8 @@ fn spawn_or_update_widgets(app: &tauri::AppHandle, state: &tauri::State<WidgetSt
         expected_labels.push(label.clone());
         
         if let Some(window) = app.get_webview_window(&label) {
-            // Only correct position/size if the window has genuinely drifted
-            // from where it should be (e.g. a monitor was disconnected and the
-            // window ended up off-screen). This function runs on every routine
-            // widgets.json refresh (roughly every 10s, whenever the main app
-            // exports data), so unconditionally calling set_position/set_size
-            // here was fighting with OS-level window management — most visibly
-            // when a widget was near a screen edge and Windows' snap animation
-            // was running, which caused jitter and could crash the window.
+            // Correct only real drift: routine exports must not fight Windows
+            // Snap animations, which caused jitter and window crashes.
             if let Some(pos) = positions.get(&id) {
                 let (clamped_x, clamped_y) = clamp_to_monitors(
                     pos.x, pos.y, pos.width, pos.height, &monitors
