@@ -500,6 +500,12 @@
   line-height: 1.65;
   overflow-wrap: anywhere;
 }
+.note-editor-content {
+  position: relative;
+}
+.note-toolbar + .note-editor-content {
+  margin-top: 12px;
+}
 .note-editor-input .tiptap {
   min-height: 180px;
   padding-block: 4px 40px;
@@ -636,72 +642,74 @@
   color: var(--subtle);
   pointer-events: none;
 }
-.note-selection {
-  position: absolute;
-  left: 0;
-  right: 0;
+.note-toolbar {
+  position: sticky;
+  top: 0;
   z-index: 25;
   display: flex;
   align-items: center;
   gap: 2px;
   flex-wrap: wrap;
-  padding: 4px;
-  background: var(--text);
-  border-radius: 10px;
-  box-shadow: 0 10px 26px color-mix(in srgb, var(--shadow-ink) 40%, transparent);
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
   font-family: var(--font-ui);
   text-align: left;
 }
-.note-selection button {
+.note-toolbar button {
   width: 30px;
   height: 30px;
   padding: 0;
   border: 0;
-  border-radius: 7px;
+  border-radius: 6px;
   background: transparent;
-  color: var(--bg);
+  color: var(--text);
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.note-selection button:hover,
-.note-selection [aria-pressed="true"] {
-  box-shadow: inset 0 0 0 1px var(--bg);
-}
-.note-selection select {
-  width: 140px;
-  height: 30px;
-  border: 0;
-  background: transparent;
-  color: var(--bg);
-  font-size: 13px;
-  padding: 0 6px;
-}
-.note-selection select option {
-  background: var(--raised);
-  color: var(--text);
+.note-toolbar button:hover,
+.note-toolbar [aria-pressed="true"] {
+  background: var(--raised-2);
+  box-shadow: inset 0 0 0 1px var(--control-border);
 }
 .note-font-picker {
   position: relative;
 }
-.note-selection .note-font-button {
+.note-toolbar .note-font-button {
   width: 140px;
   justify-content: space-between;
   padding-inline: 8px;
   font-size: 13px;
+}
+.note-toolbar .note-font-button > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.note-toolbar .note-font-button > svg {
+  flex-shrink: 0;
+}
+.note-alignments {
+  display: flex;
+  flex-shrink: 0;
+  gap: 2px;
 }
 .note-font-menu {
   position: absolute;
   top: 38px;
   left: 0;
   width: 260px;
+  max-width: calc(100vw - 64px);
   padding: 6px;
   background: var(--raised);
   border: 1px solid var(--border-strong);
   border-radius: 12px;
   box-shadow: 0 18px 40px color-mix(in srgb, var(--shadow-ink) 45%, transparent);
 }
-.note-selection .note-font-menu > button {
+.note-toolbar .note-font-menu > button {
   width: 100%;
   height: 38px;
   padding-inline: 10px;
@@ -709,30 +717,36 @@
   color: var(--text);
   font-size: 15px;
 }
-.note-selection .note-font-menu > button:hover {
+.note-toolbar .note-font-menu > button:hover {
   background: var(--raised-2);
 }
-.note-selection .note-font-menu > [aria-selected="true"] {
+.note-toolbar .note-font-menu > [aria-selected="true"] {
   background: var(--text);
   color: var(--bg);
 }
-.note-selection .note-font-menu > button:focus-visible {
+.note-toolbar .note-font-menu > button:focus-visible {
   outline-color: var(--text);
 }
 .note-text-colors {
   display: flex;
+  flex-shrink: 0;
   gap: 5px;
   padding-inline: 6px;
 }
-.note-selection .note-text-colors button {
+.note-toolbar .note-text-colors button {
   width: 18px;
   height: 18px;
   background: var(--c);
-  border: 1px solid var(--bg);
+  border: 1px solid var(--control-border);
 }
-.note-selection button:focus-visible,
-.note-selection select:focus-visible {
-  outline-color: var(--bg);
+.note-toolbar .note-text-colors [aria-pressed="true"] {
+  box-shadow:
+    0 0 0 2px var(--surface),
+    0 0 0 3px var(--text);
+}
+.note-toolbar button:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
 }
 .note-insert-menu {
   position: absolute;
@@ -1116,10 +1130,10 @@
   .notes-page .nbar {
     padding: 8px;
   }
-  .note-selection {
+  .note-toolbar {
     gap: 1px;
   }
-  .note-selection select {
+  .note-toolbar .note-font-button {
     width: 110px;
   }
   .note-colours {

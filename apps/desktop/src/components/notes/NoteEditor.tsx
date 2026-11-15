@@ -104,7 +104,6 @@ export default function NoteEditor({
     [error, setError] = useState("");
   const [menuIndex, setMenuIndex] = useState(0),
     [dismissed, setDismissed] = useState(false);
-  const [toolbarTop, setToolbarTop] = useState(0);
   const menuRef = useRef<{
     menu: InsertMenu | null;
     count: number;
@@ -302,7 +301,6 @@ export default function NoteEditor({
     setDismissed(true);
   };
   menuRef.current = { menu, count, select: choose };
-  const selected = editor && !editor.state.selection.empty && !readOnly;
   useEffect(() => {
     if (!editor || !menu || !root.current) return;
     const position = () => {
@@ -329,38 +327,14 @@ export default function NoteEditor({
       window.removeEventListener("scroll", position, true);
     };
   }, [editor, menuKey, tick, Boolean(menu)]);
-  useEffect(() => {
-    if (!editor || !selected || !root.current) return;
-    const position = () => {
-      if (!root.current || editor.isDestroyed) return;
-      const rect = editor.view.coordsAtPos(editor.state.selection.from);
-      setToolbarTop(
-        Math.max(0, rect.top - root.current.getBoundingClientRect().top - 48),
-      );
-    };
-    position();
-    window.addEventListener("resize", position);
-    window.addEventListener("scroll", position, true);
-    return () => {
-      window.removeEventListener("resize", position);
-      window.removeEventListener("scroll", position, true);
-    };
-  }, [editor, selected, tick]);
 
   return (
     <div className="note-editor-input" ref={root}>
-      <EditorContent editor={editor} />
-      {!readOnly && !editor?.getText() && (
-        <span className="note-editor-placeholder" aria-hidden="true">
-          Type / for blocks
-        </span>
-      )}
-      {selected && editor && (
+      {!readOnly && editor && (
         <div
-          className="note-selection"
+          className="note-toolbar"
           role="toolbar"
-          aria-label="Format selection"
-          style={{ top: toolbarTop }}
+          aria-label="Note formatting"
           onMouseDown={(e) => {
             if (!(e.target instanceof HTMLSelectElement)) e.preventDefault();
           }}
@@ -381,7 +355,7 @@ export default function NoteEditor({
               aria-expanded={fontOpen}
               onClick={() => setFontOpen((v) => !v)}
             >
-              {note.font ?? NOTE_FONTS[0].name}
+              <span>{note.font ?? NOTE_FONTS[0].name}</span>
               <ChevronDown size={14} />
             </button>
             {fontOpen && (
@@ -418,7 +392,9 @@ export default function NoteEditor({
                   <button
                     type="button"
                     role="option"
-                    aria-selected={(note.font ?? NOTE_FONTS[0].name) === font.name}
+                    aria-selected={
+                      (note.font ?? NOTE_FONTS[0].name) === font.name
+                    }
                     key={font.name}
                     style={{ fontFamily: font.family }}
                     onClick={() => {
@@ -454,6 +430,7 @@ export default function NoteEditor({
           <button
             type="button"
             aria-label="Link (Ctrl K)"
+            aria-pressed={editor.isActive("link")}
             onClick={() => onLink(editor)}
           >
             <Link size={16} />
@@ -486,26 +463,40 @@ export default function NoteEditor({
               />
             ))}
           </span>
-          {(
-            [
-              ["left", AlignLeft],
-              ["center", AlignCenter],
-              ["right", AlignRight],
-              ["justify", AlignJustify],
-            ] as const
-          ).map(([align, Icon]) => (
-            <button
-              type="button"
-              key={align}
-              aria-label={`Align ${align}`}
-              aria-pressed={(note.align ?? "left") === align}
-              onClick={() => onPatch({ align: align as NoteAlign })}
-            >
-              <Icon size={15} />
-            </button>
-          ))}
+          <span
+            className="note-alignments"
+            role="group"
+            aria-label="Text alignment"
+          >
+            {(
+              [
+                ["left", AlignLeft],
+                ["center", AlignCenter],
+                ["right", AlignRight],
+                ["justify", AlignJustify],
+              ] as const
+            ).map(([align, Icon]) => (
+              <button
+                type="button"
+                key={align}
+                aria-label={`Align ${align}`}
+                aria-pressed={(note.align ?? "left") === align}
+                onClick={() => onPatch({ align: align as NoteAlign })}
+              >
+                <Icon size={15} />
+              </button>
+            ))}
+          </span>
         </div>
       )}
+      <div className="note-editor-content">
+        <EditorContent editor={editor} />
+        {!readOnly && !editor?.getText() && (
+          <span className="note-editor-placeholder" aria-hidden="true">
+            Type / for blocks
+          </span>
+        )}
+      </div>
       {menu && (
         <div
           className="note-insert-menu"
