@@ -173,4 +173,4 @@ and widgets; Facta lets the widgets update before installing its own update.
 
 ## License
 
-TODO: choose a license.
+Copyright (c) 2026 Mahmoud Alshinawy. Facta is free software, released under the GNU General Public License version 3 or (at your option) any later version. See LICENSE.

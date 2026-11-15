@@ -1,6 +1,7 @@
 {
   "name": "@facta/calendar",
   "version": "0.0.0",
+  "license": "GPL-3.0-or-later",
   "private": true,
   "type": "module",
   "description": "Calendar settings, time formatting and layout maths shared by the desktop app and the widgets.",

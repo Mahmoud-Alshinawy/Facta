@@ -1,7 +1,7 @@
 {
   "name": "facta",
   "version": "0.0.0",
-  "license": "MIT",
+  "license": "GPL-3.0-or-later",
   "scripts": {
     "typecheck": "pnpm -r --filter \"./apps/**\" --filter \"./packages/calendar\" --if-present run typecheck",
     "build": "pnpm -r --if-present run build",
