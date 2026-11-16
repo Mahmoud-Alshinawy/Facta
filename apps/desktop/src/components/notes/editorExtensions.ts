@@ -253,8 +253,7 @@ const Color = Mark.create({
 });
 const Link = Mark.create({
   name: "link",
-  // Keep a link applied at the cursor while the user types its text.
-  inclusive: true,
+  inclusive: false,
   addAttributes: () => ({
     href: { default: "", parseHTML: (el) => el.getAttribute("href") },
   }),

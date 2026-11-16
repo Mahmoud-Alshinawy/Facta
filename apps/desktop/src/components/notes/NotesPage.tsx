@@ -47,6 +47,7 @@ import { externalNoteUrl, openExternalNoteLink } from "@/lib/externalLinks";
 import type { Note, NoteColor } from "@/types/planner";
 import NoteEditor, { noteFont } from "./NoteEditor";
 import NotesDialog from "./NotesDialog";
+import { applyNoteLink } from "./noteEditorLink";
 import "@fontsource/source-serif-4/latin-400.css";
 import "@fontsource/source-serif-4/latin-400-italic.css";
 import "@fontsource/source-serif-4/latin-700.css";
@@ -491,14 +492,7 @@ export default function NotesPage({
       setError("Use an https, http or mailto link.");
       return;
     }
-    if (url.trim())
-      editor
-        .chain()
-        .focus()
-        .extendMarkRange("link")
-        .setMark("link", { href: externalNoteUrl(url)! })
-        .run();
-    else editor.chain().focus().extendMarkRange("link").unsetMark("link").run();
+    applyNoteLink(editor, externalNoteUrl(url));
     closeOverlay();
   };
   const exportNotes = (kind: "md" | "txt") => {

@@ -3,7 +3,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { makeNote } from "@/test/contentFixtures";
 import NoteEditor from "./NoteEditor";
-import { getSchema } from "@tiptap/core";
+import { Editor, getSchema } from "@tiptap/core";
+import { applyNoteLink } from "./noteEditorLink";
 import { EditorState, TextSelection } from "@tiptap/pm/state";
 import { noteExtensions } from "./editorExtensions";
 
@@ -99,24 +100,87 @@ describe("note formatting toolbar", () => {
   });
 });
 
-it("keeps an applied link on all text typed at an empty selection", () => {
+it("does not extend an existing link when typing immediately after it", () => {
   const schema = getSchema(noteExtensions);
+  const href = "https://example.invalid/";
   const doc = schema.node("doc", null, [
-    schema.node("paragraph", null, [schema.text("Link ")]),
+    schema.node("paragraph", null, [
+      schema.text("Existing link", [schema.marks.link.create({ href })]),
+    ]),
   ]);
   let editor = EditorState.create({
     schema,
     doc,
     selection: TextSelection.atEnd(doc),
   });
-  editor = editor.apply(
-    editor.tr.addStoredMark(
-      schema.marks.link.create({ href: "https://example.invalid" }),
-    ),
-  );
-  for (const character of "linked words")
+  for (const character of " and more")
     editor = editor.apply(editor.tr.insertText(character));
-  const linked = editor.doc.firstChild!.lastChild!;
-  expect(linked.text).toBe("linked words");
-  expect(linked.marks.some((mark) => mark.type.name === "link")).toBe(true);
+  const paragraph = editor.doc.firstChild!;
+  expect(paragraph.firstChild!.text).toBe("Existing link");
+  expect(paragraph.firstChild!.marks[0].attrs.href).toBe(href);
+  expect(paragraph.lastChild!.text).toBe(" and more");
+  expect(paragraph.lastChild!.marks).toEqual([]);
+});
+
+it("inserts the URL as linked text at an empty selection and leaves following text unlinked", () => {
+  const editor = new Editor({
+    element: null,
+    extensions: noteExtensions,
+    content: { type: "doc", content: [{ type: "paragraph" }] },
+  });
+  try {
+    const href = "https://example.invalid/";
+    applyNoteLink(editor, href);
+    expect(editor.state.doc.firstChild!.firstChild!.text).toBe(href);
+    expect(editor.state.doc.firstChild!.firstChild!.marks[0].attrs.href).toBe(
+      href,
+    );
+    expect(editor.state.selection.empty).toBe(true);
+    expect(editor.state.selection.from).toBe(1 + href.length);
+    expect(editor.isActive("link")).toBe(false);
+    for (const character of " and more")
+      editor.view.dispatch(editor.state.tr.insertText(character));
+    const paragraph = editor.state.doc.firstChild!;
+    expect(paragraph.firstChild!.text).toBe(href);
+    expect(paragraph.lastChild!.text).toBe(" and more");
+    expect(paragraph.lastChild!.marks).toEqual([]);
+  } finally {
+    editor.destroy();
+  }
+});
+
+it("updates the whole existing link when its cursor is inside it", () => {
+  const editor = new Editor({
+    element: null,
+    extensions: noteExtensions,
+    content: {
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          content: [
+            {
+              type: "text",
+              text: "Existing link",
+              marks: [
+                { type: "link", attrs: { href: "https://old.invalid/" } },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  });
+  try {
+    editor.commands.setTextSelection(5);
+    applyNoteLink(editor, "https://new.invalid/");
+    const paragraph = editor.state.doc.firstChild!;
+    expect(paragraph.childCount).toBe(1);
+    expect(paragraph.firstChild!.text).toBe("Existing link");
+    expect(paragraph.firstChild!.marks[0].attrs.href).toBe(
+      "https://new.invalid/",
+    );
+  } finally {
+    editor.destroy();
+  }
 });
