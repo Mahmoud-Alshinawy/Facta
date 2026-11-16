@@ -10,6 +10,11 @@ export function bodyToEditor(body: readonly NoteBlock[]): JSONContent {
           type: block.type,
           attrs: {
             id: block.id,
+            ...(block.align !== undefined &&
+            block.type !== "code" &&
+            block.type !== "divider"
+              ? { align: block.align }
+              : {}),
             ...(block.level ? { level: block.level } : {}),
             ...(block.type === "checklist"
               ? { checked: Boolean(block.checked) }
@@ -79,6 +84,11 @@ export function editorToBody(doc: JSONContent): NoteBlock[] {
       id,
       type: node.type as NoteBlock["type"],
       content,
+      ...(node.attrs?.align != null &&
+      node.type !== "code" &&
+      node.type !== "divider"
+        ? { align: node.attrs.align }
+        : {}),
       ...(node.type === "heading" ? { level: node.attrs?.level ?? 2 } : {}),
       ...(node.type === "checklist"
         ? { checked: Boolean(node.attrs?.checked) }

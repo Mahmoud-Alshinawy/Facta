@@ -19,11 +19,15 @@ import {
   Code2,
 } from "lucide-react";
 import { noteExtensions } from "./editorExtensions";
+import {
+  applyNoteAlignment,
+  noteSelectionAlignment,
+} from "./noteEditorAlignment";
 import { bodyToEditor, editorToBody } from "@/lib/noteEditorAdapter";
 import { extractNoteLinks } from "@/lib/noteBody";
 import { openExternalNoteLink } from "@/lib/externalLinks";
 import { NOTE_COLORS, noteTitle } from "@/lib/notes";
-import type { Note, NoteBlock, NoteAlign } from "@/types/planner";
+import type { Note, NoteBlock } from "@/types/planner";
 
 export const NOTE_FONTS = [
   { name: "IBM Plex Sans", family: "var(--font-ui)" },
@@ -328,8 +332,16 @@ export default function NoteEditor({
     };
   }, [editor, menuKey, tick, Boolean(menu)]);
 
+  const alignment = editor
+    ? noteSelectionAlignment(editor.state, note.align ?? "left")
+    : null;
+
   return (
-    <div className="note-editor-input" ref={root}>
+    <div
+      className="note-editor-input"
+      ref={root}
+      style={{ textAlign: note.align ?? "left" }}
+    >
       {!readOnly && editor && (
         <div
           className="note-toolbar"
@@ -480,8 +492,8 @@ export default function NoteEditor({
                 type="button"
                 key={align}
                 aria-label={`Align ${align}`}
-                aria-pressed={(note.align ?? "left") === align}
-                onClick={() => onPatch({ align: align as NoteAlign })}
+                aria-pressed={alignment === align}
+                onClick={() => applyNoteAlignment(editor, align)}
               >
                 <Icon size={15} />
               </button>

@@ -91,6 +91,48 @@ describe("canonical note blocks", () => {
       "Checklist",
     );
   });
+  it("accepts every supported alignment on text-like blocks without changing their content", () => {
+    for (const align of ["left", "center", "right", "justify"]) {
+      for (const type of [
+        "paragraph",
+        "heading",
+        "checklist",
+        "bullet",
+        "quote",
+      ]) {
+        const blocks = [
+          {
+            id: "aligned",
+            type,
+            content: [{ type: "text", text: "Aligned text" }],
+            level: 2,
+            checked: false,
+            align,
+          },
+        ];
+        expect(() => validateNoteBody(blocks)).not.toThrow();
+        expect(noteBodyText(blocks as NoteBlock[])).toBe("Aligned text");
+      }
+    }
+  });
+  it.each(["centre", "", null, 12, {}])(
+    "rejects invalid block alignment %j",
+    (align) => {
+      expect(() => validateNoteBody([{ ...body[0], align }])).toThrow(
+        "alignment",
+      );
+    },
+  );
+  it("rejects alignment on code and divider blocks", () => {
+    expect(() => validateNoteBody([{ ...body[1], align: "center" }])).toThrow(
+      "alignment",
+    );
+    expect(() =>
+      validateNoteBody([
+        { id: "d", type: "divider", content: [], align: "right" },
+      ]),
+    ).toThrow("alignment");
+  });
   it("computes backlinks from live bodies rather than stale links metadata", () => {
     const base = {
       id: "source",

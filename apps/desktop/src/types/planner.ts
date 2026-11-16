@@ -65,6 +65,8 @@ export interface NoteBlock {
   id: string;
   type: NoteBlockType;
   content: NoteInline[];
+  /** Overrides the note default on text-like blocks; never used for code/dividers. */
+  align?: NoteAlign;
   level?: 1 | 2 | 3;
   checked?: boolean;
   language?: string;

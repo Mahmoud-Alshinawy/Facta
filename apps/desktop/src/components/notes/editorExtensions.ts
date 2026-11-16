@@ -9,6 +9,7 @@ import { UndoRedo } from "@tiptap/extensions/undo-redo";
 import { Plugin } from "@tiptap/pm/state";
 import { baseKeymap } from "@tiptap/pm/commands";
 import { keymap } from "@tiptap/pm/keymap";
+import { NoteAlignment } from "./noteEditorAlignment";
 
 const Document = Node.create({ name: "doc", topNode: true, content: "block+" });
 const Text = Node.create({ name: "text", group: "inline" });
@@ -94,12 +95,13 @@ const Checklist = Node.create({
       button.contentEditable = "false";
       button.setAttribute("role", "checkbox");
       button.setAttribute("aria-label", "Toggle checklist item");
-      const update = (checked: boolean) => {
+      const update = (checked: boolean, align: string | null) => {
+        dom.style.textAlign = align ?? "";
         dom.dataset.checked = String(checked);
         button.setAttribute("aria-checked", String(checked));
         button.textContent = checked ? "✓" : "";
       };
-      update(Boolean(node.attrs.checked));
+      update(Boolean(node.attrs.checked), node.attrs.align);
       button.addEventListener("click", () => {
         if (!editor.isEditable) return;
         const pos = getPos();
@@ -121,7 +123,7 @@ const Checklist = Node.create({
         stopEvent: (event) => button.contains(event.target as globalThis.Node),
         update: (updated) => {
           if (updated.type.name !== "checklist") return false;
-          update(Boolean(updated.attrs.checked));
+          update(Boolean(updated.attrs.checked), updated.attrs.align);
           return true;
         },
       };
@@ -330,5 +332,6 @@ export const noteExtensions = [
   Color,
   Link,
   UndoRedo,
+  NoteAlignment,
   BlockIdentity,
 ];

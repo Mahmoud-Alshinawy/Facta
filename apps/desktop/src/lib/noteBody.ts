@@ -12,6 +12,7 @@ const TYPES = [
   "divider",
 ];
 const COLORS = ["a", "b", "c", "d"];
+const ALIGNMENTS = ["left", "center", "right", "justify"];
 const object = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
 
@@ -76,6 +77,14 @@ export function validateNoteBody(value: unknown): asserts value is NoteBlock[] {
     )
       throw new Error("Invalid note block or inline content");
     ids.add(block.id);
+    if (
+      block.align !== undefined &&
+      (typeof block.align !== "string" ||
+        !ALIGNMENTS.includes(block.align) ||
+        block.type === "code" ||
+        block.type === "divider")
+    )
+      throw new Error("Invalid block alignment");
     if (
       block.type === "heading" &&
       (typeof block.level !== "number" || ![1, 2, 3].includes(block.level))

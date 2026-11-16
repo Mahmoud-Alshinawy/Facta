@@ -9,22 +9,15 @@ import { EditorState, TextSelection } from "@tiptap/pm/state";
 import { noteExtensions } from "./editorExtensions";
 
 const state = vi.hoisted(() => ({
-  empty: true,
+  editorState: null as EditorState | null,
   active: new Set<string>(),
 }));
 
 vi.mock("@tiptap/react", () => ({
   EditorContent: () => createElement("div", { "data-note-body": true }),
   useEditor: () => ({
-    state: {
-      selection: {
-        empty: state.empty,
-        from: 1,
-        $from: {
-          parent: { type: { name: "paragraph" }, textBetween: () => "" },
-          parentOffset: 0,
-        },
-      },
+    get state() {
+      return state.editorState!;
     },
     getText: () => "A note",
     isActive: (mark: string, attrs?: { color: string }) =>
@@ -48,7 +41,13 @@ const render = (readOnly = false) =>
 describe("note formatting toolbar", () => {
   beforeEach(() => {
     vi.stubGlobal("React", React);
-    state.empty = true;
+    const schema = getSchema(noteExtensions);
+    state.editorState = EditorState.create({
+      schema,
+      doc: schema.node("doc", null, [
+        schema.node("paragraph", null, [schema.text("A note")]),
+      ]),
+    });
     state.active.clear();
   });
 
@@ -60,7 +59,11 @@ describe("note formatting toolbar", () => {
     expect(cursor.indexOf('role="toolbar"')).toBeLessThan(
       cursor.indexOf("data-note-body"),
     );
-    state.empty = false;
+    state.editorState = state.editorState!.apply(
+      state.editorState!.tr.setSelection(
+        TextSelection.create(state.editorState!.doc, 1, 4),
+      ),
+    );
     const selection = render();
     expect(selection.match(/role="toolbar"/g)).toHaveLength(1);
     expect(selection).not.toContain("note-selection");
@@ -87,6 +90,28 @@ describe("note formatting toolbar", () => {
       );
     }
     expect(html).toMatch(/aria-label="Amber text"[^>]*aria-pressed="false"/);
+  });
+
+  it("renders the note alignment as the default for blocks without their own alignment", () => {
+    expect(render()).toContain('style="text-align:center"');
+  });
+
+  it("shows no pressed alignment for a mixed paragraph selection", () => {
+    const schema = getSchema(noteExtensions);
+    const doc = schema.node("doc", null, [
+      schema.node("paragraph", { align: "left" }, [schema.text("Left")]),
+      schema.node("paragraph", { align: "center" }, [schema.text("Center")]),
+    ]);
+    state.editorState = EditorState.create({
+      schema,
+      doc,
+      selection: TextSelection.create(doc, 1, doc.content.size - 1),
+    });
+    const html = render();
+    for (const align of ["left", "center", "right", "justify"])
+      expect(html).toMatch(
+        new RegExp('aria-label="Align ' + align + '"[^>]*aria-pressed="false"'),
+      );
   });
 
   it("shows unmarked cursor state without requiring selected text", () => {

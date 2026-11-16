@@ -12,6 +12,7 @@ const body: NoteBlock[] = [
   {
     id: "p",
     type: "paragraph",
+    align: "center",
     content: [
       {
         type: "text",
@@ -34,19 +35,27 @@ const body: NoteBlock[] = [
   {
     id: "h",
     type: "heading",
+    align: "right",
     level: 3,
     content: [{ type: "text", text: "Heading" }],
   },
   {
     id: "c",
     type: "checklist",
+    align: "justify",
     checked: true,
     content: [{ type: "text", text: "Done" }],
   },
-  { id: "b", type: "bullet", content: [{ type: "text", text: "Item" }] },
+  {
+    id: "b",
+    type: "bullet",
+    align: "left",
+    content: [{ type: "text", text: "Item" }],
+  },
   {
     id: "q",
     type: "quote",
+    align: "right",
     content: [{ type: "text", text: "Quote\nsecond line" }],
   },
   {
@@ -63,6 +72,17 @@ describe("note editor storage adapter", () => {
     const document = schema.nodeFromJSON(bodyToEditor(body));
     document.check();
     expect(editorToBody(document.toJSON())).toEqual(body);
+  });
+  it("preserves explicit alignment in both directions and omits a legacy block's default alignment", () => {
+    const editorDoc = bodyToEditor([body[0]]);
+    expect(editorDoc.content![0].attrs!.align).toBe("center");
+    expect(editorToBody(editorDoc)).toEqual([body[0]]);
+    expect(
+      editorToBody({
+        type: "doc",
+        content: [{ type: "paragraph", attrs: { id: "legacy", align: null } }],
+      }),
+    ).toEqual([{ id: "legacy", type: "paragraph", content: [] }]);
   });
   it("creates an editable empty paragraph without persisting an editor wrapper", () => {
     const result = editorToBody(bodyToEditor([]));
