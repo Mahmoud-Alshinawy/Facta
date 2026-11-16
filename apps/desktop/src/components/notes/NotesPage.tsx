@@ -47,6 +47,7 @@ import { externalNoteUrl, openExternalNoteLink } from "@/lib/externalLinks";
 import type { Note, NoteColor } from "@/types/planner";
 import NoteEditor, { noteFont } from "./NoteEditor";
 import NotesDialog from "./NotesDialog";
+import ResizableNoteColumn from "./ResizableNoteColumn";
 import { applyNoteLink } from "./noteEditorLink";
 import "@fontsource/source-serif-4/latin-400.css";
 import "@fontsource/source-serif-4/latin-400-italic.css";
@@ -954,8 +955,7 @@ export default function NotesPage({
                   )}
                 </div>
                 <div className="nbody">
-                  <article
-                    className="ndoc"
+                  <ResizableNoteColumn
                     style={{
                       fontFamily: noteFont(selected.font),
                       textAlign: selected.align ?? "left",
@@ -1116,7 +1116,7 @@ export default function NotesPage({
                         ))}
                       </section>
                     )}
-                  </article>
+                  </ResizableNoteColumn>
                 </div>
                 {!focus && (
                   <div className="foot note-status" aria-label="Note status">
